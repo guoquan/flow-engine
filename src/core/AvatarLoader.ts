@@ -92,6 +92,7 @@ export class AvatarLoader {
     const headGeo = new THREE.BoxGeometry(0.8, 0.9, 0.8);
     const head = new THREE.Mesh(headGeo, material);
     head.position.y = 1.5;
+    head.name = 'Head';
     group.add(head);
 
     // Eyes (Glowing)
@@ -110,6 +111,7 @@ export class AvatarLoader {
     const bodyGeo = new THREE.CylinderGeometry(0.6, 0.4, 1.5, 8);
     const body = new THREE.Mesh(bodyGeo, material);
     body.position.y = 0.5;
+    body.name = 'Body';
     group.add(body);
 
     // Arms
@@ -118,11 +120,13 @@ export class AvatarLoader {
     const leftArm = new THREE.Mesh(armGeo, material);
     leftArm.position.set(-0.9, 0.8, 0);
     leftArm.rotation.z = Math.PI / 4;
+    leftArm.name = 'LeftArm';
     group.add(leftArm);
 
     const rightArm = new THREE.Mesh(armGeo, material);
     rightArm.position.set(0.9, 0.8, 0);
     rightArm.rotation.z = -Math.PI / 4;
+    rightArm.name = 'RightArm';
     group.add(rightArm);
 
     return group;

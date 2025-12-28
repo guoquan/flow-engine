@@ -94,16 +94,108 @@ export class FlowEngine {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  // State
+  public isAutoRotate = false;
+  private currentAction: string | null = null;
+  private actionStartTime = 0;
+  private actionDuration = 0;
+
+  /**
+   * Play a specific action
+   */
+  public playAction(action: string, duration: number = 2000) {
+    this.currentAction = action;
+    this.actionStartTime = this.clock.getElapsedTime();
+    this.actionDuration = duration / 1000; // Convert to seconds
+    console.log(`[FlowEngine] Playing action: ${action}`);
+  }
+
   private animate() {
     requestAnimationFrame(this.animate.bind(this));
+
+    const time = this.clock.getElapsedTime();
     
-    // Simple idle animation if it's the fallback model
     if (this.avatarModel) {
-       this.avatarModel.rotation.y += 0.005; // Rotate slowly
-       this.avatarModel.position.y += Math.sin(this.clock.elapsedTime * 2) * 0.001; // Bob slightly
+       this.updateAnimations(time);
     }
 
+    // Auto Rotate Camera (Optional)
+    this.controls.autoRotate = this.isAutoRotate;
     this.controls.update();
+    
     this.renderer.render(this.scene, this.camera);
+  }
+
+  private updateAnimations(time: number) {
+    if (!this.avatarModel) return;
+
+    // Check if we are playing a transient action
+    const elapsedActionTime = time - this.actionStartTime;
+    const isActionActive = this.currentAction && elapsedActionTime < this.actionDuration;
+
+    // Find parts
+    const head = this.avatarModel.getObjectByName('Head');
+    const body = this.avatarModel.getObjectByName('Body');
+    const leftArm = this.avatarModel.getObjectByName('LeftArm');
+    const rightArm = this.avatarModel.getObjectByName('RightArm');
+
+    if (isActionActive) {
+      this.applyActionAnimation(this.currentAction!, elapsedActionTime, { head, body, leftArm, rightArm });
+    } else {
+      this.currentAction = null; // Reset to idle
+      this.updateIdleAnimation(time, { head, body, leftArm, rightArm });
+    }
+  }
+
+  private applyActionAnimation(action: string, elapsed: number, parts: any) {
+    const { head, body, leftArm, rightArm } = parts;
+
+    switch (action) {
+      case 'wave':
+        if (rightArm) {
+          // Raise arm and wave
+          rightArm.rotation.z = -Math.PI / 1.5; 
+          rightArm.rotation.x = Math.sin(elapsed * 10) * 0.5;
+        }
+        break;
+
+      case 'dance':
+        if (body) {
+          body.position.y = 0.5 + Math.abs(Math.sin(elapsed * 10)) * 0.2;
+          body.rotation.z = Math.sin(elapsed * 10) * 0.1;
+        }
+        if (leftArm) leftArm.rotation.z = Math.PI / 2 + Math.sin(elapsed * 10) * 0.5;
+        if (rightArm) rightArm.rotation.z = -Math.PI / 2 + Math.sin(elapsed * 10) * 0.5;
+        break;
+
+      case 'bow':
+        if (body) body.rotation.x = Math.min(elapsed * 1, 0.5); // Lean forward
+        if (head) head.rotation.x = Math.min(elapsed * 1.5, 0.3);
+        break;
+    }
+  }
+
+  private updateIdleAnimation(time: number, parts: any) {
+    const { head, body, leftArm, rightArm } = parts;
+
+    // 1. Body Floating (Breathing)
+    this.avatarModel!.position.y = Math.sin(time * 1.5) * 0.02;
+    if (body) body.rotation.x = 0; // Reset from bow
+
+    // 3. Animate Parts
+    if (head) {
+      head.rotation.y = Math.sin(time * 0.5) * 0.05;
+      head.rotation.x = Math.sin(time * 0.8) * 0.02;
+    }
+
+    if (leftArm) {
+      leftArm.rotation.z = (Math.PI / 4) + Math.sin(time * 2 + 1) * 0.05;
+      leftArm.rotation.x = 0;
+    }
+
+    if (rightArm) {
+      rightArm.rotation.z = (-Math.PI / 4) - Math.sin(time * 2) * 0.05;
+      rightArm.rotation.x = 0;
+    }
   }
 }

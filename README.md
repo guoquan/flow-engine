@@ -26,14 +26,20 @@
 
 ### 📦 Installation
 
-#### From NPM (Recommended)
+You can install the SDK directly from GitHub:
+
 ```bash
-npm install @guoquan.net/flow-engine
+# Using npm
+npm install github:guoquan/flow-engine
+
+# Using pnpm
+pnpm add github:guoquan/flow-engine
 ```
 
-#### From GitHub
+To use a specific version (recommended):
+
 ```bash
-npm install github:guoquan/flow-engine
+npm install github:guoquan/flow-engine#v0.1.0
 ```
 
 ### 📚 Documentation
@@ -59,14 +65,20 @@ Please visit **[docs/INDEX.md](./docs/INDEX.md)** for the full documentation and
 
 ### 📦 安装
 
-#### 通过 NPM (推荐)
+你可以直接从 GitHub 安装该 SDK：
+
 ```bash
-npm install @guoquan.net/flow-engine
+# 使用 npm
+npm install github:guoquan/flow-engine
+
+# 使用 pnpm
+pnpm add github:guoquan/flow-engine
 ```
 
-#### 通过 GitHub
+建议安装特定版本以保证稳定性：
+
 ```bash
-npm install github:guoquan/flow-engine
+npm install github:guoquan/flow-engine#v0.1.0
 ```
 
 ### 📚 文档索引

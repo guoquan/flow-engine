@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+// @ts-ignore
+import { WebGPURenderer } from 'three/webgpu';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { AvatarLoader } from './AvatarLoader';
 
@@ -6,7 +8,7 @@ export class FlowEngine {
   private container: HTMLElement;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
-  private renderer: THREE.WebGLRenderer;
+  private renderer: WebGPURenderer;
   private controls: OrbitControls;
   private clock: THREE.Clock;
   private loader: AvatarLoader;
@@ -35,11 +37,10 @@ export class FlowEngine {
     );
     this.camera.position.set(0, 1.5, 5);
 
-    // 3. Renderer
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    // 3. Renderer (WebGPU)
+    this.renderer = new WebGPURenderer({ antialias: true, alpha: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.shadowMap.enabled = true;
     this.container.appendChild(this.renderer.domElement);
 
     // 4. Lights
@@ -53,8 +54,8 @@ export class FlowEngine {
     // 6. Resize Handler
     window.addEventListener('resize', this.onWindowResize.bind(this));
 
-    // Start Loop
-    this.animate();
+    // Start Loop (WebGPU Style)
+    this.renderer.setAnimationLoop(this.animate.bind(this));
   }
 
   private setupLights() {
@@ -111,8 +112,6 @@ export class FlowEngine {
   }
 
   private animate() {
-    requestAnimationFrame(this.animate.bind(this));
-
     const time = this.clock.getElapsedTime();
     
     if (this.avatarModel) {

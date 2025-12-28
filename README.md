@@ -21,6 +21,24 @@
 - **Rendering**: Three.js (WebGPU Renderer)
 - **Build**: Vite
 
+### 📦 Installation
+
+You can install the SDK directly from GitHub:
+
+```bash
+# Using npm
+npm install github:guoquan/flow-engine
+
+# Using pnpm
+pnpm add github:guoquan/flow-engine
+```
+
+To use a specific version (recommended):
+
+```bash
+npm install github:guoquan/flow-engine#v0.1.0
+```
+
 ### 📚 Documentation
 Please visit **[docs/INDEX.md](./docs/INDEX.md)** for the full documentation and API references.
 
@@ -41,6 +59,24 @@ Please visit **[docs/INDEX.md](./docs/INDEX.md)** for the full documentation and
 - **核心**: TypeScript
 - **渲染**: Three.js (WebGPU Renderer)
 - **构建**: Vite
+
+### 📦 安装
+
+你可以直接从 GitHub 安装该 SDK：
+
+```bash
+# 使用 npm
+npm install github:guoquan/flow-engine
+
+# 使用 pnpm
+pnpm add github:guoquan/flow-engine
+```
+
+建议安装特定版本以保证稳定性：
+
+```bash
+npm install github:guoquan/flow-engine#v0.1.0
+```
 
 ### 📚 文档索引
 请访问 **[docs/INDEX.md](./docs/INDEX.md)** 查看完整文档与 API 说明。

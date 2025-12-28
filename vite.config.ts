@@ -16,6 +16,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // Base path needed for GitHub Pages (repo name)
+  base: process.env.BUILD_DEMO ? '/flow-engine/' : '/',
   // If BUILD_DEMO is true, build as a normal website, otherwise as a library
   build: process.env.BUILD_DEMO ? {
     outDir: 'dist-demo'

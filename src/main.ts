@@ -29,8 +29,12 @@ const init = async () => {
     
     statusEl.textContent = 'Loading Avatar...';
     
-    // Load the real GLB avatar
-    await engine.loadAvatar('/assets/avatars/expressive/config.json');
+    // Load the real GLB avatar (handle base path for GH Pages)
+    const baseUrl = import.meta.env.BASE_URL.endsWith('/') 
+      ? import.meta.env.BASE_URL 
+      : `${import.meta.env.BASE_URL}/`;
+      
+    await engine.loadAvatar(`${baseUrl}assets/avatars/expressive/config.json`);
     
     statusEl.textContent = 'Ready (Idle)';
 

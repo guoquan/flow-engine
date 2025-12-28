@@ -1,5 +1,5 @@
 {
-  "name": "@guoquan/flow-engine",
+  "name": "@guoquan.net/flow-engine",
   "version": "0.1.0",
   "description": "A high-performance, WebGPU-based digital human engine.",
   "type": "module",

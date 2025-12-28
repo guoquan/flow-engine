@@ -1,5 +1,8 @@
 # Flow (服喽) 🌊
-`@guoquan/flow-engine`
+`@guoquan.net/flow-engine`
+
+[![CI](https://github.com/guoquan/flow-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/guoquan/flow-engine/actions/workflows/ci.yml)
+[![Deploy to GitHub Pages](https://github.com/guoquan/flow-engine/actions/workflows/deploy.yml/badge.svg)](https://github.com/guoquan/flow-engine/actions/workflows/deploy.yml)
 
 [English](#english) | [中文](#中文)
 
@@ -9,7 +12,7 @@
 
 > **"Flow: Convincing at first breath."**
 
-**Flow** (distributed as `@guoquan/flow-engine`) is a high-performance, lightweight web-based digital human engine. It empowers web applications with lifelike AI avatars through simple API-driven interactions.
+**Flow** (distributed as `@guoquan.net/flow-engine`) is a high-performance, lightweight web-based digital human engine. It empowers web applications with lifelike AI avatars through simple API-driven interactions.
 
 ### 🌟 Highlights
 - **Modern Rendering**: Based on WebGPU for next-gen performance and visual quality.
@@ -40,7 +43,7 @@ npm install github:guoquan/flow-engine#v0.1.0
 ```
 
 ### 📚 Documentation
-Please visit **[docs/INDEX.md](./docs/INDEX.md)** for the full documentation and API references.
+Please visit **[docs/](./docs/)** for the full documentation and API references.
 
 ---
 
@@ -48,7 +51,7 @@ Please visit **[docs/INDEX.md](./docs/INDEX.md)** for the full documentation and
 
 > **"一开口，就服喽。"**
 
-**Flow** (包名称：`@guoquan/flow-engine`) 是一个高性能、轻量级的 Web 端数字人引擎。它旨在通过简单的 API 驱动，为 Web 应用赋予栩栩如生的 AI 化身交互能力。
+**Flow** (包名称：`@guoquan.net/flow-engine`) 是一个高性能、轻量级的 Web 端数字人引擎。它旨在通过简单的 API 驱动，为 Web 应用赋予栩栩如生的 AI 化身交互能力。
 
 ### 🌟 项目亮点
 - **现代化渲染**：基于 WebGPU，提供下一代渲染性能与视觉效果。
@@ -79,4 +82,4 @@ npm install github:guoquan/flow-engine#v0.1.0
 ```
 
 ### 📚 文档索引
-请访问 **[docs/INDEX.md](./docs/INDEX.md)** 查看完整文档与 API 说明。
+请访问 **[docs/](./docs/)** 查看完整文档与 API 说明。

@@ -1,4 +1,4 @@
-# 📚 Flow (服喽) Documentation Index / 文档索引
+# 📚 Documentation Index / 文档索引
 
 [English](#english) | [中文](#中文)
 

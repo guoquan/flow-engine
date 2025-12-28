@@ -1,6 +1,8 @@
 # Flow (服喽) 🌊
 `@guoquan/flow-engine`
 
+[![Deploy to GitHub Pages](https://github.com/guoquan/flow-engine/actions/workflows/deploy.yml/badge.svg)](https://github.com/guoquan/flow-engine/actions/workflows/deploy.yml)
+
 [English](#english) | [中文](#中文)
 
 ---

@@ -1,16 +1,29 @@
-# 📚 文档索引 (Documentation Index)
+# 📚 Documentation Index / 文档索引
 
-欢迎查阅 Flow (服喽) 引擎文档。
+[English](#english) | [中文](#中文)
 
-## 核心协议
+---
 
-- **[AGENTS.md](../AGENTS.md)**: 🤖 **AI Agent 协作协议**
-  AI 开发者必读。包含架构原则、代码规范和工作流。位于项目根目录。
+## English
 
-## 技术文档
+### Core Protocol
+- **[AGENTS.md](../AGENTS.md)**: 🤖 **AI Agent Collaboration Protocol** - Architecture principles and development standards for AI developers.
 
-*(待添加 - Future technical docs will be listed here)*
+### Technical Guides
+- **[ANIMATIONS.md](./ANIMATIONS.md)**: 🕺 **Animation Guide** - How to configure avatar behaviors using JSON.
 
-## 架构说明
+### API Reference
+- **[src/types/index.ts](../src/types/index.ts)**: 🏷️ **Type Definitions** - The ultimate source of truth for engine configurations.
 
-*(待添加 - Future architecture docs will be listed here)*
+---
+
+## 中文
+
+### 核心协议
+- **[AGENTS.md](../AGENTS.md)**: 🤖 **AI Agent 协作协议** - 为 AI 开发者准备的架构原则与开发规范。
+
+### 技术指南
+- **[ANIMATIONS.md](./ANIMATIONS.md)**: 🕺 **动画配置指南** - 如何通过 JSON 配置角色的动作行为。
+
+### 接口定义
+- **[src/types/index.ts](../src/types/index.ts)**: 🏷️ **类型定义** - 引擎所有配置项的终极源头。

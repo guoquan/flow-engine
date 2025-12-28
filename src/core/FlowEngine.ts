@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { AvatarLoader } from './AvatarLoader';
+import { AnimationController } from './AnimationController';
 
 export class FlowEngine {
   private container: HTMLElement;
@@ -13,12 +14,13 @@ export class FlowEngine {
   private clock: THREE.Clock;
   private loader: AvatarLoader;
   private avatarModel: THREE.Object3D | null = null;
+  private animController: AnimationController | null = null;
 
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`Container #${containerId} not found`);
     this.container = container;
-
+    
     // Init Logic
     this.clock = new THREE.Clock();
     this.loader = new AvatarLoader();
@@ -82,9 +84,28 @@ export class FlowEngine {
       this.scene.remove(this.avatarModel);
     }
 
-    const { model, config } = await this.loader.load(configUrl);
+    const { model, config, animations } = await this.loader.load(configUrl);
     this.avatarModel = model;
     this.scene.add(this.avatarModel);
+    
+    // Initialize Animation Controller
+    if (animations.length > 0) {
+      this.animController = new AnimationController(this.avatarModel, animations);
+      
+      // Use config if available, otherwise generate default map
+      const animConfig = config.animations || {
+        defaultState: 'idle',
+        states: {
+          idle: { clipName: 'Idle', loop: true },
+          wave: { clipName: 'Wave', loop: false, next: 'idle' },
+          dance: { clipName: 'Dance', loop: false, next: 'idle' },
+          bow: { clipName: 'Bow', loop: false, next: 'idle' },
+          walk: { clipName: 'Walking', loop: true }
+        }
+      };
+      
+      this.animController.init(animConfig);
+    }
     
     console.log(`[Flow] Avatar "${config.name}" loaded successfully.`);
   }
@@ -97,25 +118,31 @@ export class FlowEngine {
 
   // State
   public isAutoRotate = false;
-  private currentAction: string | null = null;
-  private actionStartTime = 0;
-  private actionDuration = 0;
 
   /**
    * Play a specific action
    */
-  public playAction(action: string, duration: number = 2000) {
-    this.currentAction = action;
-    this.actionStartTime = this.clock.getElapsedTime();
-    this.actionDuration = duration / 1000; // Convert to seconds
+  public playAction(action: string) {
     console.log(`[FlowEngine] Playing action: ${action}`);
+
+    // Priority 1: Animation Controller
+    if (this.animController) {
+      // Lowercase to match state keys if we used loose keys
+      this.animController.play(action.toLowerCase());
+      return;
+    }
+
+    // Priority 2: Procedural Animation (Fallback Model - removed for clarity, or kept minimal)
   }
 
-  private animate() {
-    const time = this.clock.getElapsedTime();
+  private animate(_timeMs: number) {
+    const delta = this.clock.getDelta();
     
     if (this.avatarModel) {
-       this.updateAnimations(time);
+       // Mixer Update
+       if (this.animController) {
+         this.animController.update(delta);
+       }
     }
 
     // Auto Rotate Camera (Optional)
@@ -123,78 +150,5 @@ export class FlowEngine {
     this.controls.update();
     
     this.renderer.render(this.scene, this.camera);
-  }
-
-  private updateAnimations(time: number) {
-    if (!this.avatarModel) return;
-
-    // Check if we are playing a transient action
-    const elapsedActionTime = time - this.actionStartTime;
-    const isActionActive = this.currentAction && elapsedActionTime < this.actionDuration;
-
-    // Find parts
-    const head = this.avatarModel.getObjectByName('Head');
-    const body = this.avatarModel.getObjectByName('Body');
-    const leftArm = this.avatarModel.getObjectByName('LeftArm');
-    const rightArm = this.avatarModel.getObjectByName('RightArm');
-
-    if (isActionActive) {
-      this.applyActionAnimation(this.currentAction!, elapsedActionTime, { head, body, leftArm, rightArm });
-    } else {
-      this.currentAction = null; // Reset to idle
-      this.updateIdleAnimation(time, { head, body, leftArm, rightArm });
-    }
-  }
-
-  private applyActionAnimation(action: string, elapsed: number, parts: any) {
-    const { head, body, leftArm, rightArm } = parts;
-
-    switch (action) {
-      case 'wave':
-        if (rightArm) {
-          // Raise arm and wave
-          rightArm.rotation.z = -Math.PI / 1.5; 
-          rightArm.rotation.x = Math.sin(elapsed * 10) * 0.5;
-        }
-        break;
-
-      case 'dance':
-        if (body) {
-          body.position.y = 0.5 + Math.abs(Math.sin(elapsed * 10)) * 0.2;
-          body.rotation.z = Math.sin(elapsed * 10) * 0.1;
-        }
-        if (leftArm) leftArm.rotation.z = Math.PI / 2 + Math.sin(elapsed * 10) * 0.5;
-        if (rightArm) rightArm.rotation.z = -Math.PI / 2 + Math.sin(elapsed * 10) * 0.5;
-        break;
-
-      case 'bow':
-        if (body) body.rotation.x = Math.min(elapsed * 1, 0.5); // Lean forward
-        if (head) head.rotation.x = Math.min(elapsed * 1.5, 0.3);
-        break;
-    }
-  }
-
-  private updateIdleAnimation(time: number, parts: any) {
-    const { head, body, leftArm, rightArm } = parts;
-
-    // 1. Body Floating (Breathing)
-    this.avatarModel!.position.y = Math.sin(time * 1.5) * 0.02;
-    if (body) body.rotation.x = 0; // Reset from bow
-
-    // 3. Animate Parts
-    if (head) {
-      head.rotation.y = Math.sin(time * 0.5) * 0.05;
-      head.rotation.x = Math.sin(time * 0.8) * 0.02;
-    }
-
-    if (leftArm) {
-      leftArm.rotation.z = (Math.PI / 4) + Math.sin(time * 2 + 1) * 0.05;
-      leftArm.rotation.x = 0;
-    }
-
-    if (rightArm) {
-      rightArm.rotation.z = (-Math.PI / 4) - Math.sin(time * 2) * 0.05;
-      rightArm.rotation.x = 0;
-    }
   }
 }

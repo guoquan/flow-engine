@@ -16,9 +16,9 @@ export class AvatarLoader {
   /**
    * 加载数字人
    * @param configUrl 指向 config.json 的 URL
-   * @returns Promise<{ model: THREE.Object3D, config: AvatarConfig }>
+   * @returns Promise<{ model: THREE.Object3D, config: AvatarConfig, animations: THREE.AnimationClip[] }>
    */
-  async load(configUrl: string): Promise<{ model: THREE.Object3D; config: AvatarConfig }> {
+  async load(configUrl: string): Promise<{ model: THREE.Object3D; config: AvatarConfig; animations: THREE.AnimationClip[] }> {
     console.log(`[Flow] Loading avatar config from: ${configUrl}`);
 
     try {
@@ -37,9 +37,12 @@ export class AvatarLoader {
 
       // 2. Load Model (with Fallback)
       let model: THREE.Object3D;
+      let animations: THREE.AnimationClip[] = [];
+
       try {
         const gltf = await this.loader.loadAsync(modelUrl);
         model = gltf.scene;
+        animations = gltf.animations || [];
       } catch (error) {
         console.warn(`[Flow] Failed to load 3D model at ${modelUrl}. Using fallback placeholder.`, error);
         model = this.createFallbackAvatar();
@@ -48,7 +51,7 @@ export class AvatarLoader {
       // 3. Apply Config
       this.applyConfig(model, config);
 
-      return { model, config };
+      return { model, config, animations };
     } catch (error) {
       console.error('[Flow] Error loading avatar:', error);
       throw error;

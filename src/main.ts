@@ -29,8 +29,8 @@ const init = async () => {
     
     statusEl.textContent = 'Loading Avatar...';
     
-    // Load the default avatar config
-    await engine.loadAvatar('/assets/avatars/default/config.json');
+    // Load the real GLB avatar
+    await engine.loadAvatar('/assets/avatars/expressive/config.json');
     
     statusEl.textContent = 'Ready (Idle)';
 
@@ -46,49 +46,45 @@ const init = async () => {
     const responseEl = document.getElementById('ai-response')!;
 
     const sendMessage = async () => {
-      const text = inputEl.value.trim();
+      const text = inputEl.value.trim().toLowerCase();
       if (!text) return;
 
       // UI State
       inputEl.value = '';
-      inputEl.disabled = true;
-      sendBtn.disabled = true;
       statusEl.textContent = 'Thinking...';
 
-      try {
-        // Use relative path since API is now served by Vite middleware
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
-        });
-        
-        const data = await res.json();
-        
-        // Handle Response
-        statusEl.textContent = `Action: ${data.command.action}`;
-        responseEl.textContent = data.text;
-        responseEl.classList.add('visible');
+      // --- Local Brain Logic (No fetch needed) ---
+      let replyText = "我听到了。";
+      let action = "idle";
 
-        console.log('[Flow] AI Command:', data.command);
-        
-        // Pass command to engine
-        engine.playAction(data.command.action, data.command.duration); 
-
-        // Hide text after a while
-        setTimeout(() => {
-          responseEl.classList.remove('visible');
-          statusEl.textContent = 'Ready (Idle)';
-        }, 3000);
-
-      } catch (err) {
-        console.error('API Error:', err);
-        statusEl.textContent = 'Brain Disconnected';
-      } finally {
-        inputEl.disabled = false;
-        sendBtn.disabled = false;
-        inputEl.focus();
+      if (text.includes("你好") || text.includes("hello")) {
+        replyText = "你好呀！很高兴见到你。";
+        action = "wave";
+      } else if (text.includes("跳舞") || text.includes("dance")) {
+        replyText = "好的，给你表演一段！";
+        action = "dance";
+      } else if (text.includes("再见") || text.includes("bye")) {
+        replyText = "下次再聊，拜拜！";
+        action = "bow";
+      } else if (text.includes("死") || text.includes("death") || text.includes("die")) {
+        replyText = "系统故障...重启中...";
+        action = "death";
       }
+
+      // Handle Response
+      statusEl.textContent = `Action: ${action}`;
+      responseEl.textContent = replyText;
+      responseEl.classList.add('visible');
+
+      console.log('[Flow] Local Brain Decision:', { action, replyText });
+      
+      engine.playAction(action); 
+
+      // Hide text after a while
+      setTimeout(() => {
+        responseEl.classList.remove('visible');
+        statusEl.textContent = 'Ready (Idle)';
+      }, 3000);
     };
 
     sendBtn.addEventListener('click', sendMessage);

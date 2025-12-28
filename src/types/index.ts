@@ -3,16 +3,28 @@
  * 定义数字人的元数据结构，对应资源包中的 config.json
  */
 export interface AvatarConfig {
-  /** 唯一标识符 */
-  id: string;
-  /** 显示名称 */
   name: string;
-  /** 模型文件路径 (相对于 config.json 或绝对路径) */
   modelSrc: string;
-  /** 缩放比例 (默认 1.0) */
   scale?: number;
-  /** 初始位置 [x, y, z] */
   initialPosition?: [number, number, number];
-  /** 版本号 */
-  version?: string;
+  /** Animation State Machine Configuration */
+  animations?: {
+    defaultState: string;
+    states: Record<string, AnimationStateConfig>;
+  };
+}
+
+export interface AnimationStateConfig {
+  /** The exact name of the clip in the GLB (fuzzy matching supported if not found) */
+  clipName: string;
+  /** Whether the animation should loop */
+  loop?: boolean;
+  /** The state to transition to after this one finishes (for non-looping) */
+  next?: string;
+  /** Cross-fade duration in seconds (default: 0.3) */
+  fadeDuration?: number;
+  /** Time scale (speed), default 1.0 */
+  timeScale?: number;
+  /** Duration to hold the last frame before transitioning (seconds) */
+  holdDuration?: number;
 }

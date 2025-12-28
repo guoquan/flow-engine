@@ -1,8 +1,18 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import path from 'path';
-import dts from 'vite-plugin-dts'; // We will need this plugin for types
+import dts from 'vite-plugin-dts';
 
 export default defineConfig({
+  test: {
+    environment: 'jsdom',
+    include: ['tests/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+    },
+    globals: true, // Allow usage of describe, it, expect without import
+  },
   plugins: [
     // Generate .d.ts files
     dts({ 

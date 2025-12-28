@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:demo": "tsc && cross-env BUILD_DEMO=true vite build",
     "preview": "vite preview",
     "prepare": "npm run build"
   },
@@ -21,9 +22,10 @@
   "devDependencies": {
     "@types/node": "^25.0.3",
     "@types/three": "^0.182.0",
+    "cross-env": "^10.1.0",
+    "three": "^0.182.0",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
-    "vite-plugin-dts": "^4.5.4",
-    "three": "^0.182.0" 
+    "vite-plugin-dts": "^4.5.4"
   }
 }

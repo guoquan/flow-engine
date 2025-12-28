@@ -16,7 +16,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  build: {
+  // If BUILD_DEMO is true, build as a normal website, otherwise as a library
+  build: process.env.BUILD_DEMO ? {
+    outDir: 'dist-demo'
+  } : {
     lib: {
       entry: path.resolve(__dirname, 'src/index.ts'),
       name: 'Flow',
@@ -29,7 +32,7 @@ export default defineConfig({
         // Global variables to use in the UMD build
         globals: {
           'three': 'THREE',
-          'three/webgpu': 'THREE', // This might need specific handling or assume THREE global extensions
+          'three/webgpu': 'THREE', 
         }
       }
     }

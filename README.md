@@ -43,7 +43,7 @@ npm install github:guoquan/flow-engine#v0.1.0
 ```
 
 ### 📚 Documentation
-Please visit **[docs/INDEX.md](./docs/INDEX.md)** for the full documentation and API references.
+Please visit **[docs/](./docs/)** for the full documentation and API references.
 
 ---
 
@@ -82,4 +82,4 @@ npm install github:guoquan/flow-engine#v0.1.0
 ```
 
 ### 📚 文档索引
-请访问 **[docs/INDEX.md](./docs/INDEX.md)** 查看完整文档与 API 说明。
+请访问 **[docs/](./docs/)** 查看完整文档与 API 说明。

@@ -1,5 +1,5 @@
 # Flow (服喽) 🌊
-`@guoquan/flow-engine`
+`@guoquan.net/flow-engine`
 
 [![CI](https://github.com/guoquan/flow-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/guoquan/flow-engine/actions/workflows/ci.yml)
 [![Deploy to GitHub Pages](https://github.com/guoquan/flow-engine/actions/workflows/deploy.yml/badge.svg)](https://github.com/guoquan/flow-engine/actions/workflows/deploy.yml)
@@ -12,7 +12,7 @@
 
 > **"Flow: Convincing at first breath."**
 
-**Flow** (distributed as `@guoquan/flow-engine`) is a high-performance, lightweight web-based digital human engine. It empowers web applications with lifelike AI avatars through simple API-driven interactions.
+**Flow** (distributed as `@guoquan.net/flow-engine`) is a high-performance, lightweight web-based digital human engine. It empowers web applications with lifelike AI avatars through simple API-driven interactions.
 
 ### 🌟 Highlights
 - **Modern Rendering**: Based on WebGPU for next-gen performance and visual quality.
@@ -26,20 +26,14 @@
 
 ### 📦 Installation
 
-You can install the SDK directly from GitHub:
-
+#### From NPM (Recommended)
 ```bash
-# Using npm
-npm install github:guoquan/flow-engine
-
-# Using pnpm
-pnpm add github:guoquan/flow-engine
+npm install @guoquan.net/flow-engine
 ```
 
-To use a specific version (recommended):
-
+#### From GitHub
 ```bash
-npm install github:guoquan/flow-engine#v0.1.0
+npm install github:guoquan/flow-engine
 ```
 
 ### 📚 Documentation
@@ -51,7 +45,7 @@ Please visit **[docs/INDEX.md](./docs/INDEX.md)** for the full documentation and
 
 > **"一开口，就服喽。"**
 
-**Flow** (包名称：`@guoquan/flow-engine`) 是一个高性能、轻量级的 Web 端数字人引擎。它旨在通过简单的 API 驱动，为 Web 应用赋予栩栩如生的 AI 化身交互能力。
+**Flow** (包名称：`@guoquan.net/flow-engine`) 是一个高性能、轻量级的 Web 端数字人引擎。它旨在通过简单的 API 驱动，为 Web 应用赋予栩栩如生的 AI 化身交互能力。
 
 ### 🌟 项目亮点
 - **现代化渲染**：基于 WebGPU，提供下一代渲染性能与视觉效果。
@@ -65,20 +59,14 @@ Please visit **[docs/INDEX.md](./docs/INDEX.md)** for the full documentation and
 
 ### 📦 安装
 
-你可以直接从 GitHub 安装该 SDK：
-
+#### 通过 NPM (推荐)
 ```bash
-# 使用 npm
-npm install github:guoquan/flow-engine
-
-# 使用 pnpm
-pnpm add github:guoquan/flow-engine
+npm install @guoquan.net/flow-engine
 ```
 
-建议安装特定版本以保证稳定性：
-
+#### 通过 GitHub
 ```bash
-npm install github:guoquan/flow-engine#v0.1.0
+npm install github:guoquan/flow-engine
 ```
 
 ### 📚 文档索引

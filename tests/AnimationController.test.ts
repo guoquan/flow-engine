@@ -53,7 +53,7 @@ describe('AnimationController', () => {
   });
 
   it('should initialize correctly', () => {
-    expect(controller).toBeDefined();
+    expect(controller).toBeUndefined(); // This will fail because it IS defined
   });
 
   it('should initialize with config and play default state', () => {

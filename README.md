@@ -1,4 +1,5 @@
 # Flow (服喽) 🌊
+`@guoquan/flow-engine`
 
 [English](#english) | [中文](#中文)
 
@@ -8,7 +9,7 @@
 
 > **"Flow: Convincing at first breath."**
 
-Flow is a high-performance, lightweight web-based digital human engine. It empowers web applications with lifelike AI avatars through simple API-driven interactions.
+**Flow** (distributed as `@guoquan/flow-engine`) is a high-performance, lightweight web-based digital human engine. It empowers web applications with lifelike AI avatars through simple API-driven interactions.
 
 ### 🌟 Highlights
 - **Modern Rendering**: Based on WebGPU for next-gen performance and visual quality.
@@ -29,7 +30,7 @@ Please visit **[docs/INDEX.md](./docs/INDEX.md)** for the full documentation and
 
 > **"一开口，就服喽。"**
 
-Flow 是一个高性能、轻量级的 Web 端数字人引擎。它旨在通过简单的 API 驱动，为 Web 应用赋予栩栩如生的 AI 化身交互能力。
+**Flow** (包名称：`@guoquan/flow-engine`) 是一个高性能、轻量级的 Web 端数字人引擎。它旨在通过简单的 API 驱动，为 Web 应用赋予栩栩如生的 AI 化身交互能力。
 
 ### 🌟 项目亮点
 - **现代化渲染**：基于 WebGPU，提供下一代渲染性能与视觉效果。

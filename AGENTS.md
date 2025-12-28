@@ -1,4 +1,4 @@
-# Flow (服喽) Engine - AI Agent Collaboration Protocol
+# Flow (服喽) Engine (`flow-engine`) - AI Agent Collaboration Protocol
 
 Welcome to the **Flow Engine** development environment.
 

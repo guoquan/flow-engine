@@ -38,5 +38,14 @@ Welcome to the **Flow Engine** development environment.
 - **Cross-Fade**: Always use `fadeIn/fadeOut` for state transitions to ensure visual smoothness.
 - **Pure Frontend**: No external server required for Demo. Logic is local in `main.ts`.
 
+## 📝 Workflow & Protocols
+
+### 1. Task Execution
+1.  **Read**: Understand the request and context.
+2.  **Plan**: Propose the change (mental or written check).
+3.  **Implement**: detailed code changes.
+4.  **PR Creation**: When using `gh pr create`, **always** include the `--draft` flag. This allows for final verification before triggering automated reviews.
+5.  **Verify**: If tests exist, run them. If not, ensure the code compiles (`npm run build` check).
+
 ---
 *Motto: Modern, Data-Driven, Fast.*

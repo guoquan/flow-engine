@@ -3,10 +3,12 @@ coverage:
     project:
       default:
         target: 90%
-        threshold: 0%  # 不允许总体覆盖率下降
+        threshold: 0%
+        informational: false  # 关键：这会让 Codecov 报告失败状态，而不是仅仅发个信息
     patch:
       default:
-        target: 90%    # 新增代码必须达到 90% 覆盖率
+        target: 90%
+        informational: false
 
 comment:
   layout: "reach, diff, flags, files"

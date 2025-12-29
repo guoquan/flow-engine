@@ -2,11 +2,16 @@
 import { defineConfig } from 'vite';
 import path from 'path';
 import dts from 'vite-plugin-dts';
+import { codecovVitePlugin } from '@codecov/vite-plugin';
 
 export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['tests/**/*.test.ts'],
+    reporters: ['default', 'junit'],
+    outputFile: {
+      junit: './junit.xml',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
@@ -19,7 +24,13 @@ export default defineConfig({
       insertTypesEntry: true,
       include: ['src/**/*.ts'],
       exclude: ['src/main.ts', 'src/vite-env.d.ts']
-    })
+    }),
+    // Codecov Bundle Analysis
+    codecovVitePlugin({
+      enable: true,
+      bundleName: 'flow-engine-bundle',
+      uploadToken: process.env.CODECOV_TOKEN,
+    }),
   ],
   resolve: {
     alias: {

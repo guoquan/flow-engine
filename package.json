@@ -23,6 +23,7 @@
     "three": ">=0.170.0"
   },
   "devDependencies": {
+    "@codecov/vite-plugin": "^1.9.1",
     "@types/node": "^25.0.3",
     "@types/three": "^0.182.0",
     "@vitest/coverage-v8": "^4.0.16",

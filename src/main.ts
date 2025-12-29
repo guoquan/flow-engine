@@ -35,6 +35,7 @@ const init = async () => {
       : `${import.meta.env.BASE_URL}/`;
       
     await engine.loadAvatar(`${baseUrl}assets/avatars/expressive/config.json`);
+    await engine.loadStage(`${baseUrl}assets/stages/default/config.json`);
     
     statusEl.textContent = 'Ready (Idle)';
 

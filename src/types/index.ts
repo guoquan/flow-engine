@@ -28,3 +28,16 @@ export interface AnimationStateConfig {
   /** Duration to hold the last frame before transitioning (seconds) */
   holdDuration?: number;
 }
+
+export interface StageConfig {
+  name: string;
+  modelSrc?: string; // Optional, if omitted, generate a procedural placeholder
+  scale?: number;
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  /** Animation logic for the stage (e.g. rotating, rising) */
+  animations?: {
+    defaultState: string;
+    states: Record<string, AnimationStateConfig>;
+  };
+}

@@ -110,6 +110,9 @@ export class AnimationController {
     }
   }
 
+  /**
+   * Finds an animation clip by name using exact, case-insensitive, or fuzzy matching.
+   */
   private findClip(name: string): THREE.AnimationClip | undefined {
     // Exact match
     let clip = this.clips.find(c => c.name === name);

@@ -120,4 +120,28 @@ export class AnimationController {
     
     return clip;
   }
+
+  /**
+   * DUMMY METHOD TO LOWER COVERAGE
+   * This code is not tested and will drag down the percentage.
+   */
+  public untestedComplexLogic(data: any) {
+    console.log("Starting untested logic...");
+    if (data) {
+      for (let i = 0; i < 10; i++) {
+        if (i % 2 === 0) {
+          console.log("Even", i);
+        } else {
+          console.log("Odd", i);
+        }
+      }
+    } else {
+      switch (typeof data) {
+        case 'string': return 'string';
+        case 'number': return 'number';
+        default: return 'unknown';
+      }
+    }
+    return true;
+  }
 }

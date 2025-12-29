@@ -2,7 +2,7 @@
 `@guoquan.net/flow-engine`
 
 [![CI](https://github.com/guoquan/flow-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/guoquan/flow-engine/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/guoquan/flow-engine/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/guoquan/flow-engine)
+[![codecov](https://codecov.io/gh/guoquan/flow-engine/graph/badge.svg?token=2T5SGUBMK4)](https://codecov.io/gh/guoquan/flow-engine)
 [![Deploy to GitHub Pages](https://github.com/guoquan/flow-engine/actions/workflows/deploy.yml/badge.svg)](https://github.com/guoquan/flow-engine/actions/workflows/deploy.yml)
 
 [English](#english) | [中文](#中文)

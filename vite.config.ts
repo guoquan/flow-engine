@@ -27,7 +27,7 @@ export default defineConfig({
     }),
     // Codecov Bundle Analysis
     codecovVitePlugin({
-      enable: true,
+      enable: !!process.env.CODECOV_TOKEN,
       bundleName: 'flow-engine-bundle',
       uploadToken: process.env.CODECOV_TOKEN,
     }),

@@ -9,7 +9,7 @@
 ### Core Protocol
 - **[AGENTS.md](../AGENTS.md)**: 🤖 **AI Agent Collaboration Protocol** - Architecture principles and development standards for AI developers.
 
-### Technical Guides
+### Technical Guides / 技术指南 📖
 - **[ANIMATIONS.md](./ANIMATIONS.md)**: 🕺 **Animation Guide** - How to configure avatar behaviors using JSON.
 
 ### API Reference

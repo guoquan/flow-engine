@@ -23,6 +23,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
 // Initialize Engine
 const init = async () => {
+  console.log('[Flow] Starting initialization sequence using WebGPU...');
   try {
     const statusEl = document.getElementById('status')!;
     const engine = new FlowEngine('canvas-container');

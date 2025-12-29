@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { AvatarLoader } from './AvatarLoader';
+import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
 
 export class FlowEngine {
@@ -13,8 +14,13 @@ export class FlowEngine {
   private controls: OrbitControls;
   private clock: THREE.Clock;
   private loader: AvatarLoader;
+  private stageLoader: StageLoader;
+  
   private avatarModel: THREE.Object3D | null = null;
+  private stageModel: THREE.Object3D | null = null;
+  
   private animController: AnimationController | null = null;
+  private stageAnimController: AnimationController | null = null;
 
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
@@ -24,6 +30,7 @@ export class FlowEngine {
     // Init Logic
     this.clock = new THREE.Clock();
     this.loader = new AvatarLoader();
+    this.stageLoader = new StageLoader();
 
     // 1. Scene
     this.scene = new THREE.Scene();
@@ -110,6 +117,27 @@ export class FlowEngine {
     console.log(`[Flow] Avatar "${config.name}" loaded successfully.`);
   }
 
+  /**
+   * Load a stage (podium/scene) by config URL
+   */
+  async loadStage(configUrl: string) {
+    if (this.stageModel) {
+      this.scene.remove(this.stageModel);
+    }
+
+    const { model, config, animations } = await this.stageLoader.load(configUrl);
+    this.stageModel = model;
+    this.scene.add(this.stageModel);
+
+    // Initialize Stage Animation Controller (if stage has animations)
+    if (animations.length > 0 && config.animations) {
+      this.stageAnimController = new AnimationController(this.stageModel, animations);
+      this.stageAnimController.init(config.animations);
+    }
+
+    console.log(`[Flow] Stage "${config.name}" loaded successfully.`);
+  }
+
   private onWindowResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
@@ -143,6 +171,10 @@ export class FlowEngine {
        if (this.animController) {
          this.animController.update(delta);
        }
+    }
+
+    if (this.stageModel && this.stageAnimController) {
+      this.stageAnimController.update(delta);
     }
 
     // Auto Rotate Camera (Optional)

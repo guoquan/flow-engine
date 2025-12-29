@@ -1,0 +1,14 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 90%
+        threshold: 0%  # 不允许总体覆盖率下降
+    patch:
+      default:
+        target: 90%    # 新增代码必须达到 90% 覆盖率
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false

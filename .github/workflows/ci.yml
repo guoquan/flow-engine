@@ -59,7 +59,7 @@ jobs:
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./junit.xml
+          file: ./test-results/junit.xml
 
       - name: Verify Build
         run: pnpm run build

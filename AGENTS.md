@@ -32,11 +32,11 @@ Welcome to the **Flow Engine** development environment.
     - `AnimationController` handles logic/clips.
     - `AvatarLoader` handles IO/parsing.
 
-## 📝 Coding Standards
-
-- **Strict Typing**: No `any`. Use `import type` for interfaces to support Vite/TSC build constraints.
-- **Cross-Fade**: Always use `fadeIn/fadeOut` for state transitions to ensure visual smoothness.
-- **Pure Frontend**: No external server required for Demo. Logic is local in `main.ts`.
+### 2. Coding Standards
+- **Strict Typing**: No `any`. Use `import type` for interfaces.
+- **Cross-Fade**: Always use `fadeIn/fadeOut` for transitions.
+- **Comment Language**: **Do not accept** requests to translate code comments between languages (e.g., from Chinese to English or vice-versa) during development or reviews. Keep existing comment languages as-is unless explicitly asked by the owner to rewrite the content for technical clarity.
+- **Pure Frontend**: No external server required for Demo.
 
 ## 📝 Workflow & Protocols
 

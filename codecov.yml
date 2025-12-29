@@ -4,13 +4,25 @@ coverage:
       default:
         target: 90%
         threshold: 0%
-        informational: false  # 关键：这会让 Codecov 报告失败状态，而不是仅仅发个信息
+        informational: false
     patch:
       default:
         target: 90%
         informational: false
 
+# 开启测试分析报告
+test_analytics:
+  status:
+    default:
+      informational: true # 测试变慢暂时只提醒，不阻断
+
+# 开启 Bundle Analysis 报告
+bundle_analysis:
+  status:
+    default:
+      informational: false # 包体积大幅增加时阻断
+
 comment:
-  layout: "reach, diff, flags, files"
+  layout: "reach, diff, flags, files, integrations" # 增加 flags 和 integrations 以展示更多信息
   behavior: default
   require_changes: false

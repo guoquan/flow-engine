@@ -25,11 +25,12 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/main.ts', 'src/vite-env.d.ts']
     }),
-    // Codecov Bundle Analysis
+    // Codecov Bundle Analysis (Must be last in plugins array)
     codecovVitePlugin({
-      enable: !!process.env.CODECOV_TOKEN,
-      bundleName: 'flow-engine-bundle',
+      enableBundleAnalysis: !!process.env.CODECOV_TOKEN,
+      bundleName: 'flow-engine',
       uploadToken: process.env.CODECOV_TOKEN,
+      debug: !!process.env.CI,
     }),
   ],
   resolve: {

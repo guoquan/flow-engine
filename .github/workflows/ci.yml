@@ -40,8 +40,14 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Run Tests
-        run: pnpm test
+      - name: Run Tests with Coverage
+        run: pnpm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # Required for private repos or stability
+          fail_ci_if_error: true
 
       - name: Verify Build
         run: pnpm run build

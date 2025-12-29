@@ -6,6 +6,11 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: read
+  pull-requests: write # Required for Codecov comments if using tokenless or specific setups
+  checks: write        # Required for test result annotations
+
 jobs:
   test:
     runs-on: ubuntu-latest

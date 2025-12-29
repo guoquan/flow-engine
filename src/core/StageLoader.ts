@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import type { StageConfig, AnimationStateConfig } from '../types';
+import type { StageConfig } from '../types';
 
 export class StageLoader {
   private loader: GLTFLoader;

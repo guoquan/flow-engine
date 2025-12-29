@@ -27,9 +27,10 @@ export default defineConfig({
     }),
     // Codecov Bundle Analysis (Must be last in plugins array)
     codecovVitePlugin({
-      enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
+      enableBundleAnalysis: !!process.env.CODECOV_TOKEN,
       bundleName: 'flow-engine',
       uploadToken: process.env.CODECOV_TOKEN,
+      debug: !!process.env.CI,
     }),
   ],
   resolve: {

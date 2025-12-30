@@ -1,0 +1,55 @@
+name: Publish to NPM and GitHub Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # 必须：用于 NPM Trusted Publishing (OIDC)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      # --- 发布到 NPM (使用 Trusted Publishing) ---
+      - name: Publish to NPM
+        run: npm publish --access public --provenance
+        env:
+          # 注意：这里不需要 NODE_AUTH_TOKEN 了，npm 命令行会自动处理 OIDC
+          # 但为了兼容性，有些版本仍需明确告知
+          NPM_CONFIG_PROVENANCE: true
+
+      # --- 发布到 GitHub Packages ---
+      - name: Setup Node for GPR
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@guoquan.net'
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

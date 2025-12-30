@@ -11,6 +11,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write # 必须：用于 NPM Trusted Publishing (OIDC)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,11 +33,13 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      # --- 发布到 NPM ---
+      # --- 发布到 NPM (使用 Trusted Publishing) ---
       - name: Publish to NPM
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # 注意：这里不需要 NODE_AUTH_TOKEN 了，npm 命令行会自动处理 OIDC
+          # 但为了兼容性，有些版本仍需明确告知
+          NPM_CONFIG_PROVENANCE: true
 
       # --- 发布到 GitHub Packages ---
       - name: Setup Node for GPR

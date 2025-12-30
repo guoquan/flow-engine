@@ -6,6 +6,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="ui-overlay">
     <h1>Flow (服喽)</h1>
     <p>Status: <span id="status">Initializing...</span></p>
+    <p style="font-size: 0.8rem; color: #00d2ff;">Tip: Click anywhere to make it look at you!</p>
     <div id="controls" style="margin-top: 10px; pointer-events: auto;">
       <label>
         <input type="checkbox" id="auto-rotate" /> Auto Rotate Camera

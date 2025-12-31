@@ -321,10 +321,12 @@ describe('FlowEngine', () => {
 
     engine.setDebug(true);
     expect(engineInternal.debugTargetMesh).toBeDefined();
+    expect(engineInternal.debugPlaneMesh).toBeDefined();
     expect(sceneAddSpy).toHaveBeenCalled();
 
     engine.setDebug(false);
     expect(engineInternal.debugTargetMesh).toBeNull();
+    expect(engineInternal.debugPlaneMesh).toBeNull();
     expect(sceneRemoveSpy).toHaveBeenCalled();
   });
 

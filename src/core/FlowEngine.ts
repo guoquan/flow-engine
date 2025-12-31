@@ -39,7 +39,7 @@ export class FlowEngine {
   // Debug Helpers
   public isDebug = false;
   private debugTargetMesh: THREE.Mesh | null = null;
-  private debugSphereMesh: THREE.Mesh | null = null;
+  private debugPlaneMesh: THREE.Mesh | null = null;
 
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
@@ -240,11 +240,11 @@ export class FlowEngine {
       this.scene.add(this.debugTargetMesh);
     }
 
-    if (!this.debugSphereMesh) {
-      const geo = new THREE.SphereGeometry(1.5, 16, 16);
-      const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true, transparent: true, opacity: 0.2 });
-      this.debugSphereMesh = new THREE.Mesh(geo, mat);
-      this.scene.add(this.debugSphereMesh);
+    if (!this.debugPlaneMesh) {
+      const geo = new THREE.PlaneGeometry(10, 10);
+      const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true, transparent: true, opacity: 0.1, side: THREE.DoubleSide });
+      this.debugPlaneMesh = new THREE.Mesh(geo, mat);
+      this.scene.add(this.debugPlaneMesh);
     }
   }
 
@@ -254,9 +254,15 @@ export class FlowEngine {
         this.debugTargetMesh.position.copy(this.currentLookAt);
         this.debugTargetMesh.visible = (this.lookAtState !== 'IDLE');
       }
-      if (this.debugSphereMesh && this.headBone) {
-        this.headBone.getWorldPosition(this.debugSphereMesh.position);
-        this.debugSphereMesh.scale.setScalar(1.0); // Reset to base R=1.5
+      if (this.debugPlaneMesh && this.headBone) {
+        const headPos = new THREE.Vector3();
+        this.headBone.getWorldPosition(headPos);
+        const camPos = this.camera.position;
+        
+        // Position at midpoint
+        this.debugPlaneMesh.position.lerpVectors(camPos, headPos, 0.5);
+        // Look at camera
+        this.debugPlaneMesh.lookAt(camPos);
       }
     }
   }
@@ -266,9 +272,9 @@ export class FlowEngine {
       this.scene.remove(this.debugTargetMesh);
       this.debugTargetMesh = null;
     }
-    if (this.debugSphereMesh) {
-      this.scene.remove(this.debugSphereMesh);
-      this.debugSphereMesh = null;
+    if (this.debugPlaneMesh) {
+      this.scene.remove(this.debugPlaneMesh);
+      this.debugPlaneMesh = null;
     }
   }
 

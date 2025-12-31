@@ -5,12 +5,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { AvatarLoader } from './AvatarLoader';
 import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
+import type { AvatarConfig } from '../types';
 
 export class FlowEngine {
-  // Configuration
-  private HEAD_LERP_FACTOR = 0.1;
-  private HEAD_ROTATION_OFFSET = Math.PI / 2;
-
   private container: HTMLElement;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;

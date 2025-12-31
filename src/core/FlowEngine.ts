@@ -34,6 +34,7 @@ export class FlowEngine {
   
   private lookAtState: 'IDLE' | 'LOOKING' | 'HOLDING' | 'RETURNING' = 'IDLE';
   private lookAtTimer = 0;
+  private lookAtWeight = 0; // 0 = Only animation, 1 = Full tracking
   private currentAvatarConfig: AvatarConfig | null = null;
   private activePlane = new THREE.Plane(); 
 
@@ -363,9 +364,11 @@ export class FlowEngine {
 
          if (isUserInteracting) {
            this.lookAtState = 'LOOKING';
+           this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 1.0, lerpFactor);
            this.calculateLookAtTarget();
            this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
          } else if (this.lookAtState === 'LOOKING') {
+           this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 1.0, lerpFactor);
            this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
            if (this.currentLookAt.distanceTo(this.lookAtTarget) < 0.01) {
              this.lookAtState = 'HOLDING';
@@ -376,20 +379,20 @@ export class FlowEngine {
              this.lookAtState = 'RETURNING';
            }
          } else if (this.lookAtState === 'RETURNING') {
-           // Define "Forward" as a point relative to the avatar's torso/root
-           const forwardTarget = new THREE.Vector3(0, 1.5, 5); // 5 units in front
-           if (this.avatarModel) {
-             this.avatarModel.localToWorld(forwardTarget);
-           }
-
-           this.currentLookAt.lerp(forwardTarget, lerpFactor);
-           if (this.currentLookAt.distanceTo(forwardTarget) < 0.01) {
+           // Fade out the influence entirely
+           this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 0.0, lerpFactor);
+           if (this.lookAtWeight < 0.01) {
              this.lookAtState = 'IDLE';
+             this.lookAtWeight = 0;
            }
          }
 
-         // Apply Rotation
-         if (this.lookAtState !== 'IDLE') {
+         // Apply Rotation with Quaternion Blending
+         if (this.lookAtWeight > 0) {
+           const targetQuat = new THREE.Quaternion();
+           const originalQuat = this.headBone.quaternion.clone(); // Capture animation pose
+           
+           // Calculate tracked pose
            this.headBone.lookAt(this.currentLookAt);
            if (config?.rotationOffset) {
              this.headBone.rotateX(config.rotationOffset[0]);
@@ -398,6 +401,10 @@ export class FlowEngine {
            } else {
              this.headBone.rotateX(Math.PI / 2);
            }
+           targetQuat.copy(this.headBone.quaternion);
+
+           // Blending: Animation (0) <---> LookAt (1)
+           this.headBone.quaternion.slerpQuaternions(originalQuat, targetQuat, this.lookAtWeight);
          }
        }
     }

@@ -112,6 +112,9 @@ export class FlowEngine {
     const normal = new THREE.Vector3().subVectors(camPos, headPos).normalize();
     this.activePlane.setFromNormalAndCoplanarPoint(normal, midPoint);
 
+    // Project default view point onto this plane to have a stable return target
+    this.activePlane.projectPoint(new THREE.Vector3(0, 1.5, 5), this.defaultLookAt);
+
     // Sync Debug Mesh with the locked mathematical plane
     if (this.debugPlaneMesh) {
       this.debugPlaneMesh.position.copy(midPoint);
@@ -294,11 +297,20 @@ export class FlowEngine {
       this.debugTargetMesh.visible = isVisible;
     }
 
-    if (this.debugPlaneMesh) {
+    if (this.debugPlaneMesh && this.headBone) {
+      const isVisible = (this.lookAtState !== 'IDLE');
       this.debugPlaneMesh.visible = isVisible;
+
+      if (isVisible) {
+        const headPos = new THREE.Vector3(0, 1.5, 0);
+        this.headBone.getWorldPosition(headPos);
+        const camPos = this.camera.position;
+        // Position stays at midpoint between dynamic camera and head
+        this.debugPlaneMesh.position.lerpVectors(camPos, headPos, 0.5);
+      }
     }
 
-    // debugPlaneMesh transform is now handled in onPointerDown for a static snapshot
+    // debugPlaneMesh orientation remains locked as set in onPointerDown
     if (this.debugTargetMesh) this.debugTargetMesh.renderOrder = 1000;
   }
 

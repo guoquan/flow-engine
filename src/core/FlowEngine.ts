@@ -241,12 +241,12 @@ export class FlowEngine {
     }
 
     if (!this.debugPlaneMesh) {
-      // Large grid to cover the entire field of view
+      // Very dense grid to create a visible 'surface' texture
       const size = 100;
-      const divisions = 100;
-      const grid = new THREE.GridHelper(size, divisions, 0x00ff00, 0x222222);
+      const divisions = 400; // Increased from 100
+      const grid = new THREE.GridHelper(size, divisions, 0x00ff00, 0x00ff00);
       grid.material.transparent = true;
-      grid.material.opacity = 0.2;
+      grid.material.opacity = 0.05; // Fainter but more uniform
       
       grid.rotateX(Math.PI / 2);
       this.debugPlaneMesh = grid as any;

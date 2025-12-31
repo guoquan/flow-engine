@@ -364,12 +364,19 @@ export class FlowEngine {
          const holdTime = config?.holdDuration ?? 2000;
 
          // State Management
-         if (this.lookAtState === 'LOOKING') {
+         const isUserInteracting = this.isPointerDown;
+
+         if (isUserInteracting) {
+           this.lookAtState = 'LOOKING';
            this.lookAtInfluence = THREE.MathUtils.lerp(this.lookAtInfluence, 1.0, lerpFactor);
            this.calculateLookAtTarget();
            this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
+         } else if (this.lookAtState === 'LOOKING') {
+           // Mouse released, continue lerping until reached or transition to holding
+           this.lookAtInfluence = THREE.MathUtils.lerp(this.lookAtInfluence, 1.0, lerpFactor);
+           this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
            
-           if (!this.isPointerDown && this.lookAtInfluence > 0.99) {
+           if (this.currentLookAt.distanceTo(this.lookAtTarget) < 0.01) {
              this.lookAtState = 'HOLDING';
              this.lookAtTimer = Date.now();
            }

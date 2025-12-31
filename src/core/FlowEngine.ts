@@ -37,6 +37,7 @@ export class FlowEngine {
   private lookAtWeight = 0; // 0 = Only animation, 1 = Full tracking
   private currentAvatarConfig: AvatarConfig | null = null;
   private activePlane = new THREE.Plane(); 
+  private lookAtProxy = new THREE.Object3D(); // Silent calculator
 
   // Debug Helpers
   public isDebug = false;
@@ -379,32 +380,26 @@ export class FlowEngine {
              this.lookAtState = 'RETURNING';
            }
          } else if (this.lookAtState === 'RETURNING') {
-           // Stage 1: Move target back to natural forward position
-           const forwardTarget = new THREE.Vector3(0, 1.5, 5);
-           if (this.avatarModel) this.avatarModel.localToWorld(forwardTarget);
-           
-           this.currentLookAt.lerp(forwardTarget, lerpFactor);
-
-           // Stage 2: Once centered, fade out the weight
-           if (this.currentLookAt.distanceTo(forwardTarget) < 0.01) {
-             this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 0.0, lerpFactor);
-             if (this.lookAtWeight < 0.001) {
-               this.lookAtState = 'IDLE';
-               this.lookAtWeight = 0;
-             }
+           // Fade out the influence entirely
+           this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 0.0, lerpFactor);
+           if (this.lookAtWeight < 0.001) {
+             this.lookAtState = 'IDLE';
+             this.lookAtWeight = 0;
            }
          }
 
          // Apply Rotation with Quaternion Blending
          if (this.headBone && this.lookAtWeight > 0) {
-           const originalQuat = this.headBone.quaternion.clone(); // Animation pose
+           // 1. Position the proxy at the bone's world position
+           const headWorldPos = new THREE.Vector3();
+           this.headBone.getWorldPosition(headWorldPos);
+           this.lookAtProxy.position.copy(headWorldPos);
            
-           // 1. Calculate ideal LookAt orientation
-           this.headBone.lookAt(this.currentLookAt);
-           const lookAtQuat = this.headBone.quaternion.clone();
+           // 2. Calculate ideal LookAt orientation on the proxy
+           this.lookAtProxy.lookAt(this.currentLookAt);
+           const lookAtQuat = this.lookAtProxy.quaternion.clone();
            
-           // 2. Apply the model-specific offset (one-time correction)
-           // We do this by creating an offset quaternion
+           // 3. Apply the model-specific offset
            const offsetQuat = new THREE.Quaternion();
            if (config?.rotationOffset) {
              offsetQuat.setFromEuler(new THREE.Euler(...config.rotationOffset));
@@ -412,11 +407,11 @@ export class FlowEngine {
              offsetQuat.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
            }
            
-           // Target = LookAt result * Offset
            const targetQuat = lookAtQuat.multiply(offsetQuat);
 
-           // 3. Blend: Animation (0) <---> TargetPose (1)
-           this.headBone.quaternion.slerpQuaternions(originalQuat, targetQuat, this.lookAtWeight);
+           // 4. Blend the real bone: Animation (0) <---> Target (1)
+           // The Mixer has already updated the bone rotation this frame
+           this.headBone.quaternion.slerp(targetQuat, this.lookAtWeight);
          }
        }
     }

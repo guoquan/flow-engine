@@ -8,8 +8,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <p>Status: <span id="status">Initializing...</span></p>
     <p style="font-size: 0.8rem; color: #00d2ff;">Tip: Click anywhere to make it look at you!</p>
     <div id="controls" style="margin-top: 10px; pointer-events: auto;">
-      <label>
+      <label style="display: block; margin-bottom: 5px;">
         <input type="checkbox" id="auto-rotate" /> Auto Rotate Camera
+      </label>
+      <label style="display: block;">
+        <input type="checkbox" id="debug-mode" /> Debug Mode
       </label>
     </div>
   </div>
@@ -44,6 +47,11 @@ const init = async () => {
     const autoRotateCheck = document.getElementById('auto-rotate') as HTMLInputElement;
     autoRotateCheck.addEventListener('change', (e) => {
       engine.isAutoRotate = (e.target as HTMLInputElement).checked;
+    });
+
+    const debugModeCheck = document.getElementById('debug-mode') as HTMLInputElement;
+    debugModeCheck.addEventListener('change', (e) => {
+      engine.setDebug((e.target as HTMLInputElement).checked);
     });
 
     // Chat Interaction Logic

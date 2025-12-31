@@ -36,6 +36,11 @@ export class FlowEngine {
   private lookAtTimer = 0;
   private currentAvatarConfig: AvatarConfig | null = null;
 
+  // Debug Helpers
+  public isDebug = false;
+  private debugTargetMesh: THREE.Mesh | null = null;
+  private debugSphereMesh: THREE.Mesh | null = null;
+
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`Container #${containerId} not found`);
@@ -204,6 +209,49 @@ export class FlowEngine {
     console.log(`[Flow] Stage "${config.name}" loaded successfully.`);
   }
 
+  /**
+   * Toggle debug helpers
+   */
+  public setDebug(enabled: boolean) {
+    this.isDebug = enabled;
+    console.log(`[Flow] Debug Mode: ${enabled}`);
+
+    if (enabled) {
+      this.createDebugHelpers();
+    } else {
+      this.removeDebugHelpers();
+    }
+  }
+
+  private createDebugHelpers() {
+    if (!this.debugTargetMesh) {
+      const geo = new THREE.SphereGeometry(0.1, 8, 8);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true, depthTest: false, transparent: true, opacity: 0.8 });
+      this.debugTargetMesh = new THREE.Mesh(geo, mat);
+      this.debugTargetMesh.renderOrder = 999;
+      this.scene.add(this.debugTargetMesh);
+    }
+
+    if (!this.debugSphereMesh) {
+      const geo = new THREE.SphereGeometry(3, 16, 16);
+      const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true, transparent: true, opacity: 0.1 });
+      this.debugSphereMesh = new THREE.Mesh(geo, mat);
+      this.debugSphereMesh.position.set(0, 1.5, 0);
+      this.scene.add(this.debugSphereMesh);
+    }
+  }
+
+  private removeDebugHelpers() {
+    if (this.debugTargetMesh) {
+      this.scene.remove(this.debugTargetMesh);
+      this.debugTargetMesh = null;
+    }
+    if (this.debugSphereMesh) {
+      this.scene.remove(this.debugSphereMesh);
+      this.debugSphereMesh = null;
+    }
+  }
+
   private onWindowResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
@@ -279,6 +327,12 @@ export class FlowEngine {
              this.headBone.rotateX(Math.PI / 2);
            }
          }
+       }
+
+       // Update Debug Helpers
+       if (this.isDebug && this.debugTargetMesh) {
+         this.debugTargetMesh.position.copy(this.currentLookAt);
+         this.debugTargetMesh.visible = (this.lookAtState !== 'IDLE');
        }
     }
 

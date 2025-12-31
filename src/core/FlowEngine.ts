@@ -101,18 +101,17 @@ export class FlowEngine {
       this.lookAtTarget.copy(intersects[0].point);
       console.log(`[Flow] Hit Object: ${intersects[0].object.name} at`, this.lookAtTarget);
     } else {
-      // 2. Fallback: Project onto a "Focal Plane" in front of the avatar
-      // Instead of Z=0 (too deep), we use Z=2 (between camera and avatar)
-      const focalPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2);
+      // 2. Fallback: Project onto a sphere around the avatar
+      // This allows looking left, right, up, down and even slightly behind
+      const sphere = new THREE.Sphere(new THREE.Vector3(0, 1.5, 0), 3);
       const intersectionPoint = new THREE.Vector3();
       
-      if (this.raycaster.ray.intersectPlane(focalPlane, intersectionPoint)) {
-        // Limit the target's range to prevent extreme head-twisting
-        intersectionPoint.x = THREE.MathUtils.clamp(intersectionPoint.x, -2, 2);
-        intersectionPoint.y = THREE.MathUtils.clamp(intersectionPoint.y, 0, 3);
-        
+      if (this.raycaster.ray.intersectSphere(sphere, intersectionPoint)) {
         this.lookAtTarget.copy(intersectionPoint);
-        console.log(`[Flow] Hit Focal Plane (Z=2) at`, this.lookAtTarget);
+        console.log(`[Flow] Hit Interaction Sphere at`, this.lookAtTarget);
+      } else {
+        // If ray misses the sphere (pointing away), just look at the ray direction at a distance
+        this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(3).add(this.camera.position);
       }
     }
 
@@ -220,14 +219,9 @@ export class FlowEngine {
   public playAction(action: string) {
     console.log(`[FlowEngine] Playing action: ${action}`);
 
-    // Priority 0: Interrupt any ongoing LookAt interaction
+    // Priority 0: Smoothly interrupt LookAt
     if (this.lookAtState !== 'IDLE') {
-      this.lookAtState = 'IDLE';
-      this.currentLookAt.copy(this.defaultLookAt);
-      if (this.headBone) {
-        // Force reset bone orientation to avoid blending issues with new action
-        this.headBone.rotation.set(0, 0, 0);
-      }
+      this.lookAtState = 'RETURNING'; // Change from IDLE to RETURNING for smoothness
     }
 
     // Priority 1: Animation Controller

@@ -107,19 +107,20 @@ export class FlowEngine {
       console.log(`[Flow] Hit Object: ${intersects[0].object.name} at`, this.lookAtTarget);
     } else {
       // 2. Fallback: Project onto a sphere around the head
-      // A smaller radius (1.5) ensures the interaction feels tight and reactive
+      // Setting radius equal to camera distance provides the most intuitive mapping
       const headPos = new THREE.Vector3(0, 1.5, 0);
       if (this.headBone) this.headBone.getWorldPosition(headPos);
       
-      const sphere = new THREE.Sphere(headPos, 1.5);
+      const distance = this.camera.position.distanceTo(headPos);
+      const sphere = new THREE.Sphere(headPos, distance);
       const intersectionPoint = new THREE.Vector3();
       
       if (this.raycaster.ray.intersectSphere(sphere, intersectionPoint)) {
         this.lookAtTarget.copy(intersectionPoint);
-        console.log(`[Flow] Hit Interaction Sphere at`, this.lookAtTarget);
+        console.log(`[Flow] Hit Dynamic Sphere (R=${distance.toFixed(2)}) at`, this.lookAtTarget);
       } else {
-        // If ray misses the sphere (pointing away), just look at the ray direction at a distance
-        this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(1.5).add(this.camera.position);
+        // If ray misses (e.g. looking away), project at same distance
+        this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(distance).add(this.camera.position);
       }
     }
 
@@ -251,6 +252,11 @@ export class FlowEngine {
       }
       if (this.debugSphereMesh && this.headBone) {
         this.headBone.getWorldPosition(this.debugSphereMesh.position);
+        
+        // Dynamically scale debug sphere to match the calculated radius
+        const distance = this.camera.position.distanceTo(this.debugSphereMesh.position);
+        // Original geometry is R=1.5, so we scale it
+        this.debugSphereMesh.scale.setScalar(distance / 1.5);
       }
     }
   }

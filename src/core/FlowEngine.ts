@@ -379,11 +379,19 @@ export class FlowEngine {
              this.lookAtState = 'RETURNING';
            }
          } else if (this.lookAtState === 'RETURNING') {
-           // Fade out the influence entirely
-           this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 0.0, lerpFactor);
-           if (this.lookAtWeight < 0.001) { // Finer threshold
-             this.lookAtState = 'IDLE';
-             this.lookAtWeight = 0;
+           // Stage 1: Move target back to natural forward position
+           const forwardTarget = new THREE.Vector3(0, 1.5, 5);
+           if (this.avatarModel) this.avatarModel.localToWorld(forwardTarget);
+           
+           this.currentLookAt.lerp(forwardTarget, lerpFactor);
+
+           // Stage 2: Once centered, fade out the weight
+           if (this.currentLookAt.distanceTo(forwardTarget) < 0.05) {
+             this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 0.0, lerpFactor);
+             if (this.lookAtWeight < 0.001) {
+               this.lookAtState = 'IDLE';
+               this.lookAtWeight = 0;
+             }
            }
          }
 

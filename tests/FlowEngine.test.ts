@@ -119,7 +119,8 @@ describe('FlowEngine', () => {
     expect(target.z).toBe(3);
   });
 
-  it('should apply stable rotation to head bone over multiple frames', async () => {
+  it('should transition through all LookAt states: LOOKING -> HOLDING -> RETURNING -> IDLE', async () => {
+    vi.useFakeTimers();
     const mockHead = new THREE.Object3D();
     mockHead.name = 'Head';
     const mockModel = new THREE.Group();
@@ -128,25 +129,106 @@ describe('FlowEngine', () => {
     const engineInternal = engine as any;
     engineInternal.loader.load.mockResolvedValueOnce({
       model: mockModel,
-      config: { name: 'LookAtAvatar' },
+      config: { 
+        name: 'StateAvatar',
+        lookAt: { enabled: true, lerpFactor: 1.0, holdDuration: 1000 } 
+      },
       animations: [],
     });
 
     await engine.loadAvatar('dummy-url');
-    engineInternal.lookAtTarget.set(0, 0, 10);
     
-    // Set LERP to 1.0 to snap immediately and test stability
-    (engineInternal as any).HEAD_LERP_FACTOR = 1.0; 
-    
-    // Run multiple frames
-    engineInternal.animate(16.6);
-    const rotationAfterFrame1 = mockHead.rotation.x;
-    
-    engineInternal.animate(33.2);
-    const rotationAfterFrame2 = mockHead.rotation.x;
+    // 1. IDLE -> LOOKING
+    const event = new PointerEvent('pointerdown', { clientX: 100, clientY: 100 });
+    engineInternal.onPointerDown(event);
+    expect(engineInternal.lookAtState).toBe('LOOKING');
 
-    // Verify rotation doesn't accumulate (within tolerance)
-    expect(rotationAfterFrame1).toBeCloseTo(rotationAfterFrame2, 5);
+    // 2. LOOKING -> HOLDING (One frame with lerp 1.0)
+    engineInternal.animate(16.6);
+    expect(engineInternal.lookAtState).toBe('HOLDING');
+
+    // 3. HOLDING -> RETURNING (Fast forward time)
+    vi.advanceTimersByTime(1500);
+    engineInternal.animate(1016.6);
+    expect(engineInternal.lookAtState).toBe('RETURNING');
+
+    // 4. RETURNING -> IDLE (One frame with lerp 1.0)
+    engineInternal.animate(1032.2);
+    expect(engineInternal.lookAtState).toBe('IDLE');
+
+    vi.useRealTimers();
+  });
+
+  it('should apply rotationOffset from config', async () => {
+    const mockHead = new THREE.Object3D();
+    mockHead.name = 'Head';
+    const mockModel = new THREE.Group();
+    mockModel.add(mockHead);
+
+    const engineInternal = engine as any;
+    engineInternal.loader.load.mockResolvedValueOnce({
+      model: mockModel,
+      config: { 
+        name: 'OffsetAvatar',
+        lookAt: { enabled: true, rotationOffset: [0.1, 0.2, 0.3] } 
+      },
+      animations: [],
+    });
+
+    await engine.loadAvatar('dummy-url');
+    engineInternal.lookAtState = 'LOOKING';
+    
+    const rotateXSpy = vi.spyOn(mockHead, 'rotateX');
+    const rotateYSpy = vi.spyOn(mockHead, 'rotateY');
+    const rotateZSpy = vi.spyOn(mockHead, 'rotateZ');
+
+    engineInternal.animate(16.6);
+
+    expect(rotateXSpy).toHaveBeenCalledWith(0.1);
+    expect(rotateYSpy).toHaveBeenCalledWith(0.2);
+    expect(rotateZSpy).toHaveBeenCalledWith(0.3);
+  });
+
+  it('should NOT look at target if lookAt is disabled in config', async () => {
+    const mockHead = new THREE.Object3D();
+    mockHead.name = 'Head';
+    const mockModel = new THREE.Group();
+    mockModel.add(mockHead);
+
+    const engineInternal = engine as any;
+    engineInternal.loader.load.mockResolvedValueOnce({
+      model: mockModel,
+      config: { 
+        name: 'DisabledAvatar',
+        lookAt: { enabled: false } 
+      },
+      animations: [],
+    });
+
+    await engine.loadAvatar('dummy-url');
+    engineInternal.lookAtState = 'LOOKING';
+    
+    const lookAtSpy = vi.spyOn(mockHead, 'lookAt');
+    engineInternal.animate(16.6);
+
+    expect(lookAtSpy).not.toHaveBeenCalled();
+  });
+
+  it('should handle head bone lookup fallback to neck', async () => {
+    const mockNeck = new THREE.Object3D();
+    mockNeck.name = 'NeckBone';
+    const mockModel = new THREE.Group();
+    mockModel.add(mockNeck);
+
+    const engineInternal = engine as any;
+    engineInternal.loader.load.mockResolvedValueOnce({
+      model: mockModel,
+      config: { name: 'NeckAvatar' },
+      animations: [],
+    });
+
+    await engine.loadAvatar('dummy-url');
+    expect(engineInternal.headBone).toBe(mockNeck);
   });
 
   it('should handle window resize', () => {

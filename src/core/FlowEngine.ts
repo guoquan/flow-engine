@@ -35,6 +35,7 @@ export class FlowEngine {
   
   private lookAtState: 'IDLE' | 'LOOKING' | 'HOLDING' | 'RETURNING' = 'IDLE';
   private lookAtTimer = 0;
+  private lookAtInfluence = 0; // 0 = Animation only, 1 = Full LookAt
   private currentAvatarConfig: AvatarConfig | null = null;
   private activePlane = new THREE.Plane(); // The locked mathematical plane
 
@@ -362,13 +363,13 @@ export class FlowEngine {
          const lerpFactor = config?.lerpFactor ?? 0.1;
          const holdTime = config?.holdDuration ?? 2000;
 
-         // Continuous update while mouse is down or state is active
-         if (this.isPointerDown || this.lookAtState === 'LOOKING') {
-           this.calculateLookAtTarget(); // Re-calculate based on latest camera/mouse
-           this.lookAtState = 'LOOKING';
+         // State Management
+         if (this.lookAtState === 'LOOKING') {
+           this.lookAtInfluence = THREE.MathUtils.lerp(this.lookAtInfluence, 1.0, lerpFactor);
+           this.calculateLookAtTarget();
            this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
            
-           if (!this.isPointerDown && this.currentLookAt.distanceTo(this.lookAtTarget) < 0.01) {
+           if (!this.isPointerDown && this.lookAtInfluence > 0.99) {
              this.lookAtState = 'HOLDING';
              this.lookAtTimer = Date.now();
            }
@@ -377,23 +378,31 @@ export class FlowEngine {
              this.lookAtState = 'RETURNING';
            }
          } else if (this.lookAtState === 'RETURNING') {
-           this.currentLookAt.lerp(this.defaultLookAt, lerpFactor);
-           if (this.currentLookAt.distanceTo(this.defaultLookAt) < 0.01) {
+           this.lookAtInfluence = THREE.MathUtils.lerp(this.lookAtInfluence, 0.0, lerpFactor);
+           if (this.lookAtInfluence < 0.01) {
              this.lookAtState = 'IDLE';
+             this.lookAtInfluence = 0;
            }
          }
 
-         // Apply Rotation
+         // Apply Rotation with Blending
          if (this.lookAtState !== 'IDLE') {
+           const targetQuat = new THREE.Quaternion();
+           const originalQuat = this.headBone.quaternion.clone();
+           
+           // Calculate target rotation
            this.headBone.lookAt(this.currentLookAt);
            if (config?.rotationOffset) {
              this.headBone.rotateX(config.rotationOffset[0]);
              this.headBone.rotateY(config.rotationOffset[1]);
              this.headBone.rotateZ(config.rotationOffset[2]);
            } else {
-             // Default Fallback
              this.headBone.rotateX(Math.PI / 2);
            }
+           targetQuat.copy(this.headBone.quaternion);
+
+           // Blend between original (animation) and target (lookAt)
+           this.headBone.quaternion.slerpQuaternions(originalQuat, targetQuat, this.lookAtInfluence);
          }
        }
     }

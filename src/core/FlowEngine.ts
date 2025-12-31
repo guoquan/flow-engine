@@ -241,9 +241,14 @@ export class FlowEngine {
     }
 
     if (!this.debugPlaneMesh) {
-      const geo = new THREE.PlaneGeometry(10, 10);
-      const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true, transparent: true, opacity: 0.1, side: THREE.DoubleSide });
-      this.debugPlaneMesh = new THREE.Mesh(geo, mat);
+      // Create a grid helper to visualize the plane
+      const size = 10;
+      const divisions = 10;
+      const grid = new THREE.GridHelper(size, divisions, 0x00ff00, 0x444444);
+      
+      // GridHelper is default horizontal, rotate it to be vertical/facing camera
+      grid.rotateX(Math.PI / 2);
+      this.debugPlaneMesh = grid as any; // Using Mesh type for property compatibility
       this.scene.add(this.debugPlaneMesh);
     }
   }
@@ -261,8 +266,10 @@ export class FlowEngine {
         
         // Position at midpoint
         this.debugPlaneMesh.position.lerpVectors(camPos, headPos, 0.5);
-        // Look at camera
+        // Constantly face the camera
         this.debugPlaneMesh.lookAt(camPos);
+        // Re-apply the internal GridHelper rotation to stay upright
+        this.debugPlaneMesh.rotateX(Math.PI / 2);
       }
     }
   }

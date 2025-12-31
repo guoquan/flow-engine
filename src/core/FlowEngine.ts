@@ -241,14 +241,15 @@ export class FlowEngine {
     }
 
     if (!this.debugPlaneMesh) {
-      // Create a grid helper to visualize the plane
-      const size = 10;
-      const divisions = 10;
-      const grid = new THREE.GridHelper(size, divisions, 0x00ff00, 0x444444);
+      // Large grid to cover the entire field of view
+      const size = 100;
+      const divisions = 100;
+      const grid = new THREE.GridHelper(size, divisions, 0x00ff00, 0x222222);
+      grid.material.transparent = true;
+      grid.material.opacity = 0.2;
       
-      // GridHelper is default horizontal, rotate it to be vertical/facing camera
       grid.rotateX(Math.PI / 2);
-      this.debugPlaneMesh = grid as any; // Using Mesh type for property compatibility
+      this.debugPlaneMesh = grid as any;
       this.scene.add(this.debugPlaneMesh);
     }
   }
@@ -260,16 +261,14 @@ export class FlowEngine {
         this.debugTargetMesh.visible = (this.lookAtState !== 'IDLE');
       }
       if (this.debugPlaneMesh && this.headBone) {
-        const headPos = new THREE.Vector3();
+        const headPos = new THREE.Vector3(0, 1.5, 0);
         this.headBone.getWorldPosition(headPos);
         const camPos = this.camera.position;
         
-        // Position at midpoint
+        // Match the exact math used in onPointerDown fallback
         this.debugPlaneMesh.position.lerpVectors(camPos, headPos, 0.5);
-        // Constantly face the camera
         this.debugPlaneMesh.lookAt(camPos);
-        // Re-apply the internal GridHelper rotation to stay upright
-        this.debugPlaneMesh.rotateX(Math.PI / 2);
+        this.debugPlaneMesh.rotateX(Math.PI / 2); // Correct orientation
       }
     }
   }

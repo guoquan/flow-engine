@@ -80,14 +80,18 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-      - name: Deploy Screenshot Previews to GitHub Pages
+      - name: Push Screenshots to Previews Branch
         if: github.event_name == 'pull_request' && always()
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./test-results
-          destination_dir: previews/${{ github.event.number }}/${{ github.run_id }}
-          keep_files: true
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin previews || git branch previews
+          git checkout previews
+          mkdir -p snapshots/${{ github.event.number }}/${{ github.run_id }}
+          cp test-results/*.png snapshots/${{ github.event.number }}/${{ github.run_id }}/
+          git add snapshots/
+          git commit -m "docs: upload e2e snapshots for PR ${{ github.event.number }} run ${{ github.run_id }}"
+          git push origin previews
 
       - name: Comment PR with E2E Summary
         if: github.event_name == 'pull_request' && always()
@@ -96,13 +100,11 @@ jobs:
           message: |
             ## 🎭 E2E Visual Test Report
             - **Status**: ${{ job.status == 'success' && '✅ Passed' || '❌ Failed' }}
-            - **Report**: [Download Playwright Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
+            - **Full Report**: [Download Playwright Artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
             
-            ### 📸 Visual Snapshots
+            ### 📸 Visual Snapshots (Instant)
             | Initial State | Looking at Target | Returned to Idle |
             | :---: | :---: | :---: |
-            | ![Initial](https://guoquan.github.io/flow-engine/previews/${{ github.event.number }}/${{ github.run_id }}/initial-view.png) | ![LookAt](https://guoquan.github.io/flow-engine/previews/${{ github.event.number }}/${{ github.run_id }}/lookat-view.png) | ![Returned](https://guoquan.github.io/flow-engine/previews/${{ github.event.number }}/${{ github.run_id }}/returned-view.png)
-            
-            *Note: If images are not showing, wait a minute for GitHub Pages to refresh.*
+            | ![Initial](https://raw.githubusercontent.com/${{ github.repository }}/previews/snapshots/${{ github.event.number }}/${{ github.run_id }}/initial-view.png) | ![LookAt](https://raw.githubusercontent.com/${{ github.repository }}/previews/snapshots/${{ github.event.number }}/${{ github.run_id }}/lookat-view.png) | ![Returned](https://raw.githubusercontent.com/${{ github.repository }}/previews/snapshots/${{ github.event.number }}/${{ github.run_id }}/returned-view.png)
           comment_tag: e2e-report
 

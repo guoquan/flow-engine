@@ -27,10 +27,9 @@ export class FlowEngine {
   // Interaction State
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
-  private isPointerDown = false; // Track interaction state
+  private isPointerDown = false; 
   
   private lookAtTarget = new THREE.Vector3();
-  private defaultLookAt = new THREE.Vector3(0, 1.5, 5);
   private currentLookAt = new THREE.Vector3(0, 1.5, 5);
   
   private lookAtState: 'IDLE' | 'LOOKING' | 'HOLDING' | 'RETURNING' = 'IDLE';
@@ -121,10 +120,7 @@ export class FlowEngine {
       this.debugPlaneMesh.rotateX(Math.PI / 2);
     }
     
-    // 3. Project default return point onto this specific plane
-    this.activePlane.projectPoint(new THREE.Vector3(0, 1.5, 5), this.defaultLookAt);
-    
-    console.log(`[Flow] LookAt Plane Locked at midpoint`);
+    console.log(`[Flow] Interaction Session Started: Plane Locked`);
   }
 
   private onPointerMove(event: PointerEvent) {
@@ -380,9 +376,14 @@ export class FlowEngine {
              this.lookAtState = 'RETURNING';
            }
          } else if (this.lookAtState === 'RETURNING') {
-           // Move currentLookAt towards the natural forward direction
-           this.currentLookAt.lerp(this.defaultLookAt, lerpFactor);
-           if (this.currentLookAt.distanceTo(this.defaultLookAt) < 0.01) {
+           // Define "Forward" as a point relative to the avatar's torso/root
+           const forwardTarget = new THREE.Vector3(0, 1.5, 5); // 5 units in front
+           if (this.avatarModel) {
+             this.avatarModel.localToWorld(forwardTarget);
+           }
+
+           this.currentLookAt.lerp(forwardTarget, lerpFactor);
+           if (this.currentLookAt.distanceTo(forwardTarget) < 0.01) {
              this.lookAtState = 'IDLE';
            }
          }

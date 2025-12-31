@@ -7,7 +7,7 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write # Required for Codecov comments if using tokenless or specific setups
   checks: write        # Required for test result annotations
 

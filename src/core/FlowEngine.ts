@@ -381,16 +381,17 @@ export class FlowEngine {
          } else if (this.lookAtState === 'RETURNING') {
            // Fade out the influence entirely
            this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 0.0, lerpFactor);
-           if (this.lookAtWeight < 0.01) {
+           if (this.lookAtWeight < 0.001) { // Finer threshold
              this.lookAtState = 'IDLE';
              this.lookAtWeight = 0;
            }
          }
 
          // Apply Rotation with Quaternion Blending
-         if (this.lookAtWeight > 0) {
+         // Only apply if we have active weight to avoid jittering in base idle
+         if (this.headBone && this.lookAtWeight > 0) {
            const targetQuat = new THREE.Quaternion();
-           const originalQuat = this.headBone.quaternion.clone(); // Capture animation pose
+           const originalQuat = this.headBone.quaternion.clone(); 
            
            // Calculate tracked pose
            this.headBone.lookAt(this.currentLookAt);
@@ -403,7 +404,7 @@ export class FlowEngine {
            }
            targetQuat.copy(this.headBone.quaternion);
 
-           // Blending: Animation (0) <---> LookAt (1)
+           // Blending
            this.headBone.quaternion.slerpQuaternions(originalQuat, targetQuat, this.lookAtWeight);
          }
        }

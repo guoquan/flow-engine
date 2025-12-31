@@ -36,6 +36,7 @@ export class FlowEngine {
   private lookAtState: 'IDLE' | 'LOOKING' | 'HOLDING' | 'RETURNING' = 'IDLE';
   private lookAtTimer = 0;
   private currentAvatarConfig: AvatarConfig | null = null;
+  private activePlane = new THREE.Plane(); // The locked mathematical plane
 
   // Debug Helpers
   public isDebug = false;
@@ -102,17 +103,23 @@ export class FlowEngine {
     this.lookAtState = 'LOOKING';
     this.lookAtTimer = Date.now();
     
-    // Update debug plane orientation ONLY on start of interaction
-    if (this.isDebug && this.debugPlaneMesh && this.headBone) {
-      const headPos = new THREE.Vector3();
-      this.headBone.getWorldPosition(headPos);
-      const camPos = this.camera.position;
-      this.debugPlaneMesh.position.lerpVectors(camPos, headPos, 0.5);
+    // Lock the Midway Plane for this specific interaction session
+    const headPos = new THREE.Vector3(0, 1.5, 0);
+    if (this.headBone) this.headBone.getWorldPosition(headPos);
+    const camPos = this.camera.position;
+    
+    const midPoint = new THREE.Vector3().lerpVectors(camPos, headPos, 0.5);
+    const normal = new THREE.Vector3().subVectors(camPos, headPos).normalize();
+    this.activePlane.setFromNormalAndCoplanarPoint(normal, midPoint);
+
+    // Sync Debug Mesh with the locked mathematical plane
+    if (this.debugPlaneMesh) {
+      this.debugPlaneMesh.position.copy(midPoint);
       this.debugPlaneMesh.lookAt(camPos);
       this.debugPlaneMesh.rotateX(Math.PI / 2);
     }
     
-    console.log(`[Flow] Pointer Down: Interaction Started`);
+    console.log(`[Flow] Interaction Session Started: Plane Locked`);
   }
 
   private onPointerMove(event: PointerEvent) {
@@ -144,20 +151,13 @@ export class FlowEngine {
     if (intersects.length > 0) {
       this.lookAtTarget.copy(intersects[0].point);
     } else {
-      // 2. Midway Plane Fallback
-      const headPos = new THREE.Vector3(0, 1.5, 0);
-      if (this.headBone) this.headBone.getWorldPosition(headPos);
-      
-      const camPos = this.camera.position;
-      const midPoint = new THREE.Vector3().lerpVectors(camPos, headPos, 0.5);
-      const normal = new THREE.Vector3().subVectors(camPos, headPos).normalize();
-      const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, midPoint);
-      
+      // 2. Use the LOCKED Midway Plane
       const intersectionPoint = new THREE.Vector3();
-      if (this.raycaster.ray.intersectPlane(plane, intersectionPoint)) {
+      if (this.raycaster.ray.intersectPlane(this.activePlane, intersectionPoint)) {
         this.lookAtTarget.copy(intersectionPoint);
       } else {
-        this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(3).add(camPos);
+        // Absolute fallback
+        this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(3).add(this.camera.position);
       }
     }
   }
@@ -287,9 +287,15 @@ export class FlowEngine {
   private updateDebugHelpers() {
     if (!this.isDebug) return;
 
+    const isVisible = (this.lookAtState !== 'IDLE');
+
     if (this.debugTargetMesh) {
       this.debugTargetMesh.position.copy(this.currentLookAt);
-      this.debugTargetMesh.visible = (this.lookAtState !== 'IDLE');
+      this.debugTargetMesh.visible = isVisible;
+    }
+
+    if (this.debugPlaneMesh) {
+      this.debugPlaneMesh.visible = isVisible;
     }
 
     // debugPlaneMesh transform is now handled in onPointerDown for a static snapshot

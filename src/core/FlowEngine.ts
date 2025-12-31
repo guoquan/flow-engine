@@ -101,6 +101,17 @@ export class FlowEngine {
     this.updateMousePosition(event);
     this.lookAtState = 'LOOKING';
     this.lookAtTimer = Date.now();
+    
+    // Update debug plane orientation ONLY on start of interaction
+    if (this.isDebug && this.debugPlaneMesh && this.headBone) {
+      const headPos = new THREE.Vector3();
+      this.headBone.getWorldPosition(headPos);
+      const camPos = this.camera.position;
+      this.debugPlaneMesh.position.lerpVectors(camPos, headPos, 0.5);
+      this.debugPlaneMesh.lookAt(camPos);
+      this.debugPlaneMesh.rotateX(Math.PI / 2);
+    }
+    
     console.log(`[Flow] Pointer Down: Interaction Started`);
   }
 
@@ -281,22 +292,8 @@ export class FlowEngine {
       this.debugTargetMesh.visible = (this.lookAtState !== 'IDLE');
     }
 
-    if (this.debugPlaneMesh && this.headBone) {
-      const headPos = new THREE.Vector3(0, 1.5, 0);
-      this.headBone.getWorldPosition(headPos);
-      const camPos = this.camera.position;
-      
-      // Calculate and apply the latest midpoint position
-      const midPoint = new THREE.Vector3().lerpVectors(camPos, headPos, 0.5);
-      this.debugPlaneMesh.position.copy(midPoint);
-      
-      // Face camera and correct GridHelper's default rotation
-      this.debugPlaneMesh.lookAt(camPos);
-      this.debugPlaneMesh.rotateX(Math.PI / 2);
-      
-      // Ensure red ball is rendered on top of grid for visibility
-      if (this.debugTargetMesh) this.debugTargetMesh.renderOrder = 1000;
-    }
+    // debugPlaneMesh transform is now handled in onPointerDown for a static snapshot
+    if (this.debugTargetMesh) this.debugTargetMesh.renderOrder = 1000;
   }
 
   private removeDebugHelpers() {

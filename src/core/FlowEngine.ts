@@ -32,12 +32,15 @@ export class FlowEngine {
   private lookAtTarget = new THREE.Vector3();
   private currentLookAt = new THREE.Vector3(0, 1.5, 5);
   
-  private lookAtState: 'IDLE' | 'LOOKING' | 'HOLDING' | 'RETURNING' = 'IDLE';
+  private lookAtState: 'IDLE' | 'TRACKING' | 'HOLDING' | 'RETURNING' = 'IDLE';
   private lookAtTimer = 0;
-  private lookAtWeight = 0; // 0 = Only animation, 1 = Full tracking
+  private lookAtWeight = 0; // 0 to 1, used for slerp
   private currentAvatarConfig: AvatarConfig | null = null;
   private activePlane = new THREE.Plane(); 
-  private lookAtProxy = new THREE.Object3D(); // Silent calculator
+  private lookAtProxy = new THREE.Object3D(); 
+
+  // Transition constants
+  private readonly TRANSITION_SPEED = 0.05; // Base speed for weight changes
 
   // Debug Helpers
   public isDebug = false;
@@ -101,7 +104,7 @@ export class FlowEngine {
   private onPointerDown(event: PointerEvent) {
     this.isPointerDown = true;
     this.updateMousePosition(event);
-    this.lookAtState = 'LOOKING';
+    this.lookAtState = 'TRACKING';
     this.lookAtTimer = Date.now();
     
     // 1. Establish the "Midway Plane" at the moment of click
@@ -357,49 +360,55 @@ export class FlowEngine {
        // Head Tracking (Manual override after animation update)
        if (this.headBone && this.currentAvatarConfig?.lookAt?.enabled !== false) {
          const config = this.currentAvatarConfig?.lookAt;
-         const lerpFactor = config?.lerpFactor ?? 0.1;
          const holdTime = config?.holdDuration ?? 2000;
 
-         // State Management
-         const isUserInteracting = this.isPointerDown;
+         // 1. Update State Machine & Weights
+         switch (this.lookAtState) {
+           case 'TRACKING':
+             this.calculateLookAtTarget();
+             this.currentLookAt.lerp(this.lookAtTarget, 0.1);
+             this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 1.0, this.TRANSITION_SPEED);
+             if (!this.isPointerDown && this.lookAtWeight > 0.99) {
+               this.lookAtState = 'HOLDING';
+               this.lookAtTimer = Date.now();
+             }
+             break;
 
-         if (isUserInteracting) {
-           this.lookAtState = 'LOOKING';
-           this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 1.0, lerpFactor);
-           this.calculateLookAtTarget();
-           this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
-         } else if (this.lookAtState === 'LOOKING') {
-           this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 1.0, lerpFactor);
-           this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
-           if (this.currentLookAt.distanceTo(this.lookAtTarget) < 0.01) {
-             this.lookAtState = 'HOLDING';
-             this.lookAtTimer = Date.now();
-           }
-         } else if (this.lookAtState === 'HOLDING') {
-           if (Date.now() - this.lookAtTimer > holdTime) {
-             this.lookAtState = 'RETURNING';
-           }
-         } else if (this.lookAtState === 'RETURNING') {
-           // Fade out the influence entirely
-           this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 0.0, lerpFactor);
-           if (this.lookAtWeight < 0.001) {
-             this.lookAtState = 'IDLE';
-             this.lookAtWeight = 0;
-           }
+           case 'HOLDING':
+             if (this.isPointerDown) {
+               this.lookAtState = 'TRACKING';
+             } else if (Date.now() - this.lookAtTimer > holdTime) {
+               this.lookAtState = 'RETURNING';
+             }
+             break;
+
+           case 'RETURNING':
+             if (this.isPointerDown) {
+               this.lookAtState = 'TRACKING';
+             } else {
+               this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 0.0, this.TRANSITION_SPEED);
+               if (this.lookAtWeight < 0.001) {
+                 this.lookAtState = 'IDLE';
+                 this.lookAtWeight = 0;
+               }
+             }
+             break;
+
+           case 'IDLE':
+             if (this.isPointerDown) {
+               this.lookAtState = 'TRACKING';
+             }
+             break;
          }
 
-         // Apply Rotation with Quaternion Blending
-         if (this.headBone && this.lookAtWeight > 0) {
-           // 1. Position the proxy at the bone's world position
+         // 2. Apply Tracking if active
+         if (this.lookAtWeight > 0) {
            const headWorldPos = new THREE.Vector3();
            this.headBone.getWorldPosition(headWorldPos);
            this.lookAtProxy.position.copy(headWorldPos);
            
-           // 2. Calculate ideal LookAt orientation on the proxy
            this.lookAtProxy.lookAt(this.currentLookAt);
-           const lookAtQuat = this.lookAtProxy.quaternion.clone();
            
-           // 3. Apply the model-specific offset
            const offsetQuat = new THREE.Quaternion();
            if (config?.rotationOffset) {
              offsetQuat.setFromEuler(new THREE.Euler(...config.rotationOffset));
@@ -407,10 +416,7 @@ export class FlowEngine {
              offsetQuat.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
            }
            
-           const targetQuat = lookAtQuat.multiply(offsetQuat);
-
-           // 4. Blend the real bone: Animation (0) <---> Target (1)
-           // The Mixer has already updated the bone rotation this frame
+           const targetQuat = this.lookAtProxy.quaternion.clone().multiply(offsetQuat);
            this.headBone.quaternion.slerp(targetQuat, this.lookAtWeight);
          }
        }

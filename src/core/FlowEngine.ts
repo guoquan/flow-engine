@@ -106,19 +106,26 @@ export class FlowEngine {
       this.lookAtTarget.copy(intersects[0].point);
       console.log(`[Flow] Hit Object: ${intersects[0].object.name} at`, this.lookAtTarget);
     } else {
-      // 2. Fallback: Point at the ray's closest point to the head
-      // This ensures the head follows the mouse direction perfectly without 
-      // the geometric distortion of a large sphere or fixed plane.
+      // 2. Fallback: Project onto a "Midway Plane" between camera and head
+      // This provides the most intuitive "I click, you look" mapping
       const headPos = new THREE.Vector3(0, 1.5, 0);
       if (this.headBone) this.headBone.getWorldPosition(headPos);
       
-      const intersectionPoint = new THREE.Vector3();
-      this.raycaster.ray.closestPointToPoint(headPos, intersectionPoint);
+      const camPos = this.camera.position;
+      const midPoint = new THREE.Vector3().lerpVectors(camPos, headPos, 0.5);
       
-      // Move the target slightly further away along the ray to ensure 
-      // the lookAt vector has sufficient length and clarity.
-      this.lookAtTarget.copy(intersectionPoint);
-      console.log(`[Flow] Target set to closest point on ray:`, this.lookAtTarget);
+      // Plane normal points from head to camera
+      const normal = new THREE.Vector3().subVectors(camPos, headPos).normalize();
+      const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, midPoint);
+      
+      const intersectionPoint = new THREE.Vector3();
+      if (this.raycaster.ray.intersectPlane(plane, intersectionPoint)) {
+        this.lookAtTarget.copy(intersectionPoint);
+        console.log(`[Flow] Hit Midway Plane at`, this.lookAtTarget);
+      } else {
+        // Extreme fallback
+        this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(3).add(camPos);
+      }
     }
 
     this.lookAtState = 'LOOKING';

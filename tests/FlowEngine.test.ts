@@ -23,6 +23,14 @@ vi.mock('three', async () => {
       setFromCamera = vi.fn();
       intersectObjects = vi.fn().mockReturnValue([]); // Default empty hits
       ray = {
+        closestPointToPoint: vi.fn().mockImplementation((_point, target) => {
+          target.set(1, 2, 3);
+          return target;
+        }),
+        intersectSphere: vi.fn().mockImplementation((_sphere, target) => {
+          target.set(1, 2, 3);
+          return target;
+        }),
         intersectPlane: vi.fn().mockImplementation((_plane, target) => {
           target.set(1, 2, 3); // Mock intersection point
           return target;
@@ -296,12 +304,12 @@ describe('FlowEngine', () => {
     expect(sceneRemoveSpy).toHaveBeenCalled();
   });
 
-  it('should reset LookAt state when playAction is called', () => {
+  it('should reset LookAt state to RETURNING when playAction is called', () => {
     const engineInternal = engine as any;
     engineInternal.lookAtState = 'LOOKING';
     
     engine.playAction('wave');
     
-    expect(engineInternal.lookAtState).toBe('IDLE');
+    expect(engineInternal.lookAtState).toBe('RETURNING');
   });
 });

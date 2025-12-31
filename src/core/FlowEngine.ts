@@ -106,22 +106,19 @@ export class FlowEngine {
       this.lookAtTarget.copy(intersects[0].point);
       console.log(`[Flow] Hit Object: ${intersects[0].object.name} at`, this.lookAtTarget);
     } else {
-      // 2. Fallback: Project onto a sphere around the head
-      // Setting radius equal to camera distance provides the most intuitive mapping
+      // 2. Fallback: Point at the ray's closest point to the head
+      // This ensures the head follows the mouse direction perfectly without 
+      // the geometric distortion of a large sphere or fixed plane.
       const headPos = new THREE.Vector3(0, 1.5, 0);
       if (this.headBone) this.headBone.getWorldPosition(headPos);
       
-      const distance = this.camera.position.distanceTo(headPos);
-      const sphere = new THREE.Sphere(headPos, distance);
       const intersectionPoint = new THREE.Vector3();
+      this.raycaster.ray.closestPointToPoint(headPos, intersectionPoint);
       
-      if (this.raycaster.ray.intersectSphere(sphere, intersectionPoint)) {
-        this.lookAtTarget.copy(intersectionPoint);
-        console.log(`[Flow] Hit Dynamic Sphere (R=${distance.toFixed(2)}) at`, this.lookAtTarget);
-      } else {
-        // If ray misses (e.g. looking away), project at same distance
-        this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(distance).add(this.camera.position);
-      }
+      // Move the target slightly further away along the ray to ensure 
+      // the lookAt vector has sufficient length and clarity.
+      this.lookAtTarget.copy(intersectionPoint);
+      console.log(`[Flow] Target set to closest point on ray:`, this.lookAtTarget);
     }
 
     this.lookAtState = 'LOOKING';
@@ -252,11 +249,7 @@ export class FlowEngine {
       }
       if (this.debugSphereMesh && this.headBone) {
         this.headBone.getWorldPosition(this.debugSphereMesh.position);
-        
-        // Dynamically scale debug sphere to match the calculated radius
-        const distance = this.camera.position.distanceTo(this.debugSphereMesh.position);
-        // Original geometry is R=1.5, so we scale it
-        this.debugSphereMesh.scale.setScalar(distance / 1.5);
+        this.debugSphereMesh.scale.setScalar(1.0); // Reset to base R=1.5
       }
     }
   }

@@ -30,8 +30,14 @@ export class FlowEngine {
   // Interaction State
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
-  private lookAtTarget = new THREE.Vector3(0, 1.5, 5); // Default look forward
+  
+  private lookAtTarget = new THREE.Vector3();
+  private defaultLookAt = new THREE.Vector3(0, 1.5, 5);
   private currentLookAt = new THREE.Vector3(0, 1.5, 5);
+  
+  private lookAtState: 'IDLE' | 'LOOKING' | 'HOLDING' | 'RETURNING' = 'IDLE';
+  private lookAtTimer = 0;
+  private currentAvatarConfig: AvatarConfig | null = null;
 
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
@@ -93,7 +99,9 @@ export class FlowEngine {
     
     if (this.raycaster.ray.intersectPlane(plane, intersectionPoint)) {
       this.lookAtTarget.copy(intersectionPoint);
-      console.log(`[Flow] New LookAt Target:`, this.lookAtTarget);
+      this.lookAtState = 'LOOKING';
+      this.lookAtTimer = Date.now();
+      console.log(`[Flow] Trigger LookAt State: LOOKING`);
     }
   }
 
@@ -123,10 +131,12 @@ export class FlowEngine {
 
     const { model, config, animations } = await this.loader.load(configUrl);
     this.avatarModel = model;
+    this.currentAvatarConfig = config;
     this.scene.add(this.avatarModel);
 
     // Find and cache the Head bone
-    this.headBone = this.avatarModel.getObjectByName('Head') || null;
+    const headName = config.lookAt?.headBoneName || 'Head';
+    this.headBone = this.avatarModel.getObjectByName(headName) || null;
     if (!this.headBone) {
       this.avatarModel.traverse(child => {
         if (this.headBone) return;
@@ -215,11 +225,41 @@ export class FlowEngine {
        }
 
        // Head Tracking (Manual override after animation update)
-       if (this.headBone) {
-         this.currentLookAt.lerp(this.lookAtTarget, this.HEAD_LERP_FACTOR);
-         this.headBone.lookAt(this.currentLookAt);
-         // Correct orientation for GLTF bones (usually Y-up)
-         this.headBone.rotateX(this.HEAD_ROTATION_OFFSET); 
+       if (this.headBone && this.currentAvatarConfig?.lookAt?.enabled !== false) {
+         const config = this.currentAvatarConfig?.lookAt;
+         const lerpFactor = config?.lerpFactor ?? 0.1;
+         const holdTime = config?.holdDuration ?? 2000;
+
+         // State Management
+         if (this.lookAtState === 'LOOKING') {
+           this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
+           if (this.currentLookAt.distanceTo(this.lookAtTarget) < 0.01) {
+             this.lookAtState = 'HOLDING';
+             this.lookAtTimer = Date.now();
+           }
+         } else if (this.lookAtState === 'HOLDING') {
+           if (Date.now() - this.lookAtTimer > holdTime) {
+             this.lookAtState = 'RETURNING';
+           }
+         } else if (this.lookAtState === 'RETURNING') {
+           this.currentLookAt.lerp(this.defaultLookAt, lerpFactor);
+           if (this.currentLookAt.distanceTo(this.defaultLookAt) < 0.01) {
+             this.lookAtState = 'IDLE';
+           }
+         }
+
+         // Apply Rotation
+         if (this.lookAtState !== 'IDLE') {
+           this.headBone.lookAt(this.currentLookAt);
+           if (config?.rotationOffset) {
+             this.headBone.rotateX(config.rotationOffset[0]);
+             this.headBone.rotateY(config.rotationOffset[1]);
+             this.headBone.rotateZ(config.rotationOffset[2]);
+           } else {
+             // Default Fallback
+             this.headBone.rotateX(Math.PI / 2);
+           }
+         }
        }
     }
 

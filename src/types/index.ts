@@ -7,6 +7,17 @@ export interface AvatarConfig {
   modelSrc: string;
   scale?: number;
   initialPosition?: [number, number, number];
+  /** Interaction: Look at target settings */
+  lookAt?: {
+    enabled?: boolean;
+    headBoneName?: string;
+    /** Euler angles offset in radians [x, y, z] to align eyes to front */
+    rotationOffset?: [number, number, number];
+    /** How fast the head turns (0-1) */
+    lerpFactor?: number;
+    /** How long to stay looking before returning (ms) */
+    holdDuration?: number;
+  };
   /** Animation State Machine Configuration */
   animations?: {
     defaultState: string;

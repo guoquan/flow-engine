@@ -3,6 +3,13 @@
   "modelSrc": "model.glb",
   "scale": 0.3,
   "initialPosition": [0, 0, 0],
+  "lookAt": {
+    "enabled": true,
+    "headBoneName": "Head",
+    "rotationOffset": [1.57, 0, 0],
+    "lerpFactor": 0.05,
+    "holdDuration": 3000
+  },
   "animations": {
     "defaultState": "idle",
     "states": {

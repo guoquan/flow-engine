@@ -386,7 +386,7 @@ export class FlowEngine {
            this.currentLookAt.lerp(forwardTarget, lerpFactor);
 
            // Stage 2: Once centered, fade out the weight
-           if (this.currentLookAt.distanceTo(forwardTarget) < 0.05) {
+           if (this.currentLookAt.distanceTo(forwardTarget) < 0.01) {
              this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 0.0, lerpFactor);
              if (this.lookAtWeight < 0.001) {
                this.lookAtState = 'IDLE';
@@ -396,23 +396,26 @@ export class FlowEngine {
          }
 
          // Apply Rotation with Quaternion Blending
-         // Only apply if we have active weight to avoid jittering in base idle
          if (this.headBone && this.lookAtWeight > 0) {
-           const targetQuat = new THREE.Quaternion();
-           const originalQuat = this.headBone.quaternion.clone(); 
+           const originalQuat = this.headBone.quaternion.clone(); // Animation pose
            
-           // Calculate tracked pose
+           // 1. Calculate ideal LookAt orientation
            this.headBone.lookAt(this.currentLookAt);
+           const lookAtQuat = this.headBone.quaternion.clone();
+           
+           // 2. Apply the model-specific offset (one-time correction)
+           // We do this by creating an offset quaternion
+           const offsetQuat = new THREE.Quaternion();
            if (config?.rotationOffset) {
-             this.headBone.rotateX(config.rotationOffset[0]);
-             this.headBone.rotateY(config.rotationOffset[1]);
-             this.headBone.rotateZ(config.rotationOffset[2]);
+             offsetQuat.setFromEuler(new THREE.Euler(...config.rotationOffset));
            } else {
-             this.headBone.rotateX(Math.PI / 2);
+             offsetQuat.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
            }
-           targetQuat.copy(this.headBone.quaternion);
+           
+           // Target = LookAt result * Offset
+           const targetQuat = lookAtQuat.multiply(offsetQuat);
 
-           // Blending
+           // 3. Blend: Animation (0) <---> TargetPose (1)
            this.headBone.quaternion.slerpQuaternions(originalQuat, targetQuat, this.lookAtWeight);
          }
        }

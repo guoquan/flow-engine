@@ -274,21 +274,28 @@ export class FlowEngine {
   }
 
   private updateDebugHelpers() {
-    if (this.isDebug) {
-      if (this.debugTargetMesh) {
-        this.debugTargetMesh.position.copy(this.currentLookAt);
-        this.debugTargetMesh.visible = (this.lookAtState !== 'IDLE');
-      }
-      if (this.debugPlaneMesh && this.headBone) {
-        const headPos = new THREE.Vector3(0, 1.5, 0);
-        this.headBone.getWorldPosition(headPos);
-        const camPos = this.camera.position;
-        
-        // Match the exact math used in onPointerDown fallback
-        this.debugPlaneMesh.position.lerpVectors(camPos, headPos, 0.5);
-        this.debugPlaneMesh.lookAt(camPos);
-        this.debugPlaneMesh.rotateX(Math.PI / 2); // Correct orientation
-      }
+    if (!this.isDebug) return;
+
+    if (this.debugTargetMesh) {
+      this.debugTargetMesh.position.copy(this.currentLookAt);
+      this.debugTargetMesh.visible = (this.lookAtState !== 'IDLE');
+    }
+
+    if (this.debugPlaneMesh && this.headBone) {
+      const headPos = new THREE.Vector3(0, 1.5, 0);
+      this.headBone.getWorldPosition(headPos);
+      const camPos = this.camera.position;
+      
+      // Calculate and apply the latest midpoint position
+      const midPoint = new THREE.Vector3().lerpVectors(camPos, headPos, 0.5);
+      this.debugPlaneMesh.position.copy(midPoint);
+      
+      // Face camera and correct GridHelper's default rotation
+      this.debugPlaneMesh.lookAt(camPos);
+      this.debugPlaneMesh.rotateX(Math.PI / 2);
+      
+      // Ensure red ball is rendered on top of grid for visibility
+      if (this.debugTargetMesh) this.debugTargetMesh.renderOrder = 1000;
     }
   }
 
@@ -382,9 +389,9 @@ export class FlowEngine {
            }
          }
        }
-
-       this.updateDebugHelpers();
     }
+
+    this.updateDebugHelpers();
 
     if (this.stageModel && this.stageAnimController) {
       this.stageAnimController.update(delta);

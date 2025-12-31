@@ -6,6 +6,10 @@ import { AvatarLoader } from './AvatarLoader';
 import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
 
+// Configuration Constants
+const HEAD_LERP_FACTOR = 0.1; // Higher = faster tracking
+const HEAD_ROTATION_OFFSET = Math.PI / 2; // Adjustment for GLTF bone orientation
+
 export class FlowEngine {
   private container: HTMLElement;
   private scene: THREE.Scene;
@@ -126,7 +130,10 @@ export class FlowEngine {
     if (!this.headBone) {
       // In some GLB models, the head might be named differently (e.g. 'neck')
       this.avatarModel.traverse(child => {
-        if (child.name.toLowerCase().includes('head')) this.headBone = child;
+        if (this.headBone) return; // Early exit if already found
+        if (child.name.toLowerCase().includes('head')) {
+          this.headBone = child;
+        }
       });
     }
     
@@ -209,10 +216,10 @@ export class FlowEngine {
 
        // Head Tracking (Manual override after animation update)
        if (this.headBone) {
-         this.currentLookAt.lerp(this.lookAtTarget, 0.1); // Smooth transition
+         this.currentLookAt.lerp(this.lookAtTarget, HEAD_LERP_FACTOR);
          this.headBone.lookAt(this.currentLookAt);
-         // Bone lookAt adjustment (GLTF bones often point Y up or X side)
-         this.headBone.rotateX(Math.PI / 2); 
+         // Apply rotation offset safely (set instead of relative rotate)
+         this.headBone.rotateX(HEAD_ROTATION_OFFSET); 
        }
     }
 

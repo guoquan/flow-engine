@@ -27,6 +27,7 @@ export class FlowEngine {
   // Interaction State
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
+  private isPointerDown = false; // Track interaction state
   
   private lookAtTarget = new THREE.Vector3();
   private defaultLookAt = new THREE.Vector3(0, 1.5, 5);
@@ -82,19 +83,47 @@ export class FlowEngine {
     // 6. Event Handlers
     window.addEventListener('resize', this.onWindowResize.bind(this));
     this.container.addEventListener('pointerdown', this.onPointerDown.bind(this));
+    this.container.addEventListener('pointermove', this.onPointerMove.bind(this));
+    window.addEventListener('pointerup', this.onPointerUp.bind(this));
 
     // Start Loop (WebGPU Style)
     this.renderer.setAnimationLoop(this.animate.bind(this));
   }
 
-  private onPointerDown(event: PointerEvent) {
+  private updateMousePosition(event: PointerEvent) {
     const rect = this.container.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  }
 
+  private onPointerDown(event: PointerEvent) {
+    this.isPointerDown = true;
+    this.updateMousePosition(event);
+    this.lookAtState = 'LOOKING';
+    this.lookAtTimer = Date.now();
+    console.log(`[Flow] Pointer Down: Interaction Started`);
+  }
+
+  private onPointerMove(event: PointerEvent) {
+    if (this.isPointerDown) {
+      this.updateMousePosition(event);
+      // Reset timer so it stays in LOOKING while moving
+      this.lookAtTimer = Date.now();
+    }
+  }
+
+  private onPointerUp() {
+    if (this.isPointerDown) {
+      this.isPointerDown = false;
+      this.lookAtTimer = Date.now(); // Start hold timer from release
+      console.log(`[Flow] Pointer Up: Holding Attention...`);
+    }
+  }
+
+  private calculateLookAtTarget() {
     this.raycaster.setFromCamera(this.mouse, this.camera);
 
-    // 1. Try to hit actual 3D objects (Stage or Avatar)
+    // 1. Try to hit actual 3D objects
     const targets = [];
     if (this.avatarModel) targets.push(this.avatarModel);
     if (this.stageModel) targets.push(this.stageModel);
@@ -102,34 +131,24 @@ export class FlowEngine {
     const intersects = this.raycaster.intersectObjects(targets, true);
 
     if (intersects.length > 0) {
-      // Hit an object! Look at the exact point on its surface.
       this.lookAtTarget.copy(intersects[0].point);
-      console.log(`[Flow] Hit Object: ${intersects[0].object.name} at`, this.lookAtTarget);
     } else {
-      // 2. Fallback: Project onto a "Midway Plane" between camera and head
-      // This provides the most intuitive "I click, you look" mapping
+      // 2. Midway Plane Fallback
       const headPos = new THREE.Vector3(0, 1.5, 0);
       if (this.headBone) this.headBone.getWorldPosition(headPos);
       
       const camPos = this.camera.position;
       const midPoint = new THREE.Vector3().lerpVectors(camPos, headPos, 0.5);
-      
-      // Plane normal points from head to camera
       const normal = new THREE.Vector3().subVectors(camPos, headPos).normalize();
       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, midPoint);
       
       const intersectionPoint = new THREE.Vector3();
       if (this.raycaster.ray.intersectPlane(plane, intersectionPoint)) {
         this.lookAtTarget.copy(intersectionPoint);
-        console.log(`[Flow] Hit Midway Plane at`, this.lookAtTarget);
       } else {
-        // Extreme fallback
         this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(3).add(camPos);
       }
     }
-
-    this.lookAtState = 'LOOKING';
-    this.lookAtTimer = Date.now();
   }
 
   private setupLights() {
@@ -329,10 +348,13 @@ export class FlowEngine {
          const lerpFactor = config?.lerpFactor ?? 0.1;
          const holdTime = config?.holdDuration ?? 2000;
 
-         // State Management
-         if (this.lookAtState === 'LOOKING') {
+         // Continuous update while mouse is down or state is active
+         if (this.isPointerDown || this.lookAtState === 'LOOKING') {
+           this.calculateLookAtTarget(); // Re-calculate based on latest camera/mouse
+           this.lookAtState = 'LOOKING';
            this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
-           if (this.currentLookAt.distanceTo(this.lookAtTarget) < 0.01) {
+           
+           if (!this.isPointerDown && this.currentLookAt.distanceTo(this.lookAtTarget) < 0.01) {
              this.lookAtState = 'HOLDING';
              this.lookAtTimer = Date.now();
            }

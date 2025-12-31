@@ -24,7 +24,6 @@ export class FlowEngine {
   private animController: AnimationController | null = null;
   private stageAnimController: AnimationController | null = null;
 
-  // Interaction State
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
   private isPointerDown = false; 
@@ -32,15 +31,14 @@ export class FlowEngine {
   private lookAtTarget = new THREE.Vector3();
   private currentLookAt = new THREE.Vector3(0, 1.5, 5);
   
-  private lookAtState: 'IDLE' | 'TRACKING' | 'HOLDING' | 'RETURNING' = 'IDLE';
-  private lookAtTimer = 0;
-  private lookAtWeight = 0; // 0 to 1, used for slerp
+  private lookAtWeight = 0; // Current blended weight
+  private targetWeight = 0; // Target weight (0 or 1)
+  private holdTimer: number | null = null;
+  private lastTimeMs = 0;
+  
   private currentAvatarConfig: AvatarConfig | null = null;
   private activePlane = new THREE.Plane(); 
   private lookAtProxy = new THREE.Object3D(); 
-
-  // Transition constants
-  private readonly TRANSITION_SPEED = 0.05; // Base speed for weight changes
 
   // Debug Helpers
   public isDebug = false;
@@ -103,9 +101,9 @@ export class FlowEngine {
 
   private onPointerDown(event: PointerEvent) {
     this.isPointerDown = true;
+    this.targetWeight = 1.0; // Engagement started
+    this.holdTimer = null; // Clear timer
     this.updateMousePosition(event);
-    this.lookAtState = 'TRACKING';
-    this.lookAtTimer = Date.now();
     
     // 1. Establish the "Midway Plane" at the moment of click
     this.camera.updateMatrixWorld();
@@ -125,22 +123,21 @@ export class FlowEngine {
       this.debugPlaneMesh.rotateX(Math.PI / 2);
     }
     
-    console.log(`[Flow] Interaction Session Started: Plane Locked`);
+    console.log(`[Flow] Interaction Session Started: TargetWeight=1.0`);
   }
 
   private onPointerMove(event: PointerEvent) {
     if (this.isPointerDown) {
       this.updateMousePosition(event);
-      // Reset timer so it stays in LOOKING while moving
-      this.lookAtTimer = Date.now();
     }
   }
 
   private onPointerUp() {
     if (this.isPointerDown) {
       this.isPointerDown = false;
-      this.lookAtTimer = Date.now(); // Start hold timer from release
-      console.log(`[Flow] Pointer Up: Holding Attention...`);
+      // Start the hold timer before we drop targetWeight to 0
+      this.holdTimer = this.lastTimeMs;
+      console.log(`[Flow] Pointer Up: Waiting to release...`);
     }
   }
 
@@ -293,7 +290,7 @@ export class FlowEngine {
   private updateDebugHelpers() {
     if (!this.isDebug) return;
 
-    const isVisible = (this.lookAtState !== 'IDLE');
+    const isVisible = (this.lookAtWeight > 0.001);
 
     if (this.debugTargetMesh) {
       this.debugTargetMesh.position.copy(this.currentLookAt);
@@ -333,10 +330,10 @@ export class FlowEngine {
   public playAction(action: string) {
     console.log(`[FlowEngine] Playing action: ${action}`);
 
-    // Priority 0: Smoothly interrupt LookAt
-    if (this.lookAtState !== 'IDLE') {
-      this.lookAtState = 'RETURNING'; // Change from IDLE to RETURNING for smoothness
-    }
+    // Priority 0: Smoothly drop LookAt influence
+    this.targetWeight = 0;
+    this.isPointerDown = false;
+    this.holdTimer = null;
 
     // Priority 1: Animation Controller
     if (this.animController) {
@@ -348,7 +345,8 @@ export class FlowEngine {
     // Priority 2: Procedural Animation (Fallback Model - removed for clarity, or kept minimal)
   }
 
-  private animate(_timeMs: number) {
+  private animate(timeMs: number) {
+    this.lastTimeMs = timeMs;
     const delta = this.clock.getDelta();
     
     if (this.avatarModel) {
@@ -360,49 +358,26 @@ export class FlowEngine {
        // Head Tracking (Manual override after animation update)
        if (this.headBone && this.currentAvatarConfig?.lookAt?.enabled !== false) {
          const config = this.currentAvatarConfig?.lookAt;
+         const lerpFactor = config?.lerpFactor ?? 0.1;
          const holdTime = config?.holdDuration ?? 2000;
 
-         // 1. Update State Machine & Weights
-         switch (this.lookAtState) {
-           case 'TRACKING':
-             this.calculateLookAtTarget();
-             this.currentLookAt.lerp(this.lookAtTarget, 0.1);
-             this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 1.0, this.TRANSITION_SPEED);
-             if (!this.isPointerDown && this.lookAtWeight > 0.99) {
-               this.lookAtState = 'HOLDING';
-               this.lookAtTimer = Date.now();
-             }
-             break;
-
-           case 'HOLDING':
-             if (this.isPointerDown) {
-               this.lookAtState = 'TRACKING';
-             } else if (Date.now() - this.lookAtTimer > holdTime) {
-               this.lookAtState = 'RETURNING';
-             }
-             break;
-
-           case 'RETURNING':
-             if (this.isPointerDown) {
-               this.lookAtState = 'TRACKING';
-             } else {
-               this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, 0.0, this.TRANSITION_SPEED);
-               if (this.lookAtWeight < 0.001) {
-                 this.lookAtState = 'IDLE';
-                 this.lookAtWeight = 0;
-               }
-             }
-             break;
-
-           case 'IDLE':
-             if (this.isPointerDown) {
-               this.lookAtState = 'TRACKING';
-             }
-             break;
+         // 1. Timer Logic (Set targetWeight to 0 after hold time)
+         if (!this.isPointerDown && this.holdTimer && timeMs - this.holdTimer > holdTime) {
+           this.targetWeight = 0;
+           this.holdTimer = null;
          }
 
-         // 2. Apply Tracking if active
-         if (this.lookAtWeight > 0) {
+         // 2. Easing: Interpolate weight towards target
+         this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, this.targetWeight, 0.05);
+
+         // 3. Update target tracking only when engaging
+         if (this.targetWeight > 0) {
+           this.calculateLookAtTarget();
+           this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
+         }
+
+         // 4. Apply Rotation with Quaternion Blending
+         if (this.lookAtWeight > 0.001) {
            const headWorldPos = new THREE.Vector3();
            this.headBone.getWorldPosition(headWorldPos);
            this.lookAtProxy.position.copy(headWorldPos);

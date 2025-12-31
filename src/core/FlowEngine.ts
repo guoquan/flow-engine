@@ -1,13 +1,17 @@
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { AvatarLoader } from './AvatarLoader';
+import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
 import { LookAtProcessor } from './LookAtProcessor';
-import type { AvatarConfig, InteractionProcessor } from '../types';
+import type { AvatarConfig } from '../types';
 
 export class FlowEngine {
   private container: HTMLElement;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
-  private renderer: WebGPURenderer;
-  private controls: OrbitControls;
+  private renderer: THREE.WebGLRenderer;
+  private controls: OrbitControls | null = null;
   private clock: THREE.Clock;
   private loader: AvatarLoader;
   private stageLoader: StageLoader;
@@ -28,88 +32,68 @@ export class FlowEngine {
   private debugTargetMesh: THREE.Mesh | null = null;
   private debugPlaneMesh: THREE.Mesh | null = null;
 
-  constructor(containerId: string, overrides?: { 
-    loader?: AvatarLoader, 
-    stageLoader?: StageLoader,
-    lookAtProcessor?: LookAtProcessor,
-    controls?: OrbitControls
-  }) {
-    const container = document.getElementById(containerId);
-    if (!container) throw new Error(`Container #${containerId} not found`);
-    this.container = container;
-    
-    // Init Logic with Dependency Injection support
-    this.clock = new THREE.Clock();
-    this.loader = overrides?.loader || new AvatarLoader();
-    this.stageLoader = overrides?.stageLoader || new StageLoader();
-
-    // 1. Scene
-    this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x1a1a1a);
-    this.scene.fog = new THREE.Fog(0x1a1a1a, 10, 50);
-
-    // 2. Camera
-    this.camera = new THREE.PerspectiveCamera(
-      45, 
-      window.innerWidth / window.innerHeight, 
-      0.1, 
-      100
-    );
-    this.camera.position.set(0, 1.5, 5);
-
-    // 3. Renderer (WebGPU) - Guard for Node/Vitest environment
-    const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
-    
-    if (isBrowser) {
-      try {
-        this.renderer = new WebGPURenderer({ antialias: true, alpha: true });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(window.devicePixelRatio);
-        this.container.appendChild(this.renderer.domElement);
-      } catch (e) {
-        console.error('[Flow] Failed to initialize WebGPURenderer:', e);
-        this.renderer = null as any;
-      }
-    } else {
-      this.renderer = null as any;
-    }
-
-    // 4. Lights
-    this.setupLights();
-
-    // 5. Controls
-    if (this.renderer) {
+    constructor(containerId: string, overrides?: { 
+      loader?: AvatarLoader, 
+      stageLoader?: StageLoader,
+      lookAtProcessor?: LookAtProcessor,
+      controls?: OrbitControls
+    }) {
+      console.log('[Flow] Engine Init Start');
+      const container = document.getElementById(containerId);
+      if (!container) throw new Error(`Container #${containerId} not found`);
+      this.container = container;
+      
+      // Init Logic with Dependency Injection support
+      this.clock = new THREE.Clock();
+      this.loader = overrides?.loader || new AvatarLoader();
+      this.stageLoader = overrides?.stageLoader || new StageLoader();
+  
+      // 1. Scene
+      this.scene = new THREE.Scene();
+      this.scene.background = new THREE.Color(0x1a1a1a);
+      this.scene.fog = new THREE.Fog(0x1a1a1a, 10, 50);
+  
+      // 2. Camera
+      this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+      this.camera.position.set(0, 1.5, 5);
+  
+      // 3. Renderer (Standard WebGL for now to fix white screen)
+      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+      this.container.appendChild(this.renderer.domElement);
+  
+      // 4. Lights
+      this.setupLights();
+  
+      // 5. Controls
       this.controls = overrides?.controls || new OrbitControls(this.camera, this.renderer.domElement);
-      this.controls.enableDamping = true;
-      this.controls.target.set(0, 1, 0);
-    } else {
-      this.controls = null as any;
-    }
-
-    // 6. Interaction Processors
-    this.lookAtProcessor = overrides?.lookAtProcessor || new LookAtProcessor(
-      this.container,
-      this.camera,
-      () => this.headBone,
-      () => this.currentAvatarConfig,
-      () => {
-        const models = [];
-        if (this.avatarModel) models.push(this.avatarModel);
-        if (this.stageModel) models.push(this.stageModel);
-        return models;
+      if (this.controls) {
+        this.controls.enableDamping = true;
+        this.controls.target.set(0, 1, 0);
       }
-    );
-
-    // 7. Event Handlers
-    window.addEventListener('resize', this.onWindowResize.bind(this));
-
-    // Start Loop (WebGPU Style)
-    if (this.renderer) {
-      this.renderer.setAnimationLoop(this.animate.bind(this));
-    }
-  }
-
-  private setupLights() {
+  
+      // 6. Interaction Processors
+      this.lookAtProcessor = overrides?.lookAtProcessor || new LookAtProcessor(
+        this.container,
+        this.camera,
+        () => this.headBone,
+        () => this.currentAvatarConfig,
+        () => {
+          const models = [];
+          if (this.avatarModel) models.push(this.avatarModel);
+          if (this.stageModel) models.push(this.stageModel);
+          return models;
+        }
+      );
+  
+      // 7. Events
+      window.addEventListener('resize', this.onWindowResize.bind(this));
+  
+      // Start Loop (standard WebGL loop)
+      this.animate(0);
+      console.log('[Flow] Engine Init Success');
+    }  private setupLights() {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
 
@@ -285,6 +269,7 @@ export class FlowEngine {
   }
 
   private animate(timeMs: number) {
+    requestAnimationFrame(this.animate.bind(this));
     const delta = this.clock.getDelta();
     
     if (this.avatarModel) {

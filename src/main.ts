@@ -27,8 +27,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
 // Initialize Engine
 const init = async () => {
+  const statusEl = document.getElementById('status')!;
   try {
-    const statusEl = document.getElementById('status')!;
+    console.log('[Flow] Initializing...');
     const engine = new FlowEngine('canvas-container');
     
     statusEl.textContent = 'Loading Avatar...';

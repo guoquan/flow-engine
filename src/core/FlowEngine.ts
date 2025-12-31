@@ -58,11 +58,18 @@ export class FlowEngine {
     this.camera.position.set(0, 1.5, 5);
 
     // 3. Renderer (WebGPU) - Guard for Node/Vitest environment
-    if (typeof WebGPURenderer !== 'undefined') {
-      this.renderer = new WebGPURenderer({ antialias: true, alpha: true });
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-      this.renderer.setPixelRatio(window.devicePixelRatio);
-      this.container.appendChild(this.renderer.domElement);
+    const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+    
+    if (isBrowser) {
+      try {
+        this.renderer = new WebGPURenderer({ antialias: true, alpha: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.container.appendChild(this.renderer.domElement);
+      } catch (e) {
+        console.error('[Flow] Failed to initialize WebGPURenderer:', e);
+        this.renderer = null as any;
+      }
     } else {
       this.renderer = null as any;
     }
@@ -71,9 +78,13 @@ export class FlowEngine {
     this.setupLights();
 
     // 5. Controls
-    this.controls = overrides?.controls || new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableDamping = true;
-    this.controls.target.set(0, 1, 0);
+    if (this.renderer) {
+      this.controls = overrides?.controls || new OrbitControls(this.camera, this.renderer.domElement);
+      this.controls.enableDamping = true;
+      this.controls.target.set(0, 1, 0);
+    } else {
+      this.controls = null as any;
+    }
 
     // 6. Interaction Processors
     this.lookAtProcessor = overrides?.lookAtProcessor || new LookAtProcessor(
@@ -295,9 +306,13 @@ export class FlowEngine {
     }
 
     // Auto Rotate Camera (Optional)
-    this.controls.autoRotate = this.isAutoRotate;
-    this.controls.update();
+    if (this.controls) {
+      this.controls.autoRotate = this.isAutoRotate;
+      this.controls.update();
+    }
     
-    this.renderer.render(this.scene, this.camera);
+    if (this.renderer) {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 }

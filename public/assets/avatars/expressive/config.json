@@ -6,7 +6,7 @@
   "lookAt": {
     "enabled": true,
     "headBoneName": "Head",
-    "rotationOffset": [1.57, 0, 0],
+    "rotationOffset": [-1.57, 0, 0],
     "lerpFactor": 0.05,
     "holdDuration": 3000
   },

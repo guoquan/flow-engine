@@ -80,6 +80,15 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
+      - name: Deploy Screenshot Previews to GitHub Pages
+        if: github.event_name == 'pull_request' && always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./test-results
+          destination_dir: previews/${{ github.event.number }}/${{ github.run_id }}
+          keep_files: true
+
       - name: Comment PR with E2E Summary
         if: github.event_name == 'pull_request' && always()
         uses: thollander/actions-comment-pull-request@v2
@@ -87,8 +96,13 @@ jobs:
           message: |
             ## 🎭 E2E Visual Test Report
             - **Status**: ${{ job.status == 'success' && '✅ Passed' || '❌ Failed' }}
-            - **Artifacts**: [Download Playwright Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
+            - **Report**: [Download Playwright Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
             
-            Please check the screenshots in the report to verify the Avatar's eye alignment.
+            ### 📸 Visual Snapshots
+            | Initial State | Looking at Target | Returned to Idle |
+            | :---: | :---: | :---: |
+            | ![Initial](https://guoquan.github.io/flow-engine/previews/${{ github.event.number }}/${{ github.run_id }}/initial-view.png) | ![LookAt](https://guoquan.github.io/flow-engine/previews/${{ github.event.number }}/${{ github.run_id }}/lookat-view.png) | ![Returned](https://guoquan.github.io/flow-engine/previews/${{ github.event.number }}/${{ github.run_id }}/returned-view.png)
+            
+            *Note: If images are not showing, wait a minute for GitHub Pages to refresh.*
           comment_tag: e2e-report
 

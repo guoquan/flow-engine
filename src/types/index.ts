@@ -40,6 +40,14 @@ export interface AnimationStateConfig {
   holdDuration?: number;
 }
 
+/**
+ * Interface for autonomous behavior components like LookAt, IK, etc.
+ */
+export interface InteractionProcessor {
+  update(timeMs: number, delta: number): void;
+  dispose(): void;
+}
+
 export interface StageConfig {
   name: string;
   modelSrc?: string; // Optional, if omitted, generate a procedural placeholder

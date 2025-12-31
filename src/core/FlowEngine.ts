@@ -1,11 +1,6 @@
-import * as THREE from 'three';
-// @ts-ignore
-import { WebGPURenderer } from 'three/webgpu';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { AvatarLoader } from './AvatarLoader';
-import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
-import type { AvatarConfig } from '../types';
+import { LookAtProcessor } from './LookAtProcessor';
+import type { AvatarConfig, InteractionProcessor } from '../types';
 
 export class FlowEngine {
   private container: HTMLElement;
@@ -24,36 +19,29 @@ export class FlowEngine {
   private animController: AnimationController | null = null;
   private stageAnimController: AnimationController | null = null;
 
-  private raycaster = new THREE.Raycaster();
-  private mouse = new THREE.Vector2();
-  private isPointerDown = false; 
-  
-  private lookAtTarget = new THREE.Vector3();
-  private currentLookAt = new THREE.Vector3(0, 1.5, 5);
-  
-  private lookAtWeight = 0; // Current blended weight
-  private targetWeight = 0; // Target weight (0 or 1)
-  private holdTimer: number | null = null;
-  private lastTimeMs = 0;
-  
+  // Modualized Processors
+  private lookAtProcessor: LookAtProcessor | null = null;
   private currentAvatarConfig: AvatarConfig | null = null;
-  private activePlane = new THREE.Plane(); 
-  private lookAtProxy = new THREE.Object3D(); 
 
   // Debug Helpers
   public isDebug = false;
   private debugTargetMesh: THREE.Mesh | null = null;
   private debugPlaneMesh: THREE.Mesh | null = null;
 
-  constructor(containerId: string) {
+  constructor(containerId: string, overrides?: { 
+    loader?: AvatarLoader, 
+    stageLoader?: StageLoader,
+    lookAtProcessor?: LookAtProcessor,
+    controls?: OrbitControls
+  }) {
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`Container #${containerId} not found`);
     this.container = container;
     
-    // Init Logic
+    // Init Logic with Dependency Injection support
     this.clock = new THREE.Clock();
-    this.loader = new AvatarLoader();
-    this.stageLoader = new StageLoader();
+    this.loader = overrides?.loader || new AvatarLoader();
+    this.stageLoader = overrides?.stageLoader || new StageLoader();
 
     // 1. Scene
     this.scene = new THREE.Scene();
@@ -69,99 +57,44 @@ export class FlowEngine {
     );
     this.camera.position.set(0, 1.5, 5);
 
-    // 3. Renderer (WebGPU)
-    this.renderer = new WebGPURenderer({ antialias: true, alpha: true });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.container.appendChild(this.renderer.domElement);
+    // 3. Renderer (WebGPU) - Guard for Node/Vitest environment
+    if (typeof WebGPURenderer !== 'undefined') {
+      this.renderer = new WebGPURenderer({ antialias: true, alpha: true });
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+      this.container.appendChild(this.renderer.domElement);
+    } else {
+      this.renderer = null as any;
+    }
 
     // 4. Lights
     this.setupLights();
 
     // 5. Controls
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls = overrides?.controls || new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.target.set(0, 1, 0);
 
-    // 6. Event Handlers
+    // 6. Interaction Processors
+    this.lookAtProcessor = overrides?.lookAtProcessor || new LookAtProcessor(
+      this.container,
+      this.camera,
+      () => this.headBone,
+      () => this.currentAvatarConfig,
+      () => {
+        const models = [];
+        if (this.avatarModel) models.push(this.avatarModel);
+        if (this.stageModel) models.push(this.stageModel);
+        return models;
+      }
+    );
+
+    // 7. Event Handlers
     window.addEventListener('resize', this.onWindowResize.bind(this));
-    this.container.addEventListener('pointerdown', this.onPointerDown.bind(this));
-    this.container.addEventListener('pointermove', this.onPointerMove.bind(this));
-    window.addEventListener('pointerup', this.onPointerUp.bind(this));
 
     // Start Loop (WebGPU Style)
-    this.renderer.setAnimationLoop(this.animate.bind(this));
-  }
-
-  private updateMousePosition(event: PointerEvent) {
-    const rect = this.container.getBoundingClientRect();
-    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  }
-
-  private onPointerDown(event: PointerEvent) {
-    this.isPointerDown = true;
-    this.targetWeight = 1.0; // Engagement started
-    this.holdTimer = null; // Clear timer
-    this.updateMousePosition(event);
-    
-    // 1. Establish the "Midway Plane" at the moment of click
-    this.camera.updateMatrixWorld();
-    const headPos = new THREE.Vector3(0, 1.5, 0);
-    if (this.headBone) this.headBone.getWorldPosition(headPos);
-    const camPos = this.camera.position.clone();
-    
-    // Position exactly halfway between head and camera
-    const midPoint = new THREE.Vector3().lerpVectors(headPos, camPos, 0.5);
-    const normal = new THREE.Vector3().subVectors(camPos, headPos).normalize();
-    this.activePlane.setFromNormalAndCoplanarPoint(normal, midPoint);
-
-    // 2. Lock the Debug Grid to this plane
-    if (this.debugPlaneMesh) {
-      this.debugPlaneMesh.position.copy(midPoint);
-      this.debugPlaneMesh.lookAt(camPos);
-      this.debugPlaneMesh.rotateX(Math.PI / 2);
-    }
-    
-    console.log(`[Flow] Interaction Session Started: TargetWeight=1.0`);
-  }
-
-  private onPointerMove(event: PointerEvent) {
-    if (this.isPointerDown) {
-      this.updateMousePosition(event);
-    }
-  }
-
-  private onPointerUp() {
-    if (this.isPointerDown) {
-      this.isPointerDown = false;
-      // Start the hold timer before we drop targetWeight to 0
-      this.holdTimer = this.lastTimeMs;
-      console.log(`[Flow] Pointer Up: Waiting to release...`);
-    }
-  }
-
-  private calculateLookAtTarget() {
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-
-    // 1. Try to hit actual 3D objects
-    const targets = [];
-    if (this.avatarModel) targets.push(this.avatarModel);
-    if (this.stageModel) targets.push(this.stageModel);
-    
-    const intersects = this.raycaster.intersectObjects(targets, true);
-
-    if (intersects.length > 0) {
-      this.lookAtTarget.copy(intersects[0].point);
-    } else {
-      // 2. Use the LOCKED Midway Plane
-      const intersectionPoint = new THREE.Vector3();
-      if (this.raycaster.ray.intersectPlane(this.activePlane, intersectionPoint)) {
-        this.lookAtTarget.copy(intersectionPoint);
-      } else {
-        // Absolute fallback
-        this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(3).add(this.camera.position);
-      }
+    if (this.renderer) {
+      this.renderer.setAnimationLoop(this.animate.bind(this));
     }
   }
 
@@ -274,13 +207,11 @@ export class FlowEngine {
     }
 
     if (!this.debugPlaneMesh) {
-      // Very dense grid to create a visible 'surface' texture
       const size = 100;
-      const divisions = 400; // Increased from 100
+      const divisions = 400;
       const grid = new THREE.GridHelper(size, divisions, 0x00ff00, 0x00ff00);
       grid.material.transparent = true;
-      grid.material.opacity = 0.05; // Fainter but more uniform
-      
+      grid.material.opacity = 0.05;
       grid.rotateX(Math.PI / 2);
       this.debugPlaneMesh = grid as any;
       this.scene.add(this.debugPlaneMesh);
@@ -288,20 +219,22 @@ export class FlowEngine {
   }
 
   private updateDebugHelpers() {
-    if (!this.isDebug) return;
+    if (!this.isDebug || !this.lookAtProcessor) return;
 
-    const isVisible = (this.lookAtWeight > 0.001);
+    const info = this.lookAtProcessor.getDebugInfo();
+    const isVisible = info.isEngaged;
 
     if (this.debugTargetMesh) {
-      this.debugTargetMesh.position.copy(this.currentLookAt);
+      this.debugTargetMesh.position.copy(info.currentLookAt);
       this.debugTargetMesh.visible = isVisible;
     }
 
     if (this.debugPlaneMesh) {
       this.debugPlaneMesh.visible = isVisible;
+      this.debugPlaneMesh.position.copy(info.activePlane.coplanarPoint(new THREE.Vector3()));
+      this.debugPlaneMesh.lookAt(this.camera.position);
+      this.debugPlaneMesh.rotateX(Math.PI / 2);
     }
-
-    if (this.debugTargetMesh) this.debugTargetMesh.renderOrder = 1000;
   }
 
   private removeDebugHelpers() {
@@ -330,70 +263,28 @@ export class FlowEngine {
   public playAction(action: string) {
     console.log(`[FlowEngine] Playing action: ${action}`);
 
-    // Priority 0: Smoothly drop LookAt influence
-    this.targetWeight = 0;
-    this.isPointerDown = false;
-    this.holdTimer = null;
+    // Interrupt interaction
+    if (this.lookAtProcessor) this.lookAtProcessor.interrupt();
 
     // Priority 1: Animation Controller
     if (this.animController) {
-      // Lowercase to match state keys if we used loose keys
       this.animController.play(action.toLowerCase());
       return;
     }
-
-    // Priority 2: Procedural Animation (Fallback Model - removed for clarity, or kept minimal)
   }
 
   private animate(timeMs: number) {
-    this.lastTimeMs = timeMs;
     const delta = this.clock.getDelta();
     
     if (this.avatarModel) {
-       // Mixer Update
+       // 1. Mixer Update
        if (this.animController) {
          this.animController.update(delta);
        }
 
-       // Head Tracking (Manual override after animation update)
-       if (this.headBone && this.currentAvatarConfig?.lookAt?.enabled !== false) {
-         const config = this.currentAvatarConfig?.lookAt;
-         const lerpFactor = config?.lerpFactor ?? 0.1;
-         const holdTime = config?.holdDuration ?? 2000;
-
-         // 1. Timer Logic (Set targetWeight to 0 after hold time)
-         if (!this.isPointerDown && this.holdTimer && timeMs - this.holdTimer > holdTime) {
-           this.targetWeight = 0;
-           this.holdTimer = null;
-         }
-
-         // 2. Easing: Interpolate weight towards target
-         this.lookAtWeight = THREE.MathUtils.lerp(this.lookAtWeight, this.targetWeight, 0.05);
-
-         // 3. Update target tracking only when engaging
-         if (this.targetWeight > 0) {
-           this.calculateLookAtTarget();
-           this.currentLookAt.lerp(this.lookAtTarget, lerpFactor);
-         }
-
-         // 4. Apply Rotation with Quaternion Blending
-         if (this.lookAtWeight > 0.001) {
-           const headWorldPos = new THREE.Vector3();
-           this.headBone.getWorldPosition(headWorldPos);
-           this.lookAtProxy.position.copy(headWorldPos);
-           
-           this.lookAtProxy.lookAt(this.currentLookAt);
-           
-           const offsetQuat = new THREE.Quaternion();
-           if (config?.rotationOffset) {
-             offsetQuat.setFromEuler(new THREE.Euler(...config.rotationOffset));
-           } else {
-             offsetQuat.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
-           }
-           
-           const targetQuat = this.lookAtProxy.quaternion.clone().multiply(offsetQuat);
-           this.headBone.quaternion.slerp(targetQuat, this.lookAtWeight);
-         }
+       // 2. Interaction Processors Update
+       if (this.lookAtProcessor) {
+         this.lookAtProcessor.update(timeMs, delta);
        }
     }
 

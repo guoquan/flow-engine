@@ -23,6 +23,7 @@ vi.mock('three', async () => {
       setFromCamera = vi.fn();
       intersectObjects = vi.fn().mockReturnValue([]); // Default empty hits
       ray = {
+        direction: new THREE.Vector3(0, 0, -1),
         closestPointToPoint: vi.fn().mockImplementation((_point, target) => {
           target.set(1, 2, 3);
           return target;
@@ -311,5 +312,52 @@ describe('FlowEngine', () => {
     engine.playAction('wave');
     
     expect(engineInternal.lookAtState).toBe('RETURNING');
+  });
+
+  it('should toggle debug helpers correctly', () => {
+    const engineInternal = engine as any;
+    const sceneAddSpy = vi.spyOn(engineInternal.scene, 'add');
+    const sceneRemoveSpy = vi.spyOn(engineInternal.scene, 'remove');
+
+    engine.setDebug(true);
+    expect(engineInternal.debugTargetMesh).toBeDefined();
+    expect(sceneAddSpy).toHaveBeenCalled();
+
+    engine.setDebug(false);
+    expect(engineInternal.debugTargetMesh).toBeNull();
+    expect(sceneRemoveSpy).toHaveBeenCalled();
+  });
+
+  it('should apply fallback lookAt when plane intersection fails', () => {
+    const engineInternal = engine as any;
+    // Force intersectPlane to return false
+    engineInternal.raycaster.ray.intersectPlane.mockReturnValueOnce(null);
+    
+    const event = new PointerEvent('pointerdown');
+    engineInternal.onPointerDown(event);
+    
+    expect(engineInternal.lookAtTarget).toBeDefined();
+  });
+
+  it('should use default rotation offset if not provided in config', async () => {
+    const mockHead = new THREE.Object3D();
+    mockHead.name = 'Head';
+    const mockModel = new THREE.Group();
+    mockModel.add(mockHead);
+
+    const engineInternal = engine as any;
+    engineInternal.loader.load.mockResolvedValueOnce({
+      model: mockModel,
+      config: { name: 'NoOffsetAvatar', lookAt: { enabled: true } },
+      animations: [],
+    });
+
+    await engine.loadAvatar('dummy-url');
+    engineInternal.lookAtState = 'LOOKING';
+    
+    const rotateXSpy = vi.spyOn(mockHead, 'rotateX');
+    engineInternal.animate(16.6);
+
+    expect(rotateXSpy).toHaveBeenCalledWith(Math.PI / 2);
   });
 });

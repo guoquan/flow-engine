@@ -7,6 +7,10 @@ import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
 
 export class FlowEngine {
+  // Configuration
+  private HEAD_LERP_FACTOR = 0.1;
+  private HEAD_ROTATION_OFFSET = Math.PI / 2;
+
   private container: HTMLElement;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
@@ -18,9 +22,16 @@ export class FlowEngine {
   
   private avatarModel: THREE.Object3D | null = null;
   private stageModel: THREE.Object3D | null = null;
+  private headBone: THREE.Object3D | null = null;
   
   private animController: AnimationController | null = null;
   private stageAnimController: AnimationController | null = null;
+
+  // Interaction State
+  private raycaster = new THREE.Raycaster();
+  private mouse = new THREE.Vector2();
+  private lookAtTarget = new THREE.Vector3(0, 1.5, 5); // Default look forward
+  private currentLookAt = new THREE.Vector3(0, 1.5, 5);
 
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
@@ -60,11 +71,30 @@ export class FlowEngine {
     this.controls.enableDamping = true;
     this.controls.target.set(0, 1, 0);
 
-    // 6. Resize Handler
+    // 6. Event Handlers
     window.addEventListener('resize', this.onWindowResize.bind(this));
+    this.container.addEventListener('pointerdown', this.onPointerDown.bind(this));
 
     // Start Loop (WebGPU Style)
     this.renderer.setAnimationLoop(this.animate.bind(this));
+  }
+
+  private onPointerDown(event: PointerEvent) {
+    // Calculate mouse position in normalized device coordinates
+    const rect = this.container.getBoundingClientRect();
+    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+
+    // Create a virtual plane at z=0 or check against stage
+    const intersectionPoint = new THREE.Vector3();
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    
+    if (this.raycaster.ray.intersectPlane(plane, intersectionPoint)) {
+      this.lookAtTarget.copy(intersectionPoint);
+      console.log(`[Flow] New LookAt Target:`, this.lookAtTarget);
+    }
   }
 
   private setupLights() {
@@ -94,6 +124,18 @@ export class FlowEngine {
     const { model, config, animations } = await this.loader.load(configUrl);
     this.avatarModel = model;
     this.scene.add(this.avatarModel);
+
+    // Find and cache the Head bone
+    this.headBone = this.avatarModel.getObjectByName('Head') || null;
+    if (!this.headBone) {
+      this.avatarModel.traverse(child => {
+        if (this.headBone) return;
+        const lowerName = child.name.toLowerCase();
+        if (lowerName.includes('head') || lowerName.includes('neck')) {
+          this.headBone = child;
+        }
+      });
+    }
     
     // Initialize Animation Controller
     if (animations.length > 0) {
@@ -170,6 +212,14 @@ export class FlowEngine {
        // Mixer Update
        if (this.animController) {
          this.animController.update(delta);
+       }
+
+       // Head Tracking (Manual override after animation update)
+       if (this.headBone) {
+         this.currentLookAt.lerp(this.lookAtTarget, this.HEAD_LERP_FACTOR);
+         this.headBone.lookAt(this.currentLookAt);
+         // Correct orientation for GLTF bones (usually Y-up)
+         this.headBone.rotateX(this.HEAD_ROTATION_OFFSET); 
        }
     }
 

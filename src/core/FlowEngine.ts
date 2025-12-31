@@ -103,26 +103,31 @@ export class FlowEngine {
     this.lookAtState = 'LOOKING';
     this.lookAtTimer = Date.now();
     
-    // Lock the Midway Plane for this specific interaction session
+    // Ensure world matrices are up to date before calculation
+    this.camera.updateMatrixWorld();
+    if (this.avatarModel) this.avatarModel.updateMatrixWorld();
+
     const headPos = new THREE.Vector3(0, 1.5, 0);
     if (this.headBone) this.headBone.getWorldPosition(headPos);
     const camPos = this.camera.position;
     
-    const midPoint = new THREE.Vector3().lerpVectors(camPos, headPos, 0.5);
+    // Position at 60% distance from head to camera (slightly closer to camera than head)
+    // to absolutely prevent the debug plane from clipping into the character's face.
+    const midPoint = new THREE.Vector3().lerpVectors(headPos, camPos, 0.6);
     const normal = new THREE.Vector3().subVectors(camPos, headPos).normalize();
     this.activePlane.setFromNormalAndCoplanarPoint(normal, midPoint);
 
     // Project default view point onto this plane to have a stable return target
     this.activePlane.projectPoint(new THREE.Vector3(0, 1.5, 5), this.defaultLookAt);
 
-    // Sync Debug Mesh with the locked mathematical plane
+    // Sync Debug Mesh
     if (this.debugPlaneMesh) {
       this.debugPlaneMesh.position.copy(midPoint);
       this.debugPlaneMesh.lookAt(camPos);
       this.debugPlaneMesh.rotateX(Math.PI / 2);
     }
     
-    console.log(`[Flow] Interaction Session Started: Plane Locked`);
+    console.log(`[Flow] Interaction Session Started: Plane Locked at 0.6 distance`);
   }
 
   private onPointerMove(event: PointerEvent) {
@@ -303,10 +308,10 @@ export class FlowEngine {
 
       if (isVisible) {
         const headPos = new THREE.Vector3(0, 1.5, 0);
-        this.headBone.getWorldPosition(headPos);
+        if (this.headBone) this.headBone.getWorldPosition(headPos);
         const camPos = this.camera.position;
-        // Position stays at midpoint between dynamic camera and head
-        this.debugPlaneMesh.position.lerpVectors(camPos, headPos, 0.5);
+        // Position stays at 0.6 distance (consistent with onPointerDown)
+        this.debugPlaneMesh.position.lerpVectors(headPos, camPos, 0.6);
       }
     }
 

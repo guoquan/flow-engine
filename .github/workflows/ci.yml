@@ -79,3 +79,16 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+
+      - name: Comment PR with E2E Summary
+        if: github.event_name == 'pull_request' && always()
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            ## 🎭 E2E Visual Test Report
+            - **Status**: ${{ job.status == 'success' && '✅ Passed' || '❌ Failed' }}
+            - **Artifacts**: [Download Playwright Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
+            
+            Please check the screenshots in the report to verify the Avatar's eye alignment.
+          comment_tag: e2e-report
+

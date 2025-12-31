@@ -106,9 +106,12 @@ export class FlowEngine {
       this.lookAtTarget.copy(intersects[0].point);
       console.log(`[Flow] Hit Object: ${intersects[0].object.name} at`, this.lookAtTarget);
     } else {
-      // 2. Fallback: Project onto a sphere around the avatar
-      // This allows looking left, right, up, down and even slightly behind
-      const sphere = new THREE.Sphere(new THREE.Vector3(0, 1.5, 0), 3);
+      // 2. Fallback: Project onto a sphere around the head
+      // A smaller radius (1.5) ensures the interaction feels tight and reactive
+      const headPos = new THREE.Vector3(0, 1.5, 0);
+      if (this.headBone) this.headBone.getWorldPosition(headPos);
+      
+      const sphere = new THREE.Sphere(headPos, 1.5);
       const intersectionPoint = new THREE.Vector3();
       
       if (this.raycaster.ray.intersectSphere(sphere, intersectionPoint)) {
@@ -116,7 +119,7 @@ export class FlowEngine {
         console.log(`[Flow] Hit Interaction Sphere at`, this.lookAtTarget);
       } else {
         // If ray misses the sphere (pointing away), just look at the ray direction at a distance
-        this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(3).add(this.camera.position);
+        this.lookAtTarget.copy(this.raycaster.ray.direction).multiplyScalar(1.5).add(this.camera.position);
       }
     }
 
@@ -233,15 +236,24 @@ export class FlowEngine {
     }
 
     if (!this.debugSphereMesh) {
-      const geo = new THREE.SphereGeometry(3, 16, 16);
-      const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true, transparent: true, opacity: 0.1 });
+      const geo = new THREE.SphereGeometry(1.5, 16, 16);
+      const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true, transparent: true, opacity: 0.2 });
       this.debugSphereMesh = new THREE.Mesh(geo, mat);
-      this.debugSphereMesh.position.set(0, 1.5, 0);
       this.scene.add(this.debugSphereMesh);
     }
   }
 
-  private removeDebugHelpers() {
+  private updateDebugHelpers() {
+    if (this.isDebug) {
+      if (this.debugTargetMesh) {
+        this.debugTargetMesh.position.copy(this.currentLookAt);
+        this.debugTargetMesh.visible = (this.lookAtState !== 'IDLE');
+      }
+      if (this.debugSphereMesh && this.headBone) {
+        this.headBone.getWorldPosition(this.debugSphereMesh.position);
+      }
+    }
+  }
     if (this.debugTargetMesh) {
       this.scene.remove(this.debugTargetMesh);
       this.debugTargetMesh = null;
@@ -329,11 +341,7 @@ export class FlowEngine {
          }
        }
 
-       // Update Debug Helpers
-       if (this.isDebug && this.debugTargetMesh) {
-         this.debugTargetMesh.position.copy(this.currentLookAt);
-         this.debugTargetMesh.visible = (this.lookAtState !== 'IDLE');
-       }
+       this.updateDebugHelpers();
     }
 
     if (this.stageModel && this.stageAnimController) {

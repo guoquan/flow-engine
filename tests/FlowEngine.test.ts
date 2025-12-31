@@ -93,8 +93,8 @@ describe('FlowEngine', () => {
     const mockModel = new THREE.Group();
     mockModel.add(mockHead);
 
-    // Mock the loader to return our specific model
-    const loader = (engine as any).loader;
+    // Use specific cast to access private members for testing
+    const loader = (engine as unknown as { loader: any }).loader;
     loader.load.mockResolvedValueOnce({
       model: mockModel,
       config: { name: 'LookAtAvatar' },
@@ -102,50 +102,51 @@ describe('FlowEngine', () => {
     });
 
     await engine.loadAvatar('dummy-url');
-    expect((engine as any).headBone).toBe(mockHead);
+    expect((engine as unknown as { headBone: THREE.Object3D }).headBone).toBe(mockHead);
   });
 
   it('should update lookAtTarget on pointer down', () => {
-    // Simulate pointer down event
     const event = new PointerEvent('pointerdown', {
       clientX: 100,
       clientY: 100,
     });
     
-    // Manually trigger the private method
     (engine as any).onPointerDown(event);
 
-    // Verify lookAtTarget was updated (based on our Raycaster mock returning 1,2,3)
-    const target = (engine as any).lookAtTarget;
+    const target = (engine as unknown as { lookAtTarget: THREE.Vector3 }).lookAtTarget;
     expect(target.x).toBe(1);
     expect(target.y).toBe(2);
     expect(target.z).toBe(3);
   });
 
-  it('should apply smooth rotation to head bone in animate', async () => {
+  it('should apply stable rotation to head bone over multiple frames', async () => {
     const mockHead = new THREE.Object3D();
     mockHead.name = 'Head';
     const mockModel = new THREE.Group();
     mockModel.add(mockHead);
 
-    (engine as any).loader.load.mockResolvedValueOnce({
+    const engineInternal = engine as any;
+    engineInternal.loader.load.mockResolvedValueOnce({
       model: mockModel,
       config: { name: 'LookAtAvatar' },
       animations: [],
     });
 
     await engine.loadAvatar('dummy-url');
+    engineInternal.lookAtTarget.set(0, 0, 10);
     
-    // Set a target far away
-    (engine as any).lookAtTarget.set(10, 10, 10);
+    // Set LERP to 1.0 to snap immediately and test stability
+    (engineInternal as any).HEAD_LERP_FACTOR = 1.0; 
     
-    // Spy on lookAt
-    const lookAtSpy = vi.spyOn(mockHead, 'lookAt');
+    // Run multiple frames
+    engineInternal.animate(16.6);
+    const rotationAfterFrame1 = mockHead.rotation.x;
     
-    // Trigger one frame
-    (engine as any).animate(16.6);
+    engineInternal.animate(33.2);
+    const rotationAfterFrame2 = mockHead.rotation.x;
 
-    expect(lookAtSpy).toHaveBeenCalled();
+    // Verify rotation doesn't accumulate (within tolerance)
+    expect(rotationAfterFrame1).toBeCloseTo(rotationAfterFrame2, 5);
   });
 
   it('should handle window resize', () => {
@@ -153,9 +154,10 @@ describe('FlowEngine', () => {
     (window as any).innerWidth = 1024;
     (window as any).innerHeight = 768;
     
-    // Spy on camera and renderer
-    const cameraSpy = vi.spyOn((engine as any).camera, 'updateProjectionMatrix');
-    const rendererSpy = vi.spyOn((engine as any).renderer, 'setSize');
+    // Use proper casting
+    const engineInternal = engine as unknown as { camera: THREE.PerspectiveCamera; renderer: any };
+    const cameraSpy = vi.spyOn(engineInternal.camera, 'updateProjectionMatrix');
+    const rendererSpy = vi.spyOn(engineInternal.renderer, 'setSize');
     
     // Trigger resize
     window.dispatchEvent(new Event('resize'));
@@ -168,8 +170,8 @@ describe('FlowEngine', () => {
     const mockStage = new THREE.Group();
     const mockAnimations = [new THREE.AnimationClip('StageIdle', 1, [])];
     
-    const stageLoader = (engine as any).stageLoader;
-    stageLoader.load.mockResolvedValueOnce({
+    const engineInternal = engine as unknown as { stageLoader: any; stageModel: THREE.Object3D; stageAnimController: any };
+    engineInternal.stageLoader.load.mockResolvedValueOnce({
       model: mockStage,
       config: { name: 'TestStage', animations: { defaultState: 'idle', states: { idle: { clipName: 'StageIdle' } } } },
       animations: mockAnimations,
@@ -177,8 +179,8 @@ describe('FlowEngine', () => {
 
     await engine.loadStage('dummy-stage-url');
     
-    expect((engine as any).stageModel).toBe(mockStage);
-    expect((engine as any).stageAnimController).toBeDefined();
+    expect(engineInternal.stageModel).toBe(mockStage);
+    expect(engineInternal.stageAnimController).toBeDefined();
   });
 
   it('should fallback to case-insensitive head bone lookup', async () => {
@@ -187,18 +189,20 @@ describe('FlowEngine', () => {
     const mockModel = new THREE.Group();
     mockModel.add(mockHead);
 
-    (engine as any).loader.load.mockResolvedValueOnce({
+    const engineInternal = engine as any;
+    engineInternal.loader.load.mockResolvedValueOnce({
       model: mockModel,
       config: { name: 'LowercaseAvatar' },
       animations: [],
     });
 
     await engine.loadAvatar('dummy-url');
-    expect((engine as any).headBone).toBe(mockHead);
+    expect(engineInternal.headBone).toBe(mockHead);
   });
 
   it('should remove old avatar before loading new one', async () => {
-    const sceneRemoveSpy = vi.spyOn((engine as any).scene, 'remove');
+    const engineInternal = engine as any;
+    const sceneRemoveSpy = vi.spyOn(engineInternal.scene, 'remove');
     
     // Load first
     await engine.loadAvatar('url1');

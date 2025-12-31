@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="19" failures="0" errors="0" time="0.024365208">
-    <testsuite name="tests/AnimationController.test.ts" timestamp="2025-12-31T03:25:55.431Z" hostname="Otsira.local" tests="11" failures="0" errors="0" skipped="0" time="0.007881">
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should initialize correctly" time="0.001295541">
+<testsuites name="vitest tests" tests="19" failures="0" errors="0" time="0.023524209">
+    <testsuite name="tests/AnimationController.test.ts" timestamp="2025-12-31T03:52:11.049Z" hostname="Otsira.local" tests="11" failures="0" errors="0" skipped="0" time="0.008066792">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should initialize correctly" time="0.001389333">
         </testcase>
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should initialize with config and play default state" time="0.001553125">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should initialize with config and play default state" time="0.00156125">
             <system-out>
 [Anim] Transition to: idle (Loop: true)
 
             </system-out>
         </testcase>
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should play requested state if exists" time="0.000213792">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should play requested state if exists" time="0.000209209">
             <system-out>
 [Anim] Transition to: idle (Loop: true)
 [Anim] Transition to: wave (Loop: false)
 
             </system-out>
         </testcase>
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should handle missing state gracefully" time="0.000306667">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should handle missing state gracefully" time="0.000301375">
             <system-out>
 [Anim] Transition to: idle (Loop: undefined)
 
@@ -26,20 +26,20 @@
 
             </system-err>
         </testcase>
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should update mixer" time="0.000598417">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should update mixer" time="0.000586875">
             <system-out>
 [Anim] Transition to: idle (Loop: undefined)
 
             </system-out>
         </testcase>
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should cross-fade when switching states" time="0.000194167">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should cross-fade when switching states" time="0.000185834">
             <system-out>
 [Anim] Transition to: idle (Loop: true)
 [Anim] Transition to: run (Loop: true)
 
             </system-out>
         </testcase>
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should auto-transition on finish" time="0.00029925">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should auto-transition on finish" time="0.000301125">
             <system-out>
 [Anim] Transition to: idle (Loop: true)
 [Anim] Transition to: wave (Loop: false)
@@ -47,20 +47,20 @@
 
             </system-out>
         </testcase>
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should warn if clip not found in config" time="0.000763291">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should warn if clip not found in config" time="0.000778708">
             <system-err>
 [AnimationController] Clip &quot;MissingClip&quot; for state &quot;idle&quot; not found.
 
             </system-err>
         </testcase>
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should reset action if playing same state with forceReset" time="0.000199917">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should reset action if playing same state with forceReset" time="0.000191584">
             <system-out>
 [Anim] Transition to: idle (Loop: undefined)
 [Anim] Transition to: idle (Loop: undefined)
 
             </system-out>
         </testcase>
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should fallback to default state on finish if no next state defined" time="0.000186667">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should fallback to default state on finish if no next state defined" time="0.000195084">
             <system-out>
 [Anim] Transition to: idle (Loop: true)
 [Anim] Transition to: oneshot (Loop: false)
@@ -68,7 +68,7 @@
 
             </system-out>
         </testcase>
-        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should wait for holdDuration before transitioning" time="0.001437375">
+        <testcase classname="tests/AnimationController.test.ts" name="AnimationController &gt; should wait for holdDuration before transitioning" time="0.001428291">
             <system-out>
 [Anim] Transition to: idle (Loop: true)
 [Anim] Transition to: death (Loop: false)
@@ -77,42 +77,42 @@
             </system-out>
         </testcase>
     </testsuite>
-    <testsuite name="tests/FlowEngine.test.ts" timestamp="2025-12-31T03:25:55.433Z" hostname="Otsira.local" tests="8" failures="0" errors="0" skipped="0" time="0.016484208">
-        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should initialize correctly" time="0.007810917">
+    <testsuite name="tests/FlowEngine.test.ts" timestamp="2025-12-31T03:52:11.051Z" hostname="Otsira.local" tests="8" failures="0" errors="0" skipped="0" time="0.015457417">
+        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should initialize correctly" time="0.006731375">
         </testcase>
-        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should find head bone in avatar model" time="0.001559292">
+        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should find head bone in avatar model" time="0.001678708">
             <system-out>
 [Flow] Avatar &quot;LookAtAvatar&quot; loaded successfully.
 
             </system-out>
         </testcase>
-        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should update lookAtTarget on pointer down" time="0.001155333">
+        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should update lookAtTarget on pointer down" time="0.001525542">
             <system-out>
 [Flow] New LookAt Target: Vector3 { x: [33m1[39m, y: [33m2[39m, z: [33m3[39m }
 
             </system-out>
         </testcase>
-        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should apply smooth rotation to head bone in animate" time="0.001269">
+        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should apply stable rotation to head bone over multiple frames" time="0.001252125">
             <system-out>
 [Flow] Avatar &quot;LookAtAvatar&quot; loaded successfully.
 
             </system-out>
         </testcase>
-        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should handle window resize" time="0.001373792">
+        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should handle window resize" time="0.00171">
         </testcase>
-        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should load stage and initialize stage animator" time="0.0007555">
+        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should load stage and initialize stage animator" time="0.000626917">
             <system-out>
 [Flow] Stage &quot;TestStage&quot; loaded successfully.
 
             </system-out>
         </testcase>
-        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should fallback to case-insensitive head bone lookup" time="0.000875791">
+        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should fallback to case-insensitive head bone lookup" time="0.000526959">
             <system-out>
 [Flow] Avatar &quot;LowercaseAvatar&quot; loaded successfully.
 
             </system-out>
         </testcase>
-        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should remove old avatar before loading new one" time="0.000803291">
+        <testcase classname="tests/FlowEngine.test.ts" name="FlowEngine &gt; should remove old avatar before loading new one" time="0.00054575">
             <system-out>
 [Flow] Avatar &quot;Test Avatar&quot; loaded successfully.
 

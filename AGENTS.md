@@ -40,12 +40,20 @@ Welcome to the **Flow Engine** development environment.
 
 ## 📝 Workflow & Protocols
 
-### 1. Task Execution
+### 1. Autonomous PR Management (MANDATORY)
+After submitting a Pull Request or pushing an update to an existing PR, the Agent **must not stop**. You are required to:
+1.  **Monitor Status**: Automatically check CI results (`gh pr checks`), CodeQL security alerts, and Codecov coverage reports.
+2.  **Handle Feedback**: Read and analyze all comments, including those from humans and automated tools like Copilot Reviewer.
+3.  **Self-Correct**: If any check fails or a reasonable suggestion is made, implement the fix and push immediately.
+4.  **Repeat**: Continue this cycle autonomously without waiting for user prompts.
+5.  **Notify**: Stop and notify the user to change the PR state (e.g., from Draft to Ready) or merge **only** when all checks are green and no further logical improvements are identified.
+
+### 2. Task Execution
 1.  **Read**: Understand the request and context.
-2.  **Plan**: Propose the change (mental or written check).
+2.  **Plan**: Propose the change.
 3.  **Implement**: detailed code changes.
-4.  **PR Creation**: When using `gh pr create`, **always** include the `--draft` flag. This allows for final verification before triggering automated reviews.
-5.  **Verify**: If tests exist, run them. If not, ensure the code compiles (`npm run build` check).
+4.  **PR Creation**: Use `gh pr create --draft`.
+5.  **Verify**: Ensure code compiles and tests pass locally before pushing.
 
 ---
 *Motto: Modern, Data-Driven, Fast.*

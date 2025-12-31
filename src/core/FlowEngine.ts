@@ -254,6 +254,8 @@ export class FlowEngine {
       }
     }
   }
+
+  private removeDebugHelpers() {
     if (this.debugTargetMesh) {
       this.scene.remove(this.debugTargetMesh);
       this.debugTargetMesh = null;

@@ -42,6 +42,15 @@ vi.mock('three/webgpu', () => ({
   },
 }));
 
+// Mock Controllers
+vi.mock('../src/core/AnimationController', () => ({
+  AnimationController: class {
+    init = vi.fn();
+    update = vi.fn();
+    play = vi.fn();
+  },
+}));
+
 // Mock Loaders
 vi.mock('../src/core/AvatarLoader', () => ({
   AvatarLoader: class {
@@ -137,5 +146,66 @@ describe('FlowEngine', () => {
     (engine as any).animate(16.6);
 
     expect(lookAtSpy).toHaveBeenCalled();
+  });
+
+  it('should handle window resize', () => {
+    // Mock window properties
+    (window as any).innerWidth = 1024;
+    (window as any).innerHeight = 768;
+    
+    // Spy on camera and renderer
+    const cameraSpy = vi.spyOn((engine as any).camera, 'updateProjectionMatrix');
+    const rendererSpy = vi.spyOn((engine as any).renderer, 'setSize');
+    
+    // Trigger resize
+    window.dispatchEvent(new Event('resize'));
+    
+    expect(cameraSpy).toHaveBeenCalled();
+    expect(rendererSpy).toHaveBeenCalledWith(1024, 768);
+  });
+
+  it('should load stage and initialize stage animator', async () => {
+    const mockStage = new THREE.Group();
+    const mockAnimations = [new THREE.AnimationClip('StageIdle', 1, [])];
+    
+    const stageLoader = (engine as any).stageLoader;
+    stageLoader.load.mockResolvedValueOnce({
+      model: mockStage,
+      config: { name: 'TestStage', animations: { defaultState: 'idle', states: { idle: { clipName: 'StageIdle' } } } },
+      animations: mockAnimations,
+    });
+
+    await engine.loadStage('dummy-stage-url');
+    
+    expect((engine as any).stageModel).toBe(mockStage);
+    expect((engine as any).stageAnimController).toBeDefined();
+  });
+
+  it('should fallback to case-insensitive head bone lookup', async () => {
+    const mockHead = new THREE.Object3D();
+    mockHead.name = 'my-head-bone'; // No 'Head', but contains 'head'
+    const mockModel = new THREE.Group();
+    mockModel.add(mockHead);
+
+    (engine as any).loader.load.mockResolvedValueOnce({
+      model: mockModel,
+      config: { name: 'LowercaseAvatar' },
+      animations: [],
+    });
+
+    await engine.loadAvatar('dummy-url');
+    expect((engine as any).headBone).toBe(mockHead);
+  });
+
+  it('should remove old avatar before loading new one', async () => {
+    const sceneRemoveSpy = vi.spyOn((engine as any).scene, 'remove');
+    
+    // Load first
+    await engine.loadAvatar('url1');
+    
+    // Load second
+    await engine.loadAvatar('url2');
+    
+    expect(sceneRemoveSpy).toHaveBeenCalled();
   });
 });

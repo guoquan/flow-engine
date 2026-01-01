@@ -204,18 +204,16 @@ export class FlowEngine {
     if (this.debugPlaneMesh) {
       this.debugPlaneMesh.visible = hasPlane; 
       
-      if (!hasPlane) return;
-
-      // POSITION: Match the center of the active plane
-      if (info.planeCenter) {
-         this.debugPlaneMesh.position.copy(info.planeCenter);
+      if (hasPlane) {
+        // POSITION: Match the center of the active plane
+        this.debugPlaneMesh.position.copy(info.planeCenter);
+        
+        // ROTATION: Match the plane normal
+        const normal = info.activePlane.normal;
+        const targetPos = this.debugPlaneMesh.position.clone().add(normal);
+        this.debugPlaneMesh.lookAt(targetPos);
+        this.debugPlaneMesh.rotateX(Math.PI / 2);
       }
-      
-      // ROTATION: Match the plane normal
-      const normal = info.activePlane.normal;
-      const targetPos = this.debugPlaneMesh.position.clone().add(normal);
-      this.debugPlaneMesh.lookAt(targetPos);
-      this.debugPlaneMesh.rotateX(Math.PI / 2);
     }
   }
 
@@ -237,11 +235,11 @@ export class FlowEngine {
     if (this.animController) this.animController.play(action.toLowerCase());
   }
 
-  private animate(timeMs: number) {
+  private animate(_timeMs: number) {
     const delta = this.clock.getDelta();
     if (this.avatarModel) {
        if (this.animController) this.animController.update(delta);
-       this.lookAtProcessor.update(timeMs, delta);
+       this.lookAtProcessor.update(_timeMs, delta);
     }
     this.updateDebugHelpers();
     if (this.stageModel && this.stageAnimController) this.stageAnimController.update(delta);

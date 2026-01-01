@@ -6,7 +6,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="ui-overlay">
     <h1>Flow (服喽)</h1>
     <p>Status: <span id="status">Initializing...</span></p>
-    <p style="font-size: 0.8rem; color: #00d2ff;">Tip: Click & Hold anywhere to track! (Advanced LookAt v2)</p>
+    <p style="font-size: 0.8rem; color: #00d2ff;">Tip: Click & Hold anywhere to track! (Advanced LookAt v6)</p>
     <div id="controls" style="margin-top: 10px; pointer-events: auto;">
       <label style="margin-right: 15px;">
         <input type="checkbox" id="auto-rotate" /> Auto Rotate

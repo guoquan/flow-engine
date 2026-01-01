@@ -39,10 +39,10 @@ export default defineConfig({
     },
   },
   // Base path needed for GitHub Pages (repo name)
-  base: process.env.BUILD_DEMO ? '/flow-engine/' : '/',
+  base: process.env.GITHUB_PAGES ? '/flow-engine/' : '/',
   // If BUILD_DEMO is true, build as a normal website, otherwise as a library
   build: process.env.BUILD_DEMO ? {
-    outDir: 'dist-demo'
+    outDir: process.env.OUT_DIR || 'dist-demo'
   } : {
     lib: {
       entry: path.resolve(__dirname, 'src/index.ts'),

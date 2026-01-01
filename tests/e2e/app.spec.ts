@@ -10,8 +10,12 @@ test.describe('Flow Engine E2E', () => {
     await expect(page.locator('#status')).toBeVisible();
 
     // 3. Wait for Engine init (Status text change)
-    // Note: WebGPU might fail in CI without specific runners, but UI should load.
-    // We wait a bit to catch the initial render state.
+    // Log WebGPU availability for debugging
+    const webgpuAvailable = await page.evaluate(async () => {
+      return !!(navigator as any).gpu;
+    });
+    console.log(`WebGPU Available: ${webgpuAvailable}`);
+
     await page.waitForTimeout(2000);
 
     // 4. Capture Initial State

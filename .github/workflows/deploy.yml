@@ -55,7 +55,7 @@ jobs:
         run: pnpm test
 
       - name: Build Demo
-        run: pnpm run build:demo
+        run: cross-env GITHUB_PAGES=true pnpm run build:demo
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

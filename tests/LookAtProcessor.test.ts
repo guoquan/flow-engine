@@ -95,20 +95,23 @@ describe('LookAtProcessor', () => {
   });
 
   it('should release to IDLE after hold duration', () => {
+    // Mock time to ensure consistency between event and update loop
+    const nowSpy = vi.spyOn(performance, 'now').mockReturnValue(1000);
+
     // Start sequence
     container.dispatchEvent(new PointerEvent('pointerdown'));
     window.dispatchEvent(new PointerEvent('pointerup'));
     
     expect((processor as any).state).toBe('HOLDING');
+    // timer is set to 1000
 
     // Simulate time passing > holdDuration (100ms)
-    // First update sets the timer
-    processor.update(1000, 0.016); 
-    
-    // Second update checks duration
-    processor.update(1200, 0.016);
+    // Update uses passed timeMs
+    processor.update(1200, 0.016); 
     
     expect((processor as any).state).toBe('IDLE');
+    
+    nowSpy.mockRestore();
   });
 
   it('should update head bone quaternion when engaged', () => {

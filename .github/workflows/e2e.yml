@@ -61,6 +61,15 @@ jobs:
       env:
         CI: true
 
+    - name: Determine Commit SHA
+      id: sha
+      run: |
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          echo "COMMIT_SHA=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+        else
+          echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
+        fi
+
     - name: Upload Playwright Report
       if: always()
       uses: actions/upload-artifact@v4
@@ -89,8 +98,8 @@ jobs:
           const screenshotDir = 'test-results/screenshots';
           // Determine PR number or ref
           const prNumber = context.issue.number;
-          // Use head sha for PRs to match the deployment path
-          const sha = context.payload.pull_request ? context.payload.pull_request.head.sha : context.sha;
+          // Use standardized SHA from env
+          const sha = process.env.COMMIT_SHA;
           const owner = context.repo.owner;
           const repo = context.repo.repo;
           
@@ -135,7 +144,7 @@ jobs:
         publish_dir: ./test-results/screenshots
         publish_branch: visual-reports
         # Versioned path: <PR_NUMBER>/<COMMIT_SHA>
-        destination_dir: ${{ github.event.pull_request.number || 'main' }}/${{ github.sha }}
+        destination_dir: ${{ github.event.pull_request.number || 'main' }}/${{ env.COMMIT_SHA }}
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
 
@@ -153,8 +162,8 @@ jobs:
 
           const screenshotDir = 'test-results/screenshots';
           const prNumber = context.issue.number;
-          // For PRs, use the head sha, not the merge commit sha
-          const sha = context.payload.pull_request ? context.payload.pull_request.head.sha : context.sha;
+          // Use standardized SHA from env
+          const sha = process.env.COMMIT_SHA;
           const shortSha = sha.substring(0, 7);
           const repo = context.repo.repo;
           const owner = context.repo.owner;

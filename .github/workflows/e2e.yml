@@ -50,6 +50,9 @@ jobs:
     - name: Create Screenshot Directory
       run: mkdir -p test-results/screenshots
 
+    - name: Debug Build Output
+      run: ls -R dist || echo "dist not found"
+
     - name: Run Playwright tests
       run: pnpm exec playwright test
       env:

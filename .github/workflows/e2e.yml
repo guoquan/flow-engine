@@ -48,7 +48,7 @@ jobs:
       run: pnpm exec playwright install --with-deps chromium
 
     - name: Build Demo
-      run: BUILD_DEMO=true OUT_DIR=dist pnpm run build
+      run: BUILD_DEMO=true GITHUB_PAGES=true OUT_DIR=dist pnpm run build
 
     - name: Create Screenshot Directory
       run: mkdir -p test-results/screenshots
@@ -79,7 +79,7 @@ jobs:
 
     # --- Push to visual-reports branch (Versioned by SHA) ---
     - name: Deploy screenshots to visual-reports branch
-      if: always()
+      if: always() && github.event_name == 'pull_request'
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -185,9 +185,27 @@ jobs:
 Error generating report: ${error.message}`;
           }
           
-          github.rest.issues.createComment({
-            issue_number: prNumber,
+          // Check for existing comment
+          const { data: comments } = await github.rest.issues.listComments({
             owner: owner,
             repo: repo,
-            body: commentBody
+            issue_number: prNumber
           });
+          
+          const existingComment = comments.find(c => c.body.startsWith('## 📸 Visual E2E Report'));
+          
+          if (existingComment) {
+            github.rest.issues.updateComment({
+              owner: owner,
+              repo: repo,
+              comment_id: existingComment.id,
+              body: commentBody
+            });
+          } else {
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: owner,
+              repo: repo,
+              body: commentBody
+            });
+          }

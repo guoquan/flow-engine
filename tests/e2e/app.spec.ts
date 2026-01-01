@@ -20,9 +20,9 @@ test.describe('Flow Engine E2E', () => {
     });
     console.log(`WebGPU Available: ${webgpuAvailable}`);
 
-    // 4. Wait for Engine init (Status text change from "Initializing..." to "Ready")
+    // 4. Wait for Engine init (Status text change from "Initializing..." to "Ready (Idle)")
     // This is more robust than waitForTimeout
-    await expect(status).not.toHaveText('Initializing...', { timeout: 30000 });
+    await expect(status).toHaveText('Ready (Idle)', { timeout: 30000 });
 
     // 5. Capture Initial State
     await page.screenshot({ path: 'test-results/screenshots/initial-state.png' });

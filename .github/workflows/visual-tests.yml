@@ -103,11 +103,8 @@ jobs:
           
           console.log(`Generating report for PR #${prNumber}, Commit: ${shortSha}`);
           
-          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})
-
-`;
+          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})\n\n`;
           
-          // Helper to format caption
           const formatCaption = (filename) => {
             return filename.replace(/[-_]/g, ' ').replace(/\.png$/i, '').replace(/\b\w/g, c => c.toUpperCase());
           };
@@ -119,15 +116,10 @@ jobs:
               if (files.length === 0) {
                 commentBody += 'No screenshots captured.';
               } else {
-                commentBody += `**Summary:** ${files.length} screenshots captured.
-
-`;
-                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})
-
-`;
+                commentBody += `**Summary:** ${files.length} screenshots captured.\n\n`;
+                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})\n\n`;
                 
-                commentBody += `### Key Visuals
-`;
+                commentBody += `### Key Visuals\n`;
                 
                 const keyScreenshots = ['initial-state.png', 'debug-mode.png'];
                 const displayed = [];
@@ -138,11 +130,8 @@ jobs:
                   
                   if (isKey) {
                     const fullSizeUrl = `${baseUrl}/${file}`;
-                    commentBody += `#### ${formatCaption(file)}
-`;
-                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})
-
-`;
+                    commentBody += `#### ${formatCaption(file)}\n`;
+                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
                     displayed.push(file);
                   } else {
                     hidden.push(file);
@@ -150,24 +139,15 @@ jobs:
                 }
 
                 if (hidden.length > 0) {
-                  commentBody += `<details>
-<summary><strong>See ${hidden.length} more screenshots...</strong></summary>
-
-`;
-                  commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.
-
-`;
-                  commentBody += `| Screenshot | Status |
-|---|---|
+                  commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots...</strong></summary>\n\n`;
+                  commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.\n\n`;
+                  commentBody += `| Screenshot | Status |\n|---|---|
 `;
                   for (const file of hidden) {
                      const fullSizeUrl = `${baseUrl}/${file}`;
-                     commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |
-`;
+                     commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |\n`;
                   }
-                  commentBody += `
-</details>
-`;
+                  commentBody += `\n</details>\n`;
                 }
               }
             } else {
@@ -175,8 +155,7 @@ jobs:
             }
           } catch (error) {
             console.error(error);
-            commentBody += `
-Error generating report: ${error.message}`;
+            commentBody += `\nError generating report: ${error.message}`;
           }
           
           console.log('Report Body Length:', commentBody.length);

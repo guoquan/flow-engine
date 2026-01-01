@@ -25,5 +25,8 @@ export default defineConfig({
     timeout: 120 * 1000,
     stdout: 'pipe',
     stderr: 'pipe',
+    env: {
+      GITHUB_PAGES: 'true'
+    }
   },
 });

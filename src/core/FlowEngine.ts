@@ -178,13 +178,13 @@ export class FlowEngine {
       this.scene.add(this.debugTargetMesh);
     }
     if (!this.debugPlaneMesh) {
-      // Larger and more visible grid
-      const grid = new THREE.GridHelper(100, 100, 0x00ff00, 0x008800);
+      // Proportional grid matching interaction plane scale (10x10 is cleaner than 100x100)
+      const grid = new THREE.GridHelper(10, 20, 0x00ff00, 0x008800);
       (grid.material as THREE.Material).transparent = true;
-      (grid.material as THREE.Material).opacity = 0.5; // High visibility
+      (grid.material as THREE.Material).opacity = 0.5; // Moderate visibility
       grid.rotateX(Math.PI / 2);
       this.debugPlaneMesh = grid as any;
-      if (this.debugPlaneMesh) this.scene.add(this.debugPlaneMesh);
+      this.scene.add(this.debugPlaneMesh);
     }
   }
 
@@ -192,6 +192,7 @@ export class FlowEngine {
     if (!this.isDebug || !this.lookAtProcessor) return;
 
     const info = this.lookAtProcessor.getDebugInfo();
+    const hasPlane = !!(info.planeCenter || info.activePlane);
     
     // Target ball visible only when actually looking
     if (this.debugTargetMesh) {
@@ -201,8 +202,10 @@ export class FlowEngine {
 
     // Grid visible whenever Debug is ON and we have a plane
     if (this.debugPlaneMesh) {
-      this.debugPlaneMesh.visible = true; // Always show if Debug is enabled
+      this.debugPlaneMesh.visible = hasPlane; // Only show when Debug is enabled AND a plane is initialized
       
+      if (!hasPlane) return;
+
       // POSITION: Match the center of the active plane
       // Use the explicit visual center calculated by the processor
       if (info.planeCenter) {

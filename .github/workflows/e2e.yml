@@ -239,3 +239,14 @@ jobs:
           console.log("README.md generated in screenshot directory.");
 
     # --- Push to visual-reports branch (Versioned by SHA) ---
+    - name: Deploy screenshots to visual-reports branch
+      if: always() && github.event_name == 'pull_request'
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./test-results/screenshots
+        publish_branch: visual-reports
+        # Versioned path: <PR_NUMBER>/<COMMIT_SHA>
+        destination_dir: ${{ github.event.pull_request.number || 'main' }}/${{ env.COMMIT_SHA }}
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'

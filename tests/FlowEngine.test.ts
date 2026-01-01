@@ -19,15 +19,7 @@ vi.mock('three', async () => {
       stopAllAction: vi.fn(),
       addEventListener: vi.fn(),
     })),
-    Raycaster: class {
-      setFromCamera = vi.fn();
-      ray = {
-        intersectPlane: vi.fn().mockImplementation((_plane, target) => {
-          target.set(1, 2, 3); // Mock intersection point
-          return target;
-        }),
-      };
-    },
+    // Mock LookAtProcessor dependencies if needed
   };
 });
 
@@ -51,13 +43,23 @@ vi.mock('../src/core/AnimationController', () => ({
   },
 }));
 
+// Mock LookAtProcessor
+vi.mock('../src/core/LookAtProcessor', () => ({
+  LookAtProcessor: class {
+    update = vi.fn();
+    getDebugInfo = vi.fn().mockReturnValue({ isEngaged: false });
+    interrupt = vi.fn();
+    dispose = vi.fn();
+  },
+}));
+
 // Mock Loaders
 vi.mock('../src/core/AvatarLoader', () => ({
   AvatarLoader: class {
     load = vi.fn().mockResolvedValue({
       model: new THREE.Group(),
       config: { name: 'Test Avatar' },
-      animations: [],
+      animations: [new THREE.AnimationClip('idle', 1, [])],
     });
   },
 }));
@@ -82,6 +84,11 @@ describe('FlowEngine', () => {
     engine = new FlowEngine('container');
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+    document.body.innerHTML = '';
+  });
+
   it('should initialize correctly', () => {
     expect(engine).toBeDefined();
     expect(container.children.length).toBeGreaterThan(0);
@@ -103,50 +110,6 @@ describe('FlowEngine', () => {
 
     await engine.loadAvatar('dummy-url');
     expect((engine as unknown as { headBone: THREE.Object3D }).headBone).toBe(mockHead);
-  });
-
-  it('should update lookAtTarget on pointer down', () => {
-    const event = new PointerEvent('pointerdown', {
-      clientX: 100,
-      clientY: 100,
-    });
-    
-    (engine as any).onPointerDown(event);
-
-    const target = (engine as unknown as { lookAtTarget: THREE.Vector3 }).lookAtTarget;
-    expect(target.x).toBe(1);
-    expect(target.y).toBe(2);
-    expect(target.z).toBe(3);
-  });
-
-  it('should apply stable rotation to head bone over multiple frames', async () => {
-    const mockHead = new THREE.Object3D();
-    mockHead.name = 'Head';
-    const mockModel = new THREE.Group();
-    mockModel.add(mockHead);
-
-    const engineInternal = engine as any;
-    engineInternal.loader.load.mockResolvedValueOnce({
-      model: mockModel,
-      config: { name: 'LookAtAvatar' },
-      animations: [],
-    });
-
-    await engine.loadAvatar('dummy-url');
-    engineInternal.lookAtTarget.set(0, 0, 10);
-    
-    // Set LERP to 1.0 to snap immediately and test stability
-    (engineInternal as any).HEAD_LERP_FACTOR = 1.0; 
-    
-    // Run multiple frames
-    engineInternal.animate(16.6);
-    const rotationAfterFrame1 = mockHead.rotation.x;
-    
-    engineInternal.animate(33.2);
-    const rotationAfterFrame2 = mockHead.rotation.x;
-
-    // Verify rotation doesn't accumulate (within tolerance)
-    expect(rotationAfterFrame1).toBeCloseTo(rotationAfterFrame2, 5);
   });
 
   it('should handle window resize', () => {
@@ -211,5 +174,75 @@ describe('FlowEngine', () => {
     await engine.loadAvatar('url2');
     
     expect(sceneRemoveSpy).toHaveBeenCalled();
+  });
+
+  it('should toggle debug mode and helpers', () => {
+    const engineInternal = engine as any;
+    
+    // Enable Debug
+    engine.setDebug(true);
+    expect(engineInternal.isDebug).toBe(true);
+    expect(engineInternal.debugTargetMesh).toBeDefined();
+    expect(engineInternal.debugPlaneMesh).toBeDefined();
+    expect(engineInternal.scene.children).toContain(engineInternal.debugTargetMesh);
+    expect(engineInternal.scene.children).toContain(engineInternal.debugPlaneMesh);
+
+    // Disable Debug
+    engine.setDebug(false);
+    expect(engineInternal.isDebug).toBe(false);
+    expect(engineInternal.debugTargetMesh).toBeNull();
+    expect(engineInternal.debugPlaneMesh).toBeNull();
+  });
+
+  it('should update debug helpers during animation when debug is on', async () => {
+    const engineInternal = engine as any;
+    engine.setDebug(true);
+    
+    // Setup mock processor return
+    engineInternal.lookAtProcessor.getDebugInfo.mockReturnValue({
+      isEngaged: true,
+      currentLookAt: new THREE.Vector3(1, 2, 3),
+      activePlane: new THREE.Plane(),
+      planeCenter: new THREE.Vector3(0, 1.5, 2.5)
+    });
+
+    // Mock lookAt for plane mesh
+    const lookAtSpy = vi.spyOn(THREE.Object3D.prototype, 'lookAt');
+
+    engineInternal.animate(100);
+
+    expect(engineInternal.debugTargetMesh.visible).toBe(true);
+    expect(engineInternal.debugTargetMesh.position.x).toBe(1);
+    expect(engineInternal.debugPlaneMesh.visible).toBe(true);
+    expect(engineInternal.debugPlaneMesh.position.z).toBe(2.5);
+    expect(lookAtSpy).toHaveBeenCalled();
+  });
+
+  it('should update controllers and processor in animation loop', async () => {
+    const engineInternal = engine as any;
+    
+    // Load avatar to enable update logic
+    await engine.loadAvatar('dummy');
+    
+    const animSpy = vi.spyOn(engineInternal.animController, 'update');
+    const procSpy = vi.spyOn(engineInternal.lookAtProcessor, 'update');
+    
+    engineInternal.animate(100);
+    
+    expect(animSpy).toHaveBeenCalled();
+    expect(procSpy).toHaveBeenCalled();
+  });
+
+  it('should play action via flow engine', async () => {
+    const engineInternal = engine as any;
+    await engine.loadAvatar('dummy');
+    
+    const interruptSpy = vi.spyOn(engineInternal.lookAtProcessor, 'interrupt');
+    const playSpy = vi.spyOn(engineInternal.animController, 'play');
+    
+    engine.playAction('WAVE');
+    
+    expect(interruptSpy).toHaveBeenCalled();
+    expect(playSpy).toHaveBeenCalledWith('wave');
   });
 });

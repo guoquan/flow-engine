@@ -1,16 +1,14 @@
 import * as THREE from 'three';
 // @ts-ignore
 import { WebGPURenderer } from 'three/webgpu';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { AvatarLoader } from './AvatarLoader';
 import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
+import { LookAtProcessor } from './LookAtProcessor';
+import type { AvatarConfig } from '../types';
 
 export class FlowEngine {
-  // Configuration
-  private HEAD_LERP_FACTOR = 0.1;
-  private HEAD_ROTATION_OFFSET = Math.PI / 2;
-
   private container: HTMLElement;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
@@ -27,11 +25,14 @@ export class FlowEngine {
   private animController: AnimationController | null = null;
   private stageAnimController: AnimationController | null = null;
 
-  // Interaction State
-  private raycaster = new THREE.Raycaster();
-  private mouse = new THREE.Vector2();
-  private lookAtTarget = new THREE.Vector3(0, 1.5, 5); // Default look forward
-  private currentLookAt = new THREE.Vector3(0, 1.5, 5);
+  // Components
+  private lookAtProcessor: LookAtProcessor;
+  private currentAvatarConfig: AvatarConfig | null = null;
+
+  // Debug Helpers
+  public isDebug = false;
+  private debugTargetMesh: THREE.Mesh | null = null;
+  private debugPlaneMesh: THREE.GridHelper | null = null;
 
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
@@ -71,30 +72,25 @@ export class FlowEngine {
     this.controls.enableDamping = true;
     this.controls.target.set(0, 1, 0);
 
-    // 6. Event Handlers
+    // 6. Initialize Processor
+    this.lookAtProcessor = new LookAtProcessor(
+      this.container,
+      this.camera,
+      () => this.headBone,
+      () => this.currentAvatarConfig,
+      () => {
+        const list = [];
+        if (this.avatarModel) list.push(this.avatarModel);
+        if (this.stageModel) list.push(this.stageModel);
+        return list;
+      }
+    );
+
+    // 7. Event Handlers
     window.addEventListener('resize', this.onWindowResize.bind(this));
-    this.container.addEventListener('pointerdown', this.onPointerDown.bind(this));
 
     // Start Loop (WebGPU Style)
     this.renderer.setAnimationLoop(this.animate.bind(this));
-  }
-
-  private onPointerDown(event: PointerEvent) {
-    // Calculate mouse position in normalized device coordinates
-    const rect = this.container.getBoundingClientRect();
-    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-
-    // Create a virtual plane at z=0 or check against stage
-    const intersectionPoint = new THREE.Vector3();
-    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-    
-    if (this.raycaster.ray.intersectPlane(plane, intersectionPoint)) {
-      this.lookAtTarget.copy(intersectionPoint);
-      console.log(`[Flow] New LookAt Target:`, this.lookAtTarget);
-    }
   }
 
   private setupLights() {
@@ -123,61 +119,108 @@ export class FlowEngine {
 
     const { model, config, animations } = await this.loader.load(configUrl);
     this.avatarModel = model;
+    this.currentAvatarConfig = config;
     this.scene.add(this.avatarModel);
 
-    // Find and cache the Head bone
-    this.headBone = this.avatarModel.getObjectByName('Head') || null;
+    // Cache head bone
+    const headName = config.lookAt?.headBoneName || 'Head';
+    this.headBone = this.avatarModel.getObjectByName(headName) || null;
     if (!this.headBone) {
-      this.avatarModel.traverse(child => {
-        if (this.headBone) return;
-        const lowerName = child.name.toLowerCase();
-        if (lowerName.includes('head') || lowerName.includes('neck')) {
-          this.headBone = child;
-        }
-      });
+      this.avatarModel.traverse(c => { if (!this.headBone && c.name.toLowerCase().includes('head')) this.headBone = c; });
     }
     
     // Initialize Animation Controller
     if (animations.length > 0) {
       this.animController = new AnimationController(this.avatarModel, animations);
-      
-      // Use config if available, otherwise generate default map
       const animConfig = config.animations || {
         defaultState: 'idle',
         states: {
           idle: { clipName: 'Idle', loop: true },
+          walk: { clipName: 'Walking', loop: true },
           wave: { clipName: 'Wave', loop: false, next: 'idle' },
           dance: { clipName: 'Dance', loop: false, next: 'idle' },
-          bow: { clipName: 'Bow', loop: false, next: 'idle' },
-          walk: { clipName: 'Walking', loop: true }
+          bow: { clipName: 'Bow', loop: false, next: 'idle' }
         }
       };
-      
       this.animController.init(animConfig);
     }
     
-    console.log(`[Flow] Avatar "${config.name}" loaded successfully.`);
+    console.log(`[Flow] Avatar "${config.name}" loaded.`);
   }
 
   /**
    * Load a stage (podium/scene) by config URL
    */
   async loadStage(configUrl: string) {
-    if (this.stageModel) {
-      this.scene.remove(this.stageModel);
-    }
-
+    if (this.stageModel) this.scene.remove(this.stageModel);
     const { model, config, animations } = await this.stageLoader.load(configUrl);
     this.stageModel = model;
     this.scene.add(this.stageModel);
 
-    // Initialize Stage Animation Controller (if stage has animations)
     if (animations.length > 0 && config.animations) {
       this.stageAnimController = new AnimationController(this.stageModel, animations);
       this.stageAnimController.init(config.animations);
     }
+  }
 
-    console.log(`[Flow] Stage "${config.name}" loaded successfully.`);
+  public setDebug(enabled: boolean) {
+    this.isDebug = enabled;
+    if (enabled) this.createDebugHelpers();
+    else this.removeDebugHelpers();
+  }
+
+  private createDebugHelpers() {
+    if (!this.debugTargetMesh) {
+      this.debugTargetMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true, depthTest: false })
+      );
+      this.debugTargetMesh.renderOrder = 999;
+      this.scene.add(this.debugTargetMesh);
+    }
+    if (!this.debugPlaneMesh) {
+      // Proportional grid matching interaction plane scale (5x5 units)
+      const grid = new THREE.GridHelper(5, 10, 0x00ff00, 0x008800);
+      (grid.material as THREE.Material).transparent = true;
+      (grid.material as THREE.Material).opacity = 0.5; // Moderate visibility
+      grid.rotateX(Math.PI / 2);
+      this.debugPlaneMesh = grid;
+      this.scene.add(this.debugPlaneMesh);
+    }
+  }
+
+  private updateDebugHelpers() {
+    if (!this.isDebug || !this.lookAtProcessor) return;
+
+    const info = this.lookAtProcessor.getDebugInfo();
+    const hasPlane = !!(info.planeCenter && info.activePlane);
+    
+    // Target ball visible only when actually looking
+    if (this.debugTargetMesh) {
+      this.debugTargetMesh.position.copy(info.currentLookAt);
+      this.debugTargetMesh.visible = info.isEngaged;
+    }
+
+    // Grid visible whenever Debug is ON and we have a plane
+    if (this.debugPlaneMesh) {
+      this.debugPlaneMesh.visible = hasPlane; 
+      
+      if (hasPlane) {
+        // POSITION: Match the center of the active plane
+        this.debugPlaneMesh.position.copy(info.planeCenter);
+        
+        // ROTATION: Match the plane normal
+        const normal = info.activePlane.normal;
+        const targetPos = this.debugPlaneMesh.position.clone().add(normal);
+        this.debugPlaneMesh.lookAt(targetPos);
+        this.debugPlaneMesh.rotateX(Math.PI / 2);
+      }
+    }
+  }
+
+  private removeDebugHelpers() {
+    if (this.debugTargetMesh) { this.scene.remove(this.debugTargetMesh); this.debugTargetMesh = null; }
+    if (this.debugPlaneMesh) { this.scene.remove(this.debugPlaneMesh); this.debugPlaneMesh = null; }
   }
 
   private onWindowResize() {
@@ -186,51 +229,23 @@ export class FlowEngine {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  // State
   public isAutoRotate = false;
 
-  /**
-   * Play a specific action
-   */
   public playAction(action: string) {
-    console.log(`[FlowEngine] Playing action: ${action}`);
-
-    // Priority 1: Animation Controller
-    if (this.animController) {
-      // Lowercase to match state keys if we used loose keys
-      this.animController.play(action.toLowerCase());
-      return;
-    }
-
-    // Priority 2: Procedural Animation (Fallback Model - removed for clarity, or kept minimal)
+    this.lookAtProcessor.interrupt();
+    if (this.animController) this.animController.play(action.toLowerCase());
   }
 
   private animate(_timeMs: number) {
     const delta = this.clock.getDelta();
-    
     if (this.avatarModel) {
-       // Mixer Update
-       if (this.animController) {
-         this.animController.update(delta);
-       }
-
-       // Head Tracking (Manual override after animation update)
-       if (this.headBone) {
-         this.currentLookAt.lerp(this.lookAtTarget, this.HEAD_LERP_FACTOR);
-         this.headBone.lookAt(this.currentLookAt);
-         // Correct orientation for GLTF bones (usually Y-up)
-         this.headBone.rotateX(this.HEAD_ROTATION_OFFSET); 
-       }
+       if (this.animController) this.animController.update(delta);
+       this.lookAtProcessor.update(_timeMs, delta);
     }
-
-    if (this.stageModel && this.stageAnimController) {
-      this.stageAnimController.update(delta);
-    }
-
-    // Auto Rotate Camera (Optional)
+    this.updateDebugHelpers();
+    if (this.stageModel && this.stageAnimController) this.stageAnimController.update(delta);
     this.controls.autoRotate = this.isAutoRotate;
     this.controls.update();
-    
     this.renderer.render(this.scene, this.camera);
   }
 }

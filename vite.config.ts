@@ -4,9 +4,11 @@ import { resolve } from 'path';
 import { codecovVitePlugin } from '@codecov/vite-plugin';
 
 export default defineConfig({
-  // Only use /flow-engine/ base path when building the demo for GitHub Pages
-  base: process.env.BUILD_DEMO ? '/flow-engine/' : '/',
-  build: {
+  // Use /flow-engine/ if GITHUB_PAGES is true, otherwise root
+  base: process.env.GITHUB_PAGES ? '/flow-engine/' : '/',
+  build: process.env.BUILD_DEMO ? {
+    outDir: process.env.OUT_DIR || 'dist'
+  } : {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'Flow',

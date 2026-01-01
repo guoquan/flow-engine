@@ -53,7 +53,7 @@ jobs:
         echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
 
     - name: Build Demo
-      run: OUT_DIR=dist pnpm run build
+      run: BUILD_DEMO=true OUT_DIR=dist pnpm run build
 
     - name: Create Screenshot Directory
       run: mkdir -p test-results/screenshots

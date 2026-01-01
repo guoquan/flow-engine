@@ -203,8 +203,6 @@ Error generating report: ${error.message}`;
     - name: Generate Report README
       if: always()
       uses: actions/github-script@v7
-      env:
-        COMMENT_ID: ${{ steps.generate_comment.outputs.comment_id }}
       with:
         script: |
           const fs = require('fs');

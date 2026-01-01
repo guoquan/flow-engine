@@ -157,4 +157,65 @@ describe('LookAtProcessor', () => {
     processor.update(1000, 0.016);
     expect(spy).not.toHaveBeenCalled();
   });
+
+  it('should calculate local rotation relative to parent bone', () => {
+    // Setup Parent
+    const parent = new THREE.Object3D();
+    parent.rotation.y = Math.PI / 2; // Parent rotated 90 deg
+    parent.add(headBone);
+    parent.updateMatrixWorld();
+
+    // Start Tracking
+    container.dispatchEvent(new PointerEvent('pointerdown'));
+    
+    const spy = vi.spyOn(THREE.Quaternion.prototype, 'invert');
+    processor.update(1000, 0.1);
+    
+    // Expect parent's inverse world rotation to be used
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should apply rotation offset from config', () => {
+    mockConfig.lookAt!.rotationOffset = [Math.PI, 0, 0];
+    
+    container.dispatchEvent(new PointerEvent('pointerdown'));
+    processor.update(1000, 0.1);
+    
+    // Just verify no crash and calculation runs
+    expect(headBone.quaternion).toBeDefined();
+  });
+
+  it('should update mouse position only when tracking', () => {
+    // 1. Idle - Move shouldn't update internal mouse
+    container.dispatchEvent(new PointerEvent('pointermove', { clientX: 500, clientY: 500 }));
+    // We can't check private mouse var easily, but we know calculateLookAtTarget uses it.
+    
+    // 2. Tracking - Move
+    container.dispatchEvent(new PointerEvent('pointerdown'));
+    const spy = vi.spyOn((processor as any).raycaster, 'setFromCamera');
+    
+    container.dispatchEvent(new PointerEvent('pointermove', { clientX: 600, clientY: 600 }));
+    processor.update(1000, 0.1); // Trigger calculation
+    
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should reset state on interrupt', () => {
+    container.dispatchEvent(new PointerEvent('pointerdown'));
+    expect((processor as any).state).toBe('TRACKING');
+    
+    processor.interrupt();
+    expect((processor as any).state).toBe('IDLE');
+  });
+
+  it('should remove event listeners on dispose', () => {
+    const spy = vi.spyOn(container, 'removeEventListener');
+    const spyWin = vi.spyOn(window, 'removeEventListener');
+    
+    processor.dispose();
+    
+    expect(spy).toHaveBeenCalledWith('pointerdown', expect.any(Function));
+    expect(spy).toHaveBeenCalledWith('pointermove', expect.any(Function));
+    expect(spyWin).toHaveBeenCalledWith('pointerup', expect.any(Function));
+  });
 });

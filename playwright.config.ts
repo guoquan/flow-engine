@@ -19,7 +19,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'cross-env BUILD_DEMO=true GITHUB_PAGES=false OUT_DIR=dist vite build && vite preview --port 4173 --host 127.0.0.1',
+    command: 'vite preview --port 4173 --host 127.0.0.1',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

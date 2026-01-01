@@ -47,20 +47,6 @@ jobs:
     - name: Install Playwright Browsers
       run: pnpm exec playwright install --with-deps chromium
 
-    - name: Build Demo
-      run: BUILD_DEMO=true OUT_DIR=dist pnpm run build
-
-    - name: Create Screenshot Directory
-      run: mkdir -p test-results/screenshots
-
-    - name: Debug Build Output
-      run: ls -R dist || echo "dist not found"
-
-    - name: Run Playwright tests
-      run: pnpm exec playwright test
-      env:
-        CI: true
-
     - name: Determine Commit SHA
       id: sha
       run: |
@@ -69,6 +55,17 @@ jobs:
         else
           echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
         fi
+
+    - name: Build Demo
+      run: BUILD_DEMO=true OUT_DIR=dist pnpm run build
+
+    - name: Create Screenshot Directory
+      run: mkdir -p test-results/screenshots
+
+    - name: Run Playwright tests
+      run: pnpm exec playwright test
+      env:
+        CI: true
 
     - name: Upload Playwright Report
       if: always()
@@ -111,7 +108,9 @@ jobs:
           
           console.log(`Generating report for PR #${prNumber}, Commit: ${shortSha}`);
           
-          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})\n\n`;
+          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})
+
+`;
           
           // Helper to format caption
           const formatCaption = (filename) => {
@@ -126,9 +125,12 @@ jobs:
                 commentBody += 'No screenshots captured.';
               } else {
                 commentBody += `**Summary:** ${files.length} screenshots captured.\n\n`;
-                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})\n\n`;
+                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})
+
+`;
                 
-                commentBody += `### Key Visuals\n`;
+                commentBody += `### Key Visuals
+`;
                 
                 // Defined "Key" screenshots to show immediately
                 const keyScreenshots = ['initial-state.png', 'debug-mode.png'];
@@ -141,8 +143,11 @@ jobs:
                   
                   if (isKey) {
                     const fullSizeUrl = `${baseUrl}/${file}`;
-                    commentBody += `#### ${formatCaption(file)}\n`;
-                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
+                    commentBody += `#### ${formatCaption(file)}
+`;
+                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})
+
+`;
                     displayed.push(file);
                   } else {
                     hidden.push(file);
@@ -151,14 +156,24 @@ jobs:
 
                 // 2. List remaining screenshots
                 if (hidden.length > 0) {
-                  commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots...</strong></summary>\n\n`;
-                  commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.\n\n`;
-                  commentBody += `| Screenshot | Status |\n|---|---|\n`;
+                  commentBody += `<details>
+<summary><strong>See ${hidden.length} more screenshots...</strong></summary>
+
+`;
+                  commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.
+
+`;
+                  commentBody += `| Screenshot | Status |
+|---|---|
+`;
                   for (const file of hidden) {
                      const fullSizeUrl = `${baseUrl}/${file}`;
-                     commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |\n`;
+                     commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |
+`;
                   }
-                  commentBody += `\n</details>\n`;
+                  commentBody += `
+</details>
+`;
                 }
               }
             } else {
@@ -166,7 +181,8 @@ jobs:
             }
           } catch (error) {
             console.error(error);
-            commentBody += `\nError generating report: ${error.message}`;
+            commentBody += `
+Error generating report: ${error.message}`;
           }
           
           console.log('Report Body Length:', commentBody.length);
@@ -212,15 +228,24 @@ jobs:
           
           let md = `# Visual E2E Report\n\n`;
           if (prNumber) {
-            md += `**PR:** [#${prNumber}](https://github.com/${owner}/${repo}/pull/${prNumber})\n\n`;
+            md += `**PR:** [#${prNumber}](https://github.com/${owner}/${repo}/pull/${prNumber})
+
+`;
           }
           if (commentId && prNumber) {
-            md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})\n\n`;
+            md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})
+
+`;
           }
-          md += `**Commit:** [\`${sha.substring(0,7)}\`](https://github.com/${owner}/${repo}/commit/${sha})\n\n`;
-          md += `**Generated:** ${new Date().toUTCString()}\n\n`;
+          md += `**Commit:** [
+${sha.substring(0,7)}
+](https://github.com/${owner}/${repo}/commit/${sha})
+
+`;
           
-          md += `## Gallery\n\n`;
+          md += `## Gallery
+
+`;
           
           if (files.length === 0) {
             md += "_No screenshots captured._\n";
@@ -231,7 +256,9 @@ jobs:
               const caption = file.replace(/[-_]/g, ' ').replace(/\.png$/i, '');
               md += `### ${caption}\n\n`;
               // Relative link to image in the same directory
-              md += `![${caption}](./${file})\n\n`; 
+              md += `![${caption}](./${file})
+
+`; 
             }
           }
           

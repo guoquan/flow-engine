@@ -1,68 +1,36 @@
-/// <reference types="vitest" />
 import { defineConfig } from 'vite';
-import path from 'path';
 import dts from 'vite-plugin-dts';
+import { resolve } from 'path';
 import { codecovVitePlugin } from '@codecov/vite-plugin';
 
 export default defineConfig({
-  test: {
-    environment: 'jsdom',
-    include: ['tests/**/*.test.ts'],
-    reporters: ['default', 'junit'],
-    outputFile: {
-      junit: './test-results/junit.xml',
-    },
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
-    },
-    globals: true, // Allow usage of describe, it, expect without import
-  },
-  plugins: [
-    // Generate .d.ts files
-    dts({ 
-      insertTypesEntry: true,
-      include: ['src/**/*.ts'],
-      exclude: ['src/main.ts', 'src/vite-env.d.ts']
-    }),
-    // Codecov Bundle Analysis (Must be last in plugins array)
-    codecovVitePlugin({
-      enableBundleAnalysis: !!process.env.CODECOV_TOKEN,
-      bundleName: 'flow-engine',
-      uploadToken: process.env.CODECOV_TOKEN,
-      debug: !!process.env.CI,
-    }),
-  ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-  // Base path needed for GitHub Pages (repo name)
-  base: process.env.GITHUB_PAGES ? '/flow-engine/' : '/',
-  // If BUILD_DEMO is true, build as a normal website, otherwise as a library
-  build: process.env.BUILD_DEMO ? {
-    outDir: process.env.OUT_DIR || 'dist-demo'
-  } : {
+  // Use /flow-engine/ if GITHUB_PAGES or BUILD_DEMO is true
+  base: (process.env.GITHUB_PAGES || process.env.BUILD_DEMO) ? '/flow-engine/' : '/',
+  build: {
     lib: {
-      entry: path.resolve(__dirname, 'src/index.ts'),
+      entry: resolve(__dirname, 'src/index.ts'),
       name: 'Flow',
       fileName: (format) => `flow.${format}.js`
     },
     rollupOptions: {
-      // Externalize deps that shouldn't be bundled
-      external: ['three', 'three/webgpu', 'three/examples/jsm/controls/OrbitControls.js', 'three/examples/jsm/loaders/GLTFLoader.js'],
+      external: ['three', 'three/examples/jsm/loaders/GLTFLoader.js', 'three/webgpu'],
       output: {
-        // Global variables to use in the UMD build
         globals: {
-          'three': 'THREE',
-          'three/webgpu': 'THREE', 
+          three: 'THREE',
+          'three/webgpu': 'THREE'
         }
       }
-    }
+    },
+    outDir: process.env.OUT_DIR || 'dist'
   },
-  server: {
-    host: true,
-    port: 5173,
-  }
+  plugins: [
+    dts({
+      include: ['src/**/*.ts']
+    }),
+    codecovVitePlugin({
+      enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
+      bundleName: `flow-engine-${process.env.VITE_BUILD_TARGET || 'library'}`,
+      uploadToken: process.env.CODECOV_TOKEN
+    })
+  ]
 });

@@ -7,11 +7,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html'], ['list']],
-  outputDir: 'test-results',
   use: {
     baseURL: 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
-    screenshot: 'on',
+    screenshot: 'only-on-failure',
   },
   projects: [
     {
@@ -20,7 +19,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'vite preview --port 4173 --host 127.0.0.1',
+    command: 'pnpm run build && pnpm run preview',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

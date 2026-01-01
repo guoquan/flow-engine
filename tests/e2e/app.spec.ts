@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Flow Engine E2E', () => {
+test.describe('Flow Engine Visual E2E', () => {
   test('should render UI and capture visual states', async ({ page }) => {
     // Log browser console
     page.on('console', msg => console.log(`BROWSER: ${msg.text()}`));
@@ -21,7 +21,6 @@ test.describe('Flow Engine E2E', () => {
     console.log(`WebGPU Available: ${webgpuAvailable}`);
 
     // 4. Wait for Engine init (Status text change from "Initializing..." to "Ready (Idle)")
-    // This is more robust than waitForTimeout
     await expect(status).toHaveText('Ready (Idle)', { timeout: 30000 });
 
     // 5. Capture Initial State
@@ -32,10 +31,10 @@ test.describe('Flow Engine E2E', () => {
     if (await debugCheckbox.isVisible()) {
         await debugCheckbox.click();
         
-        // Wait for potential UI updates (if any specific elements appear)
-        // Since the grid is inside Canvas, we can't easily wait for it without custom events.
-        // We'll use a small wait as a fallback for visual settling.
-        await page.waitForTimeout(500); 
+        // Wait for debug mode to be enabled (checkbox is checked)
+        await expect(debugCheckbox).toBeChecked();
+
+        // Optional: verify something changed in the engine if possible via UI
         await page.screenshot({ path: 'test-results/screenshots/debug-mode.png' });
     }
   });

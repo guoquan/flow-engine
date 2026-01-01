@@ -19,7 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "preview": "vite preview",
+    "preview": "vite preview --host",
     "prepare": "npm run build"
   },
   "peerDependencies": {

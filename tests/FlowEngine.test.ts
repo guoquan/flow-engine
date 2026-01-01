@@ -19,15 +19,7 @@ vi.mock('three', async () => {
       stopAllAction: vi.fn(),
       addEventListener: vi.fn(),
     })),
-    Raycaster: class {
-      setFromCamera = vi.fn();
-      ray = {
-        intersectPlane: vi.fn().mockImplementation((_plane, target) => {
-          target.set(1, 2, 3); // Mock intersection point
-          return target;
-        }),
-      };
-    },
+    // Mock LookAtProcessor dependencies if needed
   };
 });
 
@@ -48,6 +40,16 @@ vi.mock('../src/core/AnimationController', () => ({
     init = vi.fn();
     update = vi.fn();
     play = vi.fn();
+  },
+}));
+
+// Mock LookAtProcessor
+vi.mock('../src/core/LookAtProcessor', () => ({
+  LookAtProcessor: class {
+    update = vi.fn();
+    getDebugInfo = vi.fn().mockReturnValue({ isEngaged: false });
+    interrupt = vi.fn();
+    dispose = vi.fn();
   },
 }));
 
@@ -103,50 +105,6 @@ describe('FlowEngine', () => {
 
     await engine.loadAvatar('dummy-url');
     expect((engine as unknown as { headBone: THREE.Object3D }).headBone).toBe(mockHead);
-  });
-
-  it('should update lookAtTarget on pointer down', () => {
-    const event = new PointerEvent('pointerdown', {
-      clientX: 100,
-      clientY: 100,
-    });
-    
-    (engine as any).onPointerDown(event);
-
-    const target = (engine as unknown as { lookAtTarget: THREE.Vector3 }).lookAtTarget;
-    expect(target.x).toBe(1);
-    expect(target.y).toBe(2);
-    expect(target.z).toBe(3);
-  });
-
-  it('should apply stable rotation to head bone over multiple frames', async () => {
-    const mockHead = new THREE.Object3D();
-    mockHead.name = 'Head';
-    const mockModel = new THREE.Group();
-    mockModel.add(mockHead);
-
-    const engineInternal = engine as any;
-    engineInternal.loader.load.mockResolvedValueOnce({
-      model: mockModel,
-      config: { name: 'LookAtAvatar' },
-      animations: [],
-    });
-
-    await engine.loadAvatar('dummy-url');
-    engineInternal.lookAtTarget.set(0, 0, 10);
-    
-    // Set LERP to 1.0 to snap immediately and test stability
-    (engineInternal as any).HEAD_LERP_FACTOR = 1.0; 
-    
-    // Run multiple frames
-    engineInternal.animate(16.6);
-    const rotationAfterFrame1 = mockHead.rotation.x;
-    
-    engineInternal.animate(33.2);
-    const rotationAfterFrame2 = mockHead.rotation.x;
-
-    // Verify rotation doesn't accumulate (within tolerance)
-    expect(rotationAfterFrame1).toBeCloseTo(rotationAfterFrame2, 5);
   });
 
   it('should handle window resize', () => {

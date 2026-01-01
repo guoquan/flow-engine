@@ -59,7 +59,7 @@ vi.mock('../src/core/AvatarLoader', () => ({
     load = vi.fn().mockResolvedValue({
       model: new THREE.Group(),
       config: { name: 'Test Avatar' },
-      animations: [],
+      animations: [new THREE.AnimationClip('idle', 1, [])],
     });
   },
 }));
@@ -169,5 +169,75 @@ describe('FlowEngine', () => {
     await engine.loadAvatar('url2');
     
     expect(sceneRemoveSpy).toHaveBeenCalled();
+  });
+
+  it('should toggle debug mode and helpers', () => {
+    const engineInternal = engine as any;
+    
+    // Enable Debug
+    engine.setDebug(true);
+    expect(engineInternal.isDebug).toBe(true);
+    expect(engineInternal.debugTargetMesh).toBeDefined();
+    expect(engineInternal.debugPlaneMesh).toBeDefined();
+    expect(engineInternal.scene.children).toContain(engineInternal.debugTargetMesh);
+    expect(engineInternal.scene.children).toContain(engineInternal.debugPlaneMesh);
+
+    // Disable Debug
+    engine.setDebug(false);
+    expect(engineInternal.isDebug).toBe(false);
+    expect(engineInternal.debugTargetMesh).toBeNull();
+    expect(engineInternal.debugPlaneMesh).toBeNull();
+  });
+
+  it('should update debug helpers during animation when debug is on', async () => {
+    const engineInternal = engine as any;
+    engine.setDebug(true);
+    
+    // Setup mock processor return
+    engineInternal.lookAtProcessor.getDebugInfo.mockReturnValue({
+      isEngaged: true,
+      currentLookAt: new THREE.Vector3(1, 2, 3),
+      activePlane: new THREE.Plane(),
+      planeCenter: new THREE.Vector3(0, 1.5, 2.5)
+    });
+
+    // Mock lookAt for plane mesh
+    const lookAtSpy = vi.spyOn(THREE.Object3D.prototype, 'lookAt');
+
+    engineInternal.animate(100);
+
+    expect(engineInternal.debugTargetMesh.visible).toBe(true);
+    expect(engineInternal.debugTargetMesh.position.x).toBe(1);
+    expect(engineInternal.debugPlaneMesh.visible).toBe(true);
+    expect(engineInternal.debugPlaneMesh.position.z).toBe(2.5);
+    expect(lookAtSpy).toHaveBeenCalled();
+  });
+
+  it('should update controllers and processor in animation loop', async () => {
+    const engineInternal = engine as any;
+    
+    // Load avatar to enable update logic
+    await engine.loadAvatar('dummy');
+    
+    const animSpy = vi.spyOn(engineInternal.animController, 'update');
+    const procSpy = vi.spyOn(engineInternal.lookAtProcessor, 'update');
+    
+    engineInternal.animate(100);
+    
+    expect(animSpy).toHaveBeenCalled();
+    expect(procSpy).toHaveBeenCalled();
+  });
+
+  it('should play action via flow engine', async () => {
+    const engineInternal = engine as any;
+    await engine.loadAvatar('dummy');
+    
+    const interruptSpy = vi.spyOn(engineInternal.lookAtProcessor, 'interrupt');
+    const playSpy = vi.spyOn(engineInternal.animController, 'play');
+    
+    engine.playAction('WAVE');
+    
+    expect(interruptSpy).toHaveBeenCalled();
+    expect(playSpy).toHaveBeenCalledWith('wave');
   });
 });

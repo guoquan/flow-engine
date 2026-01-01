@@ -77,6 +77,55 @@ jobs:
         path: test-results/screenshots/
         retention-days: 30
 
+    # --- Generate README for Visual Reports Branch ---
+    - name: Generate Report README
+      if: always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          const screenshotDir = 'test-results/screenshots';
+          // Determine PR number or ref
+          const prNumber = context.issue.number;
+          // Use head sha for PRs to match the deployment path
+          const sha = context.payload.pull_request ? context.payload.pull_request.head.sha : context.sha;
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          
+          if (!fs.existsSync(screenshotDir)) {
+            console.log("Screenshot directory not found, skipping README generation.");
+            return;
+          }
+          
+          const files = fs.readdirSync(screenshotDir).filter(f => f.endsWith('.png'));
+          
+          let md = `# Visual E2E Report\n\n`;
+          if (prNumber) {
+            md += `**PR:** [#${prNumber}](https://github.com/${owner}/${repo}/pull/${prNumber})\n`;
+          }
+          md += `**Commit:** [\`${sha.substring(0,7)}\`](https://github.com/${owner}/${repo}/commit/${sha})\n`;
+          md += `**Generated:** ${new Date().toUTCString()}\n\n`;
+          
+          md += `## Gallery\n\n`;
+          
+          if (files.length === 0) {
+            md += "_No screenshots captured._\n";
+          } else {
+            files.sort(); // Sort for consistency
+            for (const file of files) {
+              // Clean caption
+              const caption = file.replace(/[-_]/g, ' ').replace(/\.png$/i, '');
+              md += `### ${caption}\n\n`;
+              // Relative link to image in the same directory
+              md += `![${caption}](./${file})\n\n`; 
+            }
+          }
+          
+          fs.writeFileSync(path.join(screenshotDir, 'README.md'), md);
+          console.log("README.md generated in screenshot directory.");
+
     # --- Push to visual-reports branch (Versioned by SHA) ---
     - name: Deploy screenshots to visual-reports branch
       if: always() && github.event_name == 'pull_request'
@@ -131,36 +180,22 @@ jobs:
                 commentBody += `**Summary:** ${files.length} screenshots captured.\n`;
                 commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})\n\n`;
                 
-                commentBody += `### Key Visuals (Embedded)\n`;
+                commentBody += `### Key Visuals\n`;
                 
                 // Defined "Key" screenshots to show immediately
                 const keyScreenshots = ['initial-state.png', 'debug-mode.png'];
                 const displayed = [];
                 const hidden = [];
 
-                // 1. Show Key Screenshots first as embedded Base64
+                // 1. Show Key Screenshots first
                 for (const file of files) {
                   const isKey = keyScreenshots.some(k => file.includes(k));
                   
                   if (isKey) {
                     const fullSizeUrl = `${baseUrl}/${file}`;
-                    const imagePath = path.join(screenshotDir, file);
-                    try {
-                      const stats = fs.statSync(imagePath);
-                      // Only embed if smaller than 500KB to avoid hitting comment limit
-                      if (stats.size < 500000) {
-                        const imageBase64 = fs.readFileSync(imagePath).toString('base64');
-                        const dataUri = `data:image/png;base64,${imageBase64}`;
-                        commentBody += `#### ${formatCaption(file)}\n`;
-                        commentBody += `<a href="${fullSizeUrl}"><img src="${dataUri}" alt="${formatCaption(file)}" width="600"/></a>\n\n`;
-                        displayed.push(file);
-                      } else {
-                        hidden.push(file);
-                      }
-                    } catch (e) {
-                      console.error(`Failed to embed ${file}:`, e);
-                      hidden.push(file);
-                    }
+                    commentBody += `#### ${formatCaption(file)}\n`;
+                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
+                    displayed.push(file);
                   } else {
                     hidden.push(file);
                   }
@@ -168,7 +203,7 @@ jobs:
 
                 // 2. List remaining screenshots
                 if (hidden.length > 0) {
-                  commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots in this commit...</strong></summary>\n\n`;
+                  commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots...</strong></summary>\n\n`;
                   commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.\n\n`;
                   commentBody += `| Screenshot | Status |\n|---|---|\n`;
                   for (const file of hidden) {

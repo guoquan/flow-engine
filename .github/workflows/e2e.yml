@@ -108,9 +108,7 @@ jobs:
           
           console.log(`Generating report for PR #${prNumber}, Commit: ${shortSha}`);
           
-          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})
-
-`;
+          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})\n\n`;
           
           // Helper to format caption
           const formatCaption = (filename) => {
@@ -125,12 +123,9 @@ jobs:
                 commentBody += 'No screenshots captured.';
               } else {
                 commentBody += `**Summary:** ${files.length} screenshots captured.\n\n`;
-                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})
-
-`;
+                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})\n\n`;
                 
-                commentBody += `### Key Visuals
-`;
+                commentBody += `### Key Visuals\n`;
                 
                 // Defined "Key" screenshots to show immediately
                 const keyScreenshots = ['initial-state.png', 'debug-mode.png'];
@@ -143,11 +138,8 @@ jobs:
                   
                   if (isKey) {
                     const fullSizeUrl = `${baseUrl}/${file}`;
-                    commentBody += `#### ${formatCaption(file)}
-`;
-                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})
-
-`;
+                    commentBody += `#### ${formatCaption(file)}\n`;
+                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
                     displayed.push(file);
                   } else {
                     hidden.push(file);
@@ -156,24 +148,15 @@ jobs:
 
                 // 2. List remaining screenshots
                 if (hidden.length > 0) {
-                  commentBody += `<details>
-<summary><strong>See ${hidden.length} more screenshots...</strong></summary>
-
-`;
-                  commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.
-
-`;
-                  commentBody += `| Screenshot | Status |
-|---|---|
+                  commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots...</strong></summary>\n\n`;
+                  commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.\n\n`;
+                  commentBody += `| Screenshot | Status |\n|---|---|
 `;
                   for (const file of hidden) {
                      const fullSizeUrl = `${baseUrl}/${file}`;
-                     commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |
-`;
+                     commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |\n`;
                   }
-                  commentBody += `
-</details>
-`;
+                  commentBody += `\n</details>\n`;
                 }
               }
             } else {
@@ -181,8 +164,7 @@ jobs:
             }
           } catch (error) {
             console.error(error);
-            commentBody += `
-Error generating report: ${error.message}`;
+            commentBody += `\nError generating report: ${error.message}`;
           }
           
           console.log('Report Body Length:', commentBody.length);
@@ -203,6 +185,8 @@ Error generating report: ${error.message}`;
     - name: Generate Report README
       if: always()
       uses: actions/github-script@v7
+      env:
+        COMMENT_ID: ${{ steps.generate_comment.outputs.comment_id }}
       with:
         script: |
           const fs = require('fs');
@@ -231,13 +215,19 @@ Error generating report: ${error.message}`;
           if (commentId && prNumber) {
             md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})\n\n`;
           }
-          md += `**Commit:** [\`${sha.substring(0,7)}\`](https://github.com/${owner}/${repo}/commit/${sha})\n\n`;
-          md += `**Generated:** ${new Date().toUTCString()}\n\n`;
+          md += `**Commit:** [
+${sha.substring(0,7)}
+](https://github.com/${owner}/${repo}/commit/${sha})
+
+`;
+          md += `**Generated:** ${new Date().toUTCString()}
+
+`;
           
           md += `## Gallery\n\n`;
           
           if (files.length === 0) {
-            md += "_No screenshots captured._\\n";
+            md += "_No screenshots captured._\n";
           } else {
             files.sort(); // Sort for consistency
             for (const file of files) {

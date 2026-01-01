@@ -125,7 +125,7 @@ jobs:
               if (files.length === 0) {
                 commentBody += 'No screenshots captured.';
               } else {
-                commentBody += `**Summary:** ${files.length} screenshots captured.\n`;
+                commentBody += `**Summary:** ${files.length} screenshots captured.\n\n`;
                 commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})\n\n`;
                 
                 commentBody += `### Key Visuals\n`;

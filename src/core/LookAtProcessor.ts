@@ -94,9 +94,11 @@ export class LookAtProcessor implements InteractionProcessor {
     const isInteracting = (this.state === LookAtState.TRACKING || this.state === LookAtState.HOLDING);
     
     if (isInteracting) {
+      // GOAL: Look at the target point
       this.calculateLookAtRotation(headBone, config, this._targetQuat);
       this.weight = 1;
     } else {
+      // GOAL: Follow the animation
       // Smoothing system gradually blends to the animation quaternion when released
       this._targetQuat.copy(animationQuat);
       this.weight = 0;
@@ -168,10 +170,20 @@ export class LookAtProcessor implements InteractionProcessor {
       headBone.getWorldPosition(headPos);
       const camPos = this.camera.position.clone();
       
-      const dirToCam = new THREE.Vector3().subVectors(camPos, headPos).normalize();
+      // Determine Avatar Forward direction in World Space
+      // (assuming -Z is forward in local space for standard models)
+      const headQuat = new THREE.Quaternion();
+      headBone.getWorldQuaternion(headQuat);
+      let forward = new THREE.Vector3(0, 0, 1).applyQuaternion(headQuat).normalize();
+
+      // If forward cannot be determined (near zero), fallback to camera direction
+      if (forward.lengthSq() < 1e-6) {
+        forward = new THREE.Vector3().subVectors(camPos, headPos).normalize();
+      }
       
-      this.planeCenter.copy(headPos).add(dirToCam.multiplyScalar(VIRTUAL_PLANE_OFFSET));
-      this.activePlane.setFromNormalAndCoplanarPoint(dirToCam, this.planeCenter);
+      // Place the fallback plane VIRTUAL_PLANE_OFFSET in front of the head
+      this.planeCenter.copy(headPos).add(forward.multiplyScalar(VIRTUAL_PLANE_OFFSET));
+      this.activePlane.setFromNormalAndCoplanarPoint(forward, this.planeCenter);
     }
 
     this.state = LookAtState.TRACKING;

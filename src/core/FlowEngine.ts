@@ -136,6 +136,7 @@ export class FlowEngine {
         defaultState: 'idle',
         states: {
           idle: { clipName: 'Idle', loop: true },
+          walk: { clipName: 'Walking', loop: true },
           wave: { clipName: 'Wave', loop: false, next: 'idle' },
           dance: { clipName: 'Dance', loop: false, next: 'idle' },
           bow: { clipName: 'Bow', loop: false, next: 'idle' }

@@ -1,0 +1,144 @@
+name: E2E Visual Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  playwright:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v3
+      with:
+        version: 9
+        run_install: false
+
+    - name: Get pnpm store directory
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Install Playwright Browsers
+      run: pnpm exec playwright install --with-deps chromium
+
+    - name: Run Playwright tests
+      run: pnpm exec playwright test
+      env:
+        CI: true
+
+    - name: Upload Playwright Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
+
+    - name: Upload Visual Screenshots
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: visual-screenshots
+        path: test-results/screenshots/
+        retention-days: 30
+
+    # --- Push to visual-reports branch ---
+    - name: Deploy screenshots to visual-reports branch
+      if: always()
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./test-results/screenshots
+        publish_branch: visual-reports
+        destination_dir: ${{ github.event.pull_request.number || 'main' }}
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+
+    # --- Visual Reporting Logic ---
+    
+    - name: Generate Visual Report Comment
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          const screenshotDir = 'test-results/screenshots';
+          const prNumber = context.issue.number;
+          const repo = context.repo.repo;
+          const owner = context.repo.owner;
+          const visualReportsUrl = `https://raw.githubusercontent.com/${owner}/${repo}/visual-reports/${prNumber}`;
+          
+          let commentBody = '## 📸 Visual E2E Report\n\n';
+          
+          try {
+            if (fs.existsSync(screenshotDir)) {
+              const files = fs.readdirSync(screenshotDir).filter(f => f.endsWith('.png'));
+              
+              if (files.length === 0) {
+                commentBody += 'No screenshots captured.';
+              } else {
+                commentBody += `Captured ${files.length} screenshots. Full-size versions are available on the [visual-reports branch](https://github.com/${owner}/${repo}/tree/visual-reports/${prNumber}).\n\n`;
+                
+                // Embed up to 3 small images as Base64
+                for (const file of files.slice(0, 3)) {
+                  const filePath = path.join(screenshotDir, file);
+                  const bitmap = fs.readFileSync(filePath);
+                  const fullSizeUrl = `${visualReportsUrl}/${file}`;
+                  
+                  commentBody += `### [${file}](${fullSizeUrl})\n`;
+                  
+                  // Check size < 100KB to avoid hitting comment limits
+                  if (bitmap.length < 100 * 1024) {
+                     const base64 = Buffer.from(bitmap).toString('base64');
+                     commentBody += `<img src="data:image/png;base64,${base64}" width="400" />\n\n`;
+                  } else {
+                     commentBody += `(Image too large for Base64 preview, click title to view full size)\n\n`;
+                  }
+                }
+                
+                if (files.length > 3) {
+                  commentBody += `\n...and ${files.length - 3} more (see Artifacts or visual-reports branch).`;
+                }
+              }
+            } else {
+              commentBody += '⚠️ Screenshot directory not found. Tests might have failed before capture.';
+            }
+          } catch (error) {
+            console.error(error);
+            commentBody += `\nError generating report: ${error.message}`;
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: commentBody
+          });

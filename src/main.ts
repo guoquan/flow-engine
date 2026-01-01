@@ -6,9 +6,13 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="ui-overlay">
     <h1>Flow (服喽)</h1>
     <p>Status: <span id="status">Initializing...</span></p>
+    <p style="font-size: 0.8rem; color: #00d2ff;">Tip: Click & Hold anywhere to track! (Advanced LookAt v2)</p>
     <div id="controls" style="margin-top: 10px; pointer-events: auto;">
+      <label style="margin-right: 15px;">
+        <input type="checkbox" id="auto-rotate" /> Auto Rotate
+      </label>
       <label>
-        <input type="checkbox" id="auto-rotate" /> Auto Rotate Camera
+        <input type="checkbox" id="debug-mode" /> Debug Mode
       </label>
     </div>
   </div>
@@ -23,8 +27,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
 // Initialize Engine
 const init = async () => {
+  const statusEl = document.getElementById('status')!;
   try {
-    const statusEl = document.getElementById('status')!;
+    console.log('[Flow] Creating engine instance...');
     const engine = new FlowEngine('canvas-container');
     
     statusEl.textContent = 'Loading Avatar...';
@@ -43,6 +48,11 @@ const init = async () => {
     const autoRotateCheck = document.getElementById('auto-rotate') as HTMLInputElement;
     autoRotateCheck.addEventListener('change', (e) => {
       engine.isAutoRotate = (e.target as HTMLInputElement).checked;
+    });
+
+    const debugCheck = document.getElementById('debug-mode') as HTMLInputElement;
+    debugCheck.addEventListener('change', (e) => {
+      engine.setDebug((e.target as HTMLInputElement).checked);
     });
 
     // Chat Interaction Logic

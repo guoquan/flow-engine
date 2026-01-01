@@ -131,22 +131,36 @@ jobs:
                 commentBody += `**Summary:** ${files.length} screenshots captured.\n`;
                 commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})\n\n`;
                 
-                commentBody += `### Key Visuals\n`;
+                commentBody += `### Key Visuals (Embedded)\n`;
                 
                 // Defined "Key" screenshots to show immediately
                 const keyScreenshots = ['initial-state.png', 'debug-mode.png'];
                 const displayed = [];
                 const hidden = [];
 
-                // 1. Show Key Screenshots first
+                // 1. Show Key Screenshots first as embedded Base64
                 for (const file of files) {
                   const isKey = keyScreenshots.some(k => file.includes(k));
                   
                   if (isKey) {
                     const fullSizeUrl = `${baseUrl}/${file}`;
-                    commentBody += `#### ${formatCaption(file)}\n`;
-                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
-                    displayed.push(file);
+                    const imagePath = path.join(screenshotDir, file);
+                    try {
+                      const stats = fs.statSync(imagePath);
+                      // Only embed if smaller than 500KB to avoid hitting comment limit
+                      if (stats.size < 500000) {
+                        const imageBase64 = fs.readFileSync(imagePath).toString('base64');
+                        const dataUri = `data:image/png;base64,${imageBase64}`;
+                        commentBody += `#### ${formatCaption(file)}\n`;
+                        commentBody += `<a href="${fullSizeUrl}"><img src="${dataUri}" alt="${formatCaption(file)}" width="600"/></a>\n\n`;
+                        displayed.push(file);
+                      } else {
+                        hidden.push(file);
+                      }
+                    } catch (e) {
+                      console.error(`Failed to embed ${file}:`, e);
+                      hidden.push(file);
+                    }
                   } else {
                     hidden.push(file);
                   }
@@ -154,7 +168,8 @@ jobs:
 
                 // 2. List remaining screenshots
                 if (hidden.length > 0) {
-                  commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots...</strong></summary>\n\n`;
+                  commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots in this commit...</strong></summary>\n\n`;
+                  commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.\n\n`;
                   commentBody += `| Screenshot | Status |\n|---|---|\n`;
                   for (const file of hidden) {
                      const fullSizeUrl = `${baseUrl}/${file}`;

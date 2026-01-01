@@ -2,6 +2,10 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Flow Engine E2E', () => {
   test('should load the 3D scene and UI', async ({ page }) => {
+    // Log browser console
+    page.on('console', msg => console.log(`BROWSER: ${msg.text()}`));
+    page.on('pageerror', err => console.log(`BROWSER ERROR: ${err.message}`));
+
     // 1. Go to page
     await page.goto('/');
     

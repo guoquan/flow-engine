@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html'], ['list']],
   use: {
-    baseUrl: 'http://localhost:4173',
+    baseUrl: 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
     screenshot: 'on',
   },
@@ -20,7 +20,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'cross-env BUILD_DEMO=true OUT_DIR=dist vite build && vite preview --port 4173',
-    url: 'http://localhost:4173',
+    url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 300 * 1000,
   },

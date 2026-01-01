@@ -50,11 +50,7 @@ jobs:
     - name: Determine Commit SHA
       id: sha
       run: |
-        if [ "${{ github.event_name }}" == "pull_request" ]; then
-          echo "COMMIT_SHA=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
-        else
-          echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
-        fi
+        echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
 
     - name: Build Demo
       run: GITHUB_PAGES=true OUT_DIR=dist pnpm run build

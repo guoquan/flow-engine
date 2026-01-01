@@ -212,12 +212,12 @@ jobs:
           
           let md = `# Visual E2E Report\n\n`;
           if (prNumber) {
-            md += `**PR:** [#${prNumber}](https://github.com/${owner}/${repo}/pull/${prNumber})\n`;
+            md += `**PR:** [#${prNumber}](https://github.com/${owner}/${repo}/pull/${prNumber})\n\n`;
           }
           if (commentId && prNumber) {
-            md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})\n`;
+            md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})\n\n`;
           }
-          md += `**Commit:** [\`${sha.substring(0,7)}\`](https://github.com/${owner}/${repo}/commit/${sha})\n`;
+          md += `**Commit:** [\`${sha.substring(0,7)}\`](https://github.com/${owner}/${repo}/commit/${sha})\n\n`;
           md += `**Generated:** ${new Date().toUTCString()}\n\n`;
           
           md += `## Gallery\n\n`;

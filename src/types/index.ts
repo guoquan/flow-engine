@@ -17,6 +17,8 @@ export interface AvatarConfig {
     lerpFactor?: number;
     /** How long to stay looking before returning (ms) */
     holdDuration?: number;
+    /** Smoothing damping factor (typical 5-10) */
+    damping?: number;
   };
   /** Animation State Machine Configuration */
   animations?: {

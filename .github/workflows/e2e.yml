@@ -61,6 +61,12 @@ jobs:
       env:
         CI: true
 
+    - name: Debug Test Results
+      if: always()
+      run: |
+        echo "Listing test-results directory:"
+        ls -R test-results || echo "test-results not found"
+
     - name: Upload Playwright Report
       if: always()
       uses: actions/upload-artifact@v4

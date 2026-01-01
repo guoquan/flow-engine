@@ -77,7 +77,7 @@ jobs:
         path: test-results/screenshots/
         retention-days: 30
 
-    # --- Push to visual-reports branch ---
+    # --- Push to visual-reports branch (Versioned by SHA) ---
     - name: Deploy screenshots to visual-reports branch
       if: always()
       uses: peaceiris/actions-gh-pages@v4
@@ -85,7 +85,8 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./test-results/screenshots
         publish_branch: visual-reports
-        destination_dir: ${{ github.event.pull_request.number || 'main' }}
+        # Versioned path: <PR_NUMBER>/<COMMIT_SHA>
+        destination_dir: ${{ github.event.pull_request.number || 'main' }}/${{ github.sha }}
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
 
@@ -99,19 +100,25 @@ jobs:
           const fs = require('fs');
           const path = require('path');
           
-          if (!context.issue.number) {
-            console.log('Not a pull request, skipping comment.');
-            return;
-          }
+          if (!context.issue.number) return;
 
           const screenshotDir = 'test-results/screenshots';
           const prNumber = context.issue.number;
+          const sha = context.sha;
           const repo = context.repo.repo;
           const owner = context.repo.owner;
-          const visualReportsUrl = `https://raw.githubusercontent.com/${owner}/${repo}/visual-reports/${prNumber}`;
+          const baseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/visual-reports/${prNumber}/${sha}`;
+          const treeUrl = `https://github.com/${owner}/${repo}/tree/visual-reports/${prNumber}/${sha}`;
           
-          let commentBody = '## 📸 Visual E2E Report\n\n';
+          let commentBody = `## 📸 Visual E2E Report (Commit: ${sha.substring(0, 7)})
+
+`;
           
+          // Helper to format caption
+          const formatCaption = (filename) => {
+            return filename.replace(/[-_]/g, ' ').replace(/\.png$/i, '').replace(/\b\w/g, c => c.toUpperCase());
+          };
+
           try {
             if (fs.existsSync(screenshotDir)) {
               const files = fs.readdirSync(screenshotDir).filter(f => f.endsWith('.png'));
@@ -119,12 +126,54 @@ jobs:
               if (files.length === 0) {
                 commentBody += 'No screenshots captured.';
               } else {
-                commentBody += `Captured ${files.length} screenshots. Full-size versions are available on the [visual-reports branch](https://github.com/${owner}/${repo}/tree/visual-reports/${prNumber}).\n\n`;
+                commentBody += `**Summary:** ${files.length} screenshots captured.
+`;
+                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})
+
+`;
                 
+                commentBody += `### Key Visuals
+`;
+                
+                // Defined "Key" screenshots to show immediately
+                const keyScreenshots = ['initial-state.png', 'debug-mode.png'];
+                const displayed = [];
+                const hidden = [];
+
+                // 1. Show Key Screenshots first
                 for (const file of files) {
-                  const fullSizeUrl = `${visualReportsUrl}/${file}`;
-                  commentBody += `### ${file}\n`;
-                  commentBody += `![${file}](${fullSizeUrl})\n\n`;
+                  const isKey = keyScreenshots.some(k => file.includes(k));
+                  
+                  if (isKey) {
+                    const fullSizeUrl = `${baseUrl}/${file}`;
+                    commentBody += `#### ${formatCaption(file)}
+`;
+                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})
+
+`;
+                    displayed.push(file);
+                  } else {
+                    hidden.push(file);
+                  }
+                }
+
+                // 2. List remaining screenshots
+                if (hidden.length > 0) {
+                  commentBody += `<details>
+<summary><strong>See ${hidden.length} more screenshots...</strong></summary>
+
+`;
+                  commentBody += `| Screenshot | Status |
+|---|---|
+`;
+                  for (const file of hidden) {
+                     const fullSizeUrl = `${baseUrl}/${file}`;
+                     commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |
+`;
+                  }
+                  commentBody += `
+</details>
+`;
                 }
               }
             } else {
@@ -132,7 +181,8 @@ jobs:
             }
           } catch (error) {
             console.error(error);
-            commentBody += `\nError generating report: ${error.message}`;
+            commentBody += `
+Error generating report: ${error.message}`;
           }
           
           github.rest.issues.createComment({

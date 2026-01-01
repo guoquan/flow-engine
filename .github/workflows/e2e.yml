@@ -104,15 +104,17 @@ jobs:
 
           const screenshotDir = 'test-results/screenshots';
           const prNumber = context.issue.number;
-          const sha = context.sha;
+          // For PRs, use the head sha, not the merge commit sha
+          const sha = context.payload.pull_request ? context.payload.pull_request.head.sha : context.sha;
+          const shortSha = sha.substring(0, 7);
           const repo = context.repo.repo;
           const owner = context.repo.owner;
           const baseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/visual-reports/${prNumber}/${sha}`;
           const treeUrl = `https://github.com/${owner}/${repo}/tree/visual-reports/${prNumber}/${sha}`;
           
-          let commentBody = `## 📸 Visual E2E Report (Commit: ${sha.substring(0, 7)})
-
-`;
+          console.log(`Generating report for PR #${prNumber}, Commit: ${shortSha}`);
+          
+          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})\n\n`;
           
           // Helper to format caption
           const formatCaption = (filename) => {
@@ -126,14 +128,10 @@ jobs:
               if (files.length === 0) {
                 commentBody += 'No screenshots captured.';
               } else {
-                commentBody += `**Summary:** ${files.length} screenshots captured.
-`;
-                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})
-
-`;
+                commentBody += `**Summary:** ${files.length} screenshots captured.\n`;
+                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})\n\n`;
                 
-                commentBody += `### Key Visuals
-`;
+                commentBody += `### Key Visuals\n`;
                 
                 // Defined "Key" screenshots to show immediately
                 const keyScreenshots = ['initial-state.png', 'debug-mode.png'];
@@ -146,11 +144,8 @@ jobs:
                   
                   if (isKey) {
                     const fullSizeUrl = `${baseUrl}/${file}`;
-                    commentBody += `#### ${formatCaption(file)}
-`;
-                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})
-
-`;
+                    commentBody += `#### ${formatCaption(file)}\n`;
+                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
                     displayed.push(file);
                   } else {
                     hidden.push(file);
@@ -159,21 +154,13 @@ jobs:
 
                 // 2. List remaining screenshots
                 if (hidden.length > 0) {
-                  commentBody += `<details>
-<summary><strong>See ${hidden.length} more screenshots...</strong></summary>
-
-`;
-                  commentBody += `| Screenshot | Status |
-|---|---|
-`;
+                  commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots...</strong></summary>\n\n`;
+                  commentBody += `| Screenshot | Status |\n|---|---|\n`;
                   for (const file of hidden) {
                      const fullSizeUrl = `${baseUrl}/${file}`;
-                     commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |
-`;
+                     commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |\n`;
                   }
-                  commentBody += `
-</details>
-`;
+                  commentBody += `\n</details>\n`;
                 }
               }
             } else {
@@ -181,10 +168,11 @@ jobs:
             }
           } catch (error) {
             console.error(error);
-            commentBody += `
-Error generating report: ${error.message}`;
+            commentBody += `\nError generating report: ${error.message}`;
           }
           
+          console.log('Report Body Length:', commentBody.length);
+
           // Check for existing comment
           const { data: comments } = await github.rest.issues.listComments({
             owner: owner,
@@ -195,14 +183,16 @@ Error generating report: ${error.message}`;
           const existingComment = comments.find(c => c.body.startsWith('## 📸 Visual E2E Report'));
           
           if (existingComment) {
-            github.rest.issues.updateComment({
+            console.log(`Updating existing comment ${existingComment.id}`);
+            await github.rest.issues.updateComment({
               owner: owner,
               repo: repo,
               comment_id: existingComment.id,
               body: commentBody
             });
           } else {
-            github.rest.issues.createComment({
+            console.log('Creating new comment');
+            await github.rest.issues.createComment({
               issue_number: prNumber,
               owner: owner,
               repo: repo,

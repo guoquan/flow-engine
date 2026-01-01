@@ -16,7 +16,7 @@ test.describe('Flow Engine Visual E2E', () => {
 
     // 3. WebGPU availability check
     const webgpuAvailable = await page.evaluate(async () => {
-      return !!(navigator as Navigator & { gpu?: unknown }).gpu;
+      return !!(navigator as any).gpu;
     });
     console.log(`WebGPU Available: ${webgpuAvailable}`);
 

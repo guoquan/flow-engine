@@ -4,8 +4,8 @@ import { resolve } from 'path';
 import { codecovVitePlugin } from '@codecov/vite-plugin';
 
 export default defineConfig({
-  // Use /flow-engine/ if GITHUB_PAGES or BUILD_DEMO is true
-  base: (process.env.GITHUB_PAGES || process.env.BUILD_DEMO) ? '/flow-engine/' : '/',
+  // Only use /flow-engine/ base path when building the demo for GitHub Pages
+  base: process.env.BUILD_DEMO ? '/flow-engine/' : '/',
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
@@ -32,5 +32,16 @@ export default defineConfig({
       bundleName: `flow-engine-${process.env.VITE_BUILD_TARGET || 'library'}`,
       uploadToken: process.env.CODECOV_TOKEN
     })
-  ]
+  ],
+  // @ts-ignore - vitest config
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'tests/e2e/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      include: ['src/**/*.ts']
+    }
+  }
 });

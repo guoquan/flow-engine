@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 import { LookAtProcessor } from '../src/core/LookAtProcessor';
 import type { AvatarConfig } from '../src/types';

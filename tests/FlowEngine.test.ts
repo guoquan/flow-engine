@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as THREE from 'three';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { FlowEngine } from '../src/core/FlowEngine';
 
 // Mock Three.js

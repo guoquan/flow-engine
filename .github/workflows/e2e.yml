@@ -57,7 +57,7 @@ jobs:
         fi
 
     - name: Build Demo
-      run: BUILD_DEMO=true OUT_DIR=dist pnpm run build
+      run: GITHUB_PAGES=true OUT_DIR=dist pnpm run build
 
     - name: Create Screenshot Directory
       run: mkdir -p test-results/screenshots

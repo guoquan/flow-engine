@@ -32,7 +32,7 @@ export class FlowEngine {
   // Debug Helpers
   public isDebug = false;
   private debugTargetMesh: THREE.Mesh | null = null;
-  private debugPlaneMesh: THREE.Mesh | null = null;
+  private debugPlaneMesh: THREE.GridHelper | null = null;
 
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
@@ -178,15 +178,13 @@ export class FlowEngine {
       this.scene.add(this.debugTargetMesh);
     }
     if (!this.debugPlaneMesh) {
-      // Proportional grid matching interaction plane scale (10x10 is cleaner than 100x100)
-      const grid = new THREE.GridHelper(10, 20, 0x00ff00, 0x008800);
+      // Proportional grid matching interaction plane scale (5x5 units)
+      const grid = new THREE.GridHelper(5, 10, 0x00ff00, 0x008800);
       (grid.material as THREE.Material).transparent = true;
       (grid.material as THREE.Material).opacity = 0.5; // Moderate visibility
       grid.rotateX(Math.PI / 2);
-      this.debugPlaneMesh = grid as any;
-      if (this.debugPlaneMesh) {
-        this.scene.add(this.debugPlaneMesh);
-      }
+      this.debugPlaneMesh = grid;
+      this.scene.add(this.debugPlaneMesh);
     }
   }
 
@@ -194,7 +192,7 @@ export class FlowEngine {
     if (!this.isDebug || !this.lookAtProcessor) return;
 
     const info = this.lookAtProcessor.getDebugInfo();
-    const hasPlane = !!(info.planeCenter || info.activePlane);
+    const hasPlane = !!(info.planeCenter && info.activePlane);
     
     // Target ball visible only when actually looking
     if (this.debugTargetMesh) {
@@ -204,17 +202,13 @@ export class FlowEngine {
 
     // Grid visible whenever Debug is ON and we have a plane
     if (this.debugPlaneMesh) {
-      this.debugPlaneMesh.visible = hasPlane; // Only show when Debug is enabled AND a plane is initialized
+      this.debugPlaneMesh.visible = hasPlane; 
       
       if (!hasPlane) return;
 
       // POSITION: Match the center of the active plane
-      // Use the explicit visual center calculated by the processor
       if (info.planeCenter) {
          this.debugPlaneMesh.position.copy(info.planeCenter);
-      } else {
-         // Fallback if not initialized
-         info.activePlane.projectPoint(new THREE.Vector3(0, 1.5, 0), this.debugPlaneMesh.position);
       }
       
       // ROTATION: Match the plane normal

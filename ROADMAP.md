@@ -16,10 +16,10 @@
 - **Problem**: `FlowEngine` currently acts as glue code without a clear behavioral model.
 - **Solution**: Implement a `BehaviorController` (or `AgentBrain`) that acts as the centralized decision maker.
 - **States**:
-    - `SLEEPING`: Systems off, weights = 0.
-    - `IDLE`: LookAt (Passive), Animation (Idle), Physics (Enabled).
-    - `INTERACTING`: LookAt (Active/Hybrid), Animation (Gesture).
-    - `PERFORMING`: LookAt (Restricted), Animation (Sequence).
+    - IDLE: No interaction target, damping back to base animation.
+    - TRACKING: Actively following pointer.
+    - HOLDING: Locked on last interaction point.
+    - (Returning logic is handled via continuous damping during IDLE).
 
 #### 2. Subsystem Delegation
 - Refactor `LookAtProcessor`, `AnimationController`, and future `IKController` to be pure **"Reflex Organs"**.

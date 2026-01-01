@@ -84,6 +84,11 @@ describe('FlowEngine', () => {
     engine = new FlowEngine('container');
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+    document.body.innerHTML = '';
+  });
+
   it('should initialize correctly', () => {
     expect(engine).toBeDefined();
     expect(container.children.length).toBeGreaterThan(0);

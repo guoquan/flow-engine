@@ -4,10 +4,14 @@ import type { InteractionProcessor, AvatarConfig } from '../types';
 const LookAtState = {
   IDLE: 'IDLE',
   TRACKING: 'TRACKING',
-  HOLDING: 'HOLDING',
-  RETURNING: 'RETURNING'
+  HOLDING: 'HOLDING'
 } as const;
 type LookAtState = typeof LookAtState[keyof typeof LookAtState];
+
+// Default Constants
+const DEFAULT_DAMPING = 5.0;
+const VIRTUAL_PLANE_OFFSET = 1.5;
+const NORMAL_THRESHOLD = Number.EPSILON;
 
 export class LookAtProcessor implements InteractionProcessor {
   private raycaster = new THREE.Raycaster();
@@ -19,17 +23,22 @@ export class LookAtProcessor implements InteractionProcessor {
 
   // Core Data
   private lookAtTarget = new THREE.Vector3(); // Desired World Target
-  private currentLookAt = new THREE.Vector3(); // Smoothed World Target (Legacy helper for debug visualization)
+  private currentLookAt = new THREE.Vector3(); // Smoothed World Target (For debug visualization)
   private activePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.5);
   private planeCenter = new THREE.Vector3(0, 1.5, 2.5); // Visual center of the plane
   
   // Physics / Math Helpers
   private lookAtProxy = new THREE.Object3D();
   
+  // Reusable temporaries to reduce GC
+  private _targetQuat = new THREE.Quaternion();
+  private _dummyVec = new THREE.Vector3();
+  private _offsetQuat = new THREE.Quaternion();
+  private _parentWorldQuat = new THREE.Quaternion();
+  
   // V6 Architecture: Persistent State Tracker
-  // The 'Real Entity' state that smoothly chases the target
   private outputQuaternion: THREE.Quaternion | null = null;
-  private weight = 0; // Legacy debug value, kept for HUD
+  private weight = 0; // Legacy debug value
 
   // Dependencies
   private container: HTMLElement;
@@ -37,6 +46,11 @@ export class LookAtProcessor implements InteractionProcessor {
   private getHeadBone: () => THREE.Object3D | null;
   private getConfig: () => AvatarConfig | null;
   private getModels: () => THREE.Object3D[];
+
+  // Bound event handlers
+  private boundOnPointerDown: (e: PointerEvent) => void;
+  private boundOnPointerMove: (e: PointerEvent) => void;
+  private boundOnPointerUp: (e: PointerEvent) => void;
 
   constructor(
     container: HTMLElement,
@@ -51,9 +65,13 @@ export class LookAtProcessor implements InteractionProcessor {
     this.getConfig = getConfig;
     this.getModels = getModels;
 
-    this.container.addEventListener('pointerdown', this.onPointerDown.bind(this));
-    this.container.addEventListener('pointermove', this.onPointerMove.bind(this));
-    window.addEventListener('pointerup', this.onPointerUp.bind(this));
+    this.boundOnPointerDown = this.onPointerDown.bind(this);
+    this.boundOnPointerMove = this.onPointerMove.bind(this);
+    this.boundOnPointerUp = this.onPointerUp.bind(this);
+
+    this.container.addEventListener('pointerdown', this.boundOnPointerDown);
+    this.container.addEventListener('pointermove', this.boundOnPointerMove);
+    window.addEventListener('pointerup', this.boundOnPointerUp);
   }
 
   public update(timeMs: number, delta: number) {
@@ -62,84 +80,66 @@ export class LookAtProcessor implements InteractionProcessor {
     if (!headBone || !config || config.lookAt?.enabled === false) return;
 
     // --- 1. Capture Base Animation State ---
-    // The AnimationMixer has already run this frame. 
-    // This represents the "Natural" state of the bone (where it wants to be if we do nothing).
+    // Note: This refers to the AnimationController's internal mixer result for this frame.
     const animationQuat = headBone.quaternion.clone();
 
-    // Initialize outputQuaternion if first frame
     if (!this.outputQuaternion) {
       this.outputQuaternion = animationQuat.clone();
     }
 
     // --- 2. State Machine Update ---
-    this.updateState(timeMs, delta, config);
+    this.updateState(timeMs, config);
 
     // --- 3. Determine the "Virtual Target" (Instantaneous Goal) ---
-    const targetQuat = new THREE.Quaternion();
-    
-    // Logic: Who is in control?
     const isInteracting = (this.state === LookAtState.TRACKING || this.state === LookAtState.HOLDING);
     
     if (isInteracting) {
-      // GOAL: Look at the target point
-      // We calculate the exact rotation needed to look at 'lookAtTarget' right now.
-      targetQuat.copy(this.calculateLookAtRotation(headBone, config));
-      this.weight = 1; // Debug info
+      this.calculateLookAtRotation(headBone, config, this._targetQuat);
+      this.weight = 1;
     } else {
-      // GOAL: Follow the animation
-      // The target is simply the animation's current frame rotation.
-      targetQuat.copy(animationQuat);
-      this.weight = 0; // Debug info
+      // Smoothing system gradually blends to the animation quaternion when released
+      this._targetQuat.copy(animationQuat);
+      this.weight = 0;
     }
 
     // --- 4. The Smoothing (The "Entity" chasing the "Virtual Target") ---
-    // Use independent damping. 
-    // A value of 5.0 - 10.0 gives a responsive but smooth "organic" feel.
-    // Lower = heavier/sleepier. Higher = tighter/robotic.
-    const damping = 5.0; 
+    const damping = config.lookAt?.damping ?? DEFAULT_DAMPING;
     const alpha = 1 - Math.exp(-damping * delta);
-    
-    this.outputQuaternion.slerp(targetQuat, alpha);
+    this.outputQuaternion.slerp(this._targetQuat, alpha);
 
     // --- 5. Apply Final Result ---
-    // Overwrite the bone's rotation with our smoothed result.
     headBone.quaternion.copy(this.outputQuaternion);
 
-    // Update debug helper vector (visual only now)
+    // Update debug helper vector only if needed
     if (isInteracting) {
         this.currentLookAt.lerp(this.lookAtTarget, alpha);
     }
   }
 
-  // Calculate the Local Rotation needed to look at the target
-  private calculateLookAtRotation(headBone: THREE.Object3D, config: AvatarConfig): THREE.Quaternion {
-    const headWorldPos = new THREE.Vector3();
+  private calculateLookAtRotation(headBone: THREE.Object3D, config: AvatarConfig, targetQuat: THREE.Quaternion) {
+    const headWorldPos = this._dummyVec;
     headBone.getWorldPosition(headWorldPos);
 
-    // 1. Proxy looks at target in World Space
     this.lookAtProxy.position.copy(headWorldPos);
     this.lookAtProxy.lookAt(this.lookAtTarget);
+    this.lookAtProxy.updateMatrixWorld(); // Ensure matrix is current
     
-    // 2. Apply Offset
-    const offsetQuat = new THREE.Quaternion();
     const rotOffset = config.lookAt?.rotationOffset || [0, 0, 0];
-    offsetQuat.setFromEuler(new THREE.Euler(...rotOffset));
+    this._offsetQuat.setFromEuler(new THREE.Euler(...rotOffset));
     
-    const targetWorldQuat = this.lookAtProxy.quaternion.clone().multiply(offsetQuat);
+    const targetWorldQuat = this.lookAtProxy.quaternion.multiply(this._offsetQuat);
 
-    // 3. Convert to Local Space (relative to parent)
     const parent = headBone.parent;
     if (parent) {
-      const parentWorldQuat = new THREE.Quaternion();
-      parent.getWorldQuaternion(parentWorldQuat);
-      const invParentQuat = parentWorldQuat.invert();
-      return invParentQuat.multiply(targetWorldQuat);
+      parent.getWorldQuaternion(this._parentWorldQuat);
+      const invParentQuat = this._parentWorldQuat.invert();
+      targetQuat.copy(invParentQuat.multiply(targetWorldQuat));
     } else {
-      return targetWorldQuat;
+      targetQuat.copy(targetWorldQuat);
     }
   }
 
-  private updateState(timeMs: number, _delta: number, config: AvatarConfig) {
+  private updateState(timeMs: number, config: AvatarConfig) {
     const holdDuration = config.lookAt?.holdDuration ?? 2000;
 
     switch (this.state) {
@@ -149,7 +149,7 @@ export class LookAtProcessor implements InteractionProcessor {
 
       case LookAtState.HOLDING:
         if (timeMs - this.stateTimer > holdDuration) {
-          this.state = LookAtState.IDLE; // Direct transition to IDLE (Target becomes Animation)
+          this.state = LookAtState.IDLE;
           console.log('[Flow] LookAt: Holding finished, releasing to animation.');
         }
         break;
@@ -159,34 +159,24 @@ export class LookAtProcessor implements InteractionProcessor {
     }
   }
 
-  // --- Input Handling ---
-
   private onPointerDown(event: PointerEvent) {
     this.updateMouse(event);
     
-    // Initialize interaction plane (Fallback layer)
     const headBone = this.getHeadBone();
     if (headBone) {
       const headPos = new THREE.Vector3();
       headBone.getWorldPosition(headPos);
       const camPos = this.camera.position.clone();
       
-      // LOGIC FIX: Place the fallback plane 1.5m in front of the head.
-      // This creates a "Virtual Screen" in front of the avatar.
       const dirToCam = new THREE.Vector3().subVectors(camPos, headPos).normalize();
       
-      // Plane passes 1.5m in front of head
-      this.planeCenter.copy(headPos).add(dirToCam.multiplyScalar(1.5));
+      this.planeCenter.copy(headPos).add(dirToCam.multiplyScalar(VIRTUAL_PLANE_OFFSET));
       this.activePlane.setFromNormalAndCoplanarPoint(dirToCam, this.planeCenter);
     }
 
-    // Start Tracking
     this.state = LookAtState.TRACKING;
-    
-    // Initial Target Calculation
     this.calculateLookAtTarget();
     
-    // Snap initial visual helper for debug consistency
     if (!this.outputQuaternion) {
         this.currentLookAt.copy(this.lookAtTarget);
     }
@@ -205,8 +195,6 @@ export class LookAtProcessor implements InteractionProcessor {
     }
   }
 
-  // --- Helpers ---
-
   private updateMouse(event: PointerEvent) {
     const rect = this.container.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -216,21 +204,18 @@ export class LookAtProcessor implements InteractionProcessor {
   private calculateLookAtTarget() {
     this.raycaster.setFromCamera(this.mouse, this.camera);
     
-    // 1. First Pass: Check REAL objects (Avatar, Stage, Props)
-    const models = this.getModels().filter(m => !!m); // Filter nulls
+    const models = this.getModels().filter(m => !!m);
     
     if (models.length > 0) {
       const intersects = this.raycaster.intersectObjects(models, true);
       if (intersects.length > 0) {
         this.lookAtTarget.copy(intersects[0].point);
-        return; // Early exit if we hit an object
+        return; 
       }
     }
 
-    // 2. Second Pass: Raycast against the Fallback Plane (Virtual Void)
-    const target = new THREE.Vector3();
-    // Validate plane normal to avoid errors
-    if (this.activePlane.normal.lengthSq() > 0.1) {
+    const target = this._dummyVec;
+    if (this.activePlane.normal.lengthSq() > NORMAL_THRESHOLD) {
       if (this.raycaster.ray.intersectPlane(this.activePlane, target)) {
         this.lookAtTarget.copy(target);
       }
@@ -252,8 +237,8 @@ export class LookAtProcessor implements InteractionProcessor {
   }
 
   public dispose() {
-    this.container.removeEventListener('pointerdown', this.onPointerDown.bind(this));
-    this.container.removeEventListener('pointermove', this.onPointerMove.bind(this));
-    window.removeEventListener('pointerup', this.onPointerUp.bind(this));
+    this.container.removeEventListener('pointerdown', this.boundOnPointerDown);
+    this.container.removeEventListener('pointermove', this.boundOnPointerMove);
+    window.removeEventListener('pointerup', this.boundOnPointerUp);
   }
 }

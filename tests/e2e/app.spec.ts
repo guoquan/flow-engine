@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Flow Engine E2E', () => {
-  test('should load the 3D scene and UI', async ({ page }) => {
+  test('should render UI and capture visual states', async ({ page }) => {
     // Log browser console
     page.on('console', msg => console.log(`BROWSER: ${msg.text()}`));
     page.on('pageerror', err => console.log(`BROWSER ERROR: ${err.message}`));
@@ -11,25 +11,31 @@ test.describe('Flow Engine E2E', () => {
     
     // 2. Check UI elements
     await expect(page.locator('h1')).toHaveText('Flow (服喽)');
-    await expect(page.locator('#status')).toBeVisible();
+    const status = page.locator('#status');
+    await expect(status).toBeVisible();
 
-    // 3. Wait for Engine init (Status text change)
-    // Log WebGPU availability for debugging
+    // 3. WebGPU availability check
     const webgpuAvailable = await page.evaluate(async () => {
-      return !!(navigator as any).gpu;
+      return !!(navigator as Navigator & { gpu?: unknown }).gpu;
     });
     console.log(`WebGPU Available: ${webgpuAvailable}`);
 
-    await page.waitForTimeout(2000);
+    // 4. Wait for Engine init (Status text change from "Initializing..." to "Ready")
+    // This is more robust than waitForTimeout
+    await expect(status).not.toHaveText('Initializing...', { timeout: 30000 });
 
-    // 4. Capture Initial State
+    // 5. Capture Initial State
     await page.screenshot({ path: 'test-results/screenshots/initial-state.png' });
 
-    // 5. Interact (Click controls)
+    // 6. Interact (Click controls)
     const debugCheckbox = page.locator('#debug-mode');
     if (await debugCheckbox.isVisible()) {
         await debugCheckbox.click();
-        await page.waitForTimeout(500); // Wait for debug grid
+        
+        // Wait for potential UI updates (if any specific elements appear)
+        // Since the grid is inside Canvas, we can't easily wait for it without custom events.
+        // We'll use a small wait as a fallback for visual settling.
+        await page.waitForTimeout(500); 
         await page.screenshot({ path: 'test-results/screenshots/debug-mode.png' });
     }
   });

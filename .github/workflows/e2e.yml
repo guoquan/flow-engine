@@ -93,6 +93,11 @@ jobs:
           const fs = require('fs');
           const path = require('path');
           
+          if (!context.issue.number) {
+            console.log('Not a pull request, skipping comment.');
+            return;
+          }
+
           const screenshotDir = 'test-results/screenshots';
           const prNumber = context.issue.number;
           const repo = context.repo.repo;
@@ -110,7 +115,6 @@ jobs:
               } else {
                 commentBody += `Captured ${files.length} screenshots. Full-size versions are available on the [visual-reports branch](https://github.com/${owner}/${repo}/tree/visual-reports/${prNumber}).\n\n`;
                 
-                // Embed images using raw links from the visual-reports branch
                 for (const file of files) {
                   const fullSizeUrl = `${visualReportsUrl}/${file}`;
                   commentBody += `### ${file}\n`;
@@ -126,8 +130,8 @@ jobs:
           }
           
           github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
+            issue_number: prNumber,
+            owner: owner,
+            repo: repo,
             body: commentBody
           });

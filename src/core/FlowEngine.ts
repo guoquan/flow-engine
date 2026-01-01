@@ -184,7 +184,9 @@ export class FlowEngine {
       (grid.material as THREE.Material).opacity = 0.5; // Moderate visibility
       grid.rotateX(Math.PI / 2);
       this.debugPlaneMesh = grid as any;
-      this.scene.add(this.debugPlaneMesh);
+      if (this.debugPlaneMesh) {
+        this.scene.add(this.debugPlaneMesh);
+      }
     }
   }
 

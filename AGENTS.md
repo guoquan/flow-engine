@@ -40,11 +40,14 @@ For **every** update requirement, the Agent **must** autonomously drive the foll
 *   **Test**: Run `npm test` (Unit) and `npm run test:e2e` (Visual) if applicable.
 *   **Commit**: Use conventional commits (e.g., `fix(core): ...`).
 
-#### Phase 3: Delivery 🚚
+#### Phase 3: Delivery & Review 🚚
 *   **Push**: `git push origin <branch-name>`.
-*   **PR Creation**: 
-    *   If `gh` CLI is available: `gh pr create`.
-    *   If not: Provide the clickable **GitHub PR Link** in the response.
+*   **Draft PR**: Create a draft to trigger CI without notifying reviewers.
+    *   Command: `gh pr create --draft`
+*   **CI Verification**: Monitor the PR checks. **Must** be green before proceeding.
+    *   Command: `gh pr checks`
+*   **Promote**: Mark the PR as ready for review.
+    *   Command: `gh pr ready`
 
 #### Phase 4: Follow-through 🔄
 *   **Monitor**: Check for merge status (via `git branch --merged` or user confirmation).

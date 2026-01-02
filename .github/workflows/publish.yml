@@ -34,6 +34,7 @@ jobs:
 
       # --- 发布到 NPM (恢复 Token 模式用于首次发布) ---
       - name: Publish to NPM
+        continue-on-error: true
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

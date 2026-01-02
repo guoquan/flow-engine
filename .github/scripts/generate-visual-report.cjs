@@ -72,34 +72,13 @@ module.exports = async ({ github, context, core }) => {
   
   console.log('Report Body Length:', commentBody.length);
 
-  const { data: comments } = await github.rest.issues.listComments({
+  // Always create a new comment as requested
+  console.log('Creating new comment');
+  const response = await github.rest.issues.createComment({
+    issue_number: prNumber,
     owner: owner,
     repo: repo,
-    issue_number: prNumber,
-    per_page: 100
+    body: commentBody
   });
-
-  const existingComment = comments.find(comment => {
-    return comment.body && comment.body.startsWith('## 📸 Visual E2E Report');
-  });
-
-  if (existingComment) {
-    console.log('Updating existing comment', existingComment.id);
-    await github.rest.issues.updateComment({
-      owner: owner,
-      repo: repo,
-      comment_id: existingComment.id,
-      body: commentBody
-    });
-    core.setOutput('comment_id', existingComment.id);
-  } else {
-    console.log('Creating new comment');
-    const response = await github.rest.issues.createComment({
-      issue_number: prNumber,
-      owner: owner,
-      repo: repo,
-      body: commentBody
-    });
-    core.setOutput('comment_id', response.data.id);
-  }
+  core.setOutput('comment_id', response.data.id);
 };

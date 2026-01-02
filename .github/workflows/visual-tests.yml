@@ -87,7 +87,7 @@ jobs:
       uses: actions/github-script@v7
       with:
         script: |
-          const script = require('./.github/scripts/generate-visual-report.js');
+          const script = require('./.github/scripts/generate-visual-report.cjs');
           await script({github, context, core});
 
     - name: Generate Report README
@@ -97,7 +97,7 @@ jobs:
         COMMENT_ID: ${{ steps.generate_comment.outputs.comment_id }}
       with:
         script: |
-          const script = require('./.github/scripts/generate-readme.js');
+          const script = require('./.github/scripts/generate-readme.cjs');
           await script({github, context, core});
 
     # --- Push to visual-reports branch (Versioned by SHA) ---

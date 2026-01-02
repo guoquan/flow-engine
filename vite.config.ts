@@ -4,27 +4,33 @@ import { resolve } from 'path';
 import { codecovVitePlugin } from '@codecov/vite-plugin';
 
 export default defineConfig({
-  // Use /flow-engine/ if GITHUB_PAGES is true, otherwise root
-  base: process.env.GITHUB_PAGES ? '/flow-engine/' : '/',
-  build: process.env.BUILD_DEMO ? {
-    outDir: process.env.OUT_DIR || 'dist'
-  } : {
-    lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      name: 'Flow',
-      fileName: (format) => `flow.${format}.js`
-    },
-    rollupOptions: {
-      external: ['three', 'three/examples/jsm/loaders/GLTFLoader.js', 'three/webgpu'],
-      output: {
-        globals: {
-          three: 'THREE',
-          'three/webgpu': 'THREE'
-        }
+  // Use /flow-engine/ if GITHUB_PAGES or BUILD_DEMO is true, otherwise root /
+  base: (process.env.GITHUB_PAGES === 'true' || process.env.BUILD_DEMO === 'true') ? '/flow-engine/' : '/',
+  
+  build: (process.env.BUILD_DEMO === 'true') 
+    ? {
+        // App mode build
+        outDir: process.env.OUT_DIR || 'dist-demo'
       }
-    },
-    outDir: process.env.OUT_DIR || 'dist'
-  },
+    : {
+        // Library mode build
+        lib: {
+          entry: resolve(__dirname, 'src/index.ts'),
+          name: 'Flow',
+          fileName: (format) => `flow.${format}.js`
+        },
+        rollupOptions: {
+          external: ['three', 'three/examples/jsm/loaders/GLTFLoader.js', 'three/webgpu'],
+          output: {
+            globals: {
+              three: 'THREE',
+              'three/webgpu': 'THREE'
+            }
+          }
+        },
+        outDir: process.env.OUT_DIR || 'dist'
+      },
+
   plugins: [
     dts({
       include: ['src/**/*.ts']
@@ -35,6 +41,7 @@ export default defineConfig({
       uploadToken: process.env.CODECOV_TOKEN
     })
   ],
+
   // @ts-ignore - vitest config
   test: {
     environment: 'jsdom',

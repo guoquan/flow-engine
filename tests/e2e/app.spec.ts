@@ -34,7 +34,7 @@ test.describe('Flow Engine Visual E2E', () => {
         // Wait for debug mode to be enabled (checkbox is checked)
         await expect(debugCheckbox).toBeChecked();
 
-        // Optional: verify something changed in the engine if possible via UI
+        // Capture Debug State
         await page.screenshot({ path: 'test-results/screenshots/debug-mode.png' });
     }
   });

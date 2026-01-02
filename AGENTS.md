@@ -61,8 +61,8 @@ Agents must strictly follow this lifecycle for every change:
     *   **Visual Proof**: Every UI/Interaction PR must trigger E2E tests.
     *   **Screenshots**: Tests must generate screenshots for key states (Idle, Interaction, etc.).
     *   **Reporting**: 
-        - Small thumbnails (<100KB) -> Embed as Base64 in PR comments.
-        - Full-size images -> Push to `visual-reports` branch (orphan branch).
+        - Screenshots -> Push full-size images to the `visual-reports` orphan branch.
+        - PR comments -> Link to the relevant images in `visual-reports` for quick visual review.
 
 ## 🛠 Engineering Guidelines
 

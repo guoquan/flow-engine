@@ -50,7 +50,11 @@ jobs:
     - name: Determine Commit SHA
       id: sha
       run: |
-        echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          echo "COMMIT_SHA=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+        else
+          echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
+        fi
 
     - name: Build Demo
       run: BUILD_DEMO=true OUT_DIR=dist pnpm run build
@@ -103,7 +107,9 @@ jobs:
           
           console.log(`Generating report for PR #${prNumber}, Commit: ${shortSha}`);
           
-          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})\n\n`;
+          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})
+
+`;
           
           const formatCaption = (filename) => {
             return filename.replace(/[-_]/g, ' ').replace(/\.png$/i, '').replace(/\b\w/g, c => c.toUpperCase());
@@ -117,7 +123,9 @@ jobs:
                 commentBody += 'No screenshots captured.';
               } else {
                 commentBody += `**Summary:** ${files.length} screenshots captured.\n\n`;
-                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})\n\n`;
+                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})
+
+`;
                 
                 commentBody += `### Key Visuals\n`;
                 
@@ -130,8 +138,11 @@ jobs:
                   
                   if (isKey) {
                     const fullSizeUrl = `${baseUrl}/${file}`;
-                    commentBody += `#### ${formatCaption(file)}\n`;
-                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
+                    commentBody += `#### ${formatCaption(file)}
+`;
+                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})
+
+`;
                     displayed.push(file);
                   } else {
                     hidden.push(file);
@@ -141,7 +152,8 @@ jobs:
                 if (hidden.length > 0) {
                   commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots...</strong></summary>\n\n`;
                   commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.\n\n`;
-                  commentBody += `| Screenshot | Status |\n|---|---|\n`;
+                  commentBody += `| Screenshot | Status |\n|---|---|
+`;
                   for (const file of hidden) {
                      const fullSizeUrl = `${baseUrl}/${file}`;
                      commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |\n`;
@@ -159,21 +171,43 @@ jobs:
           
           console.log('Report Body Length:', commentBody.length);
 
-          const response = await github.rest.issues.createComment({
-            issue_number: prNumber,
+          const { data: comments } = await github.rest.issues.listComments({
             owner: owner,
             repo: repo,
-            body: commentBody
+            issue_number: prNumber,
+            per_page: 100
           });
-          
-          core.setOutput('comment_id', response.data.id);
+
+          const existingComment = comments.find(comment => {
+            return comment.body && comment.body.startsWith('## 📸 Visual E2E Report');
+          });
+
+          if (existingComment) {
+            console.log('Updating existing comment', existingComment.id);
+            await github.rest.issues.updateComment({
+              owner: owner,
+              repo: repo,
+              comment_id: existingComment.id,
+              body: commentBody
+            });
+            core.setOutput('comment_id', existingComment.id);
+          } else {
+            console.log('Creating new comment');
+            const response = await github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: owner,
+              repo: repo,
+              body: commentBody
+            });
+            core.setOutput('comment_id', response.data.id);
+          }
 
     # --- Generate README for Visual Reports Branch ---
     - name: Generate Report README
       if: always()
       uses: actions/github-script@v7
       env:
-        COMMENT_ID: ${{ steps.generate_comment.outputs.comment_id }}
+        COMMENT_ID: ${{ github.event_name == 'pull_request' && steps.generate_comment.outputs.comment_id || '' }}
       with:
         script: |
           const fs = require('fs');
@@ -195,13 +229,23 @@ jobs:
           
           let md = `# Visual E2E Report\n\n`;
           if (prNumber) {
-            md += `**PR:** [#${prNumber}](https://github.com/${owner}/${repo}/pull/${prNumber})\n\n`;
+            md += `**PR:** [#${prNumber}](https://github.com/${owner}/${repo}/pull/${prNumber})
+
+`;
           }
           if (commentId && prNumber) {
-            md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})\n\n`;
+            md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})
+
+`;
           }
-          md += `**Commit:** [\`${sha.substring(0,7)}\`](https://github.com/${owner}/${repo}/commit/${sha})\n\n`;
-          md += `**Generated:** ${new Date().toUTCString()}\n\n`;
+          md += `**Commit:** [
+${sha.substring(0,7)}
+](https://github.com/${owner}/${repo}/commit/${sha})
+
+`;
+          md += `**Generated:** ${new Date().toUTCString()}
+
+`;
           
           md += `## Gallery\n\n`;
           

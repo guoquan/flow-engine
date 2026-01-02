@@ -41,13 +41,25 @@ For **every** update requirement, the Agent **must** autonomously drive the foll
 *   **Commit**: Use conventional commits (e.g., `fix(core): ...`).
 
 #### Phase 3: Delivery & Review 🚚
-*   **Push**: `git push origin <branch-name>`.
-*   **Draft PR**: Create a draft to trigger CI without notifying reviewers.
-    *   Command: `gh pr create --draft`
-*   **CI Verification**: Monitor the PR checks. **Must** be green before proceeding.
-    *   Command: `gh pr checks`
-*   **Promote**: Mark the PR as ready for review.
-    *   Command: `gh pr ready`
+
+1.  **Delivery**:
+    *   **Push**: `git push origin <branch-name>`.
+    *   **Draft PR**: Create a draft to trigger CI silently.
+        *   Command: `gh pr create --draft`
+
+2.  **Verification**:
+    *   **CI Checks**: Monitor `gh pr checks`. **Must** be green before proceeding.
+    *   **Promote**: Only when CI passes, mark as ready.
+        *   Command: `gh pr ready`
+
+3.  **Review & Iteration**:
+    *   **Wait**: Allow time for Human/Copilot reviews.
+    *   **Respond**: Resolve **all** comments via code changes.
+    *   **Re-verify**: Ensure new changes pass CI loops.
+
+4.  **Merge**:
+    *   **Criteria**: Proceed only when CI is Green ✅ AND Reviews are Approved ✅.
+    *   **Strategy**: Use **Squash and merge** to maintain a clean history.
 
 #### Phase 4: Follow-through 🔄
 *   **Monitor**: Check for merge status (via `git branch --merged` or user confirmation).

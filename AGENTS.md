@@ -25,32 +25,47 @@ Welcome to the **Flow Engine** development environment.
 
 ## 📝 Workflow & Protocols
 
-### 1. The Pull Request Lifecycle (STRICT)
+### 1. Agent Operating Procedure (Strict)
 
-Agents must strictly follow this lifecycle for every change:
+For **every** update requirement, the Agent **must** autonomously drive the following lifecycle. Do not wait for the user to request these steps.
 
-1.  **Draft Creation**:
-    *   ALWAYS create PRs as drafts first: `gh pr create --draft`.
-    *   Do not request review immediately.
+#### Phase 1: Isolation 🛡️
+*   **Identify Scope**: Determine if it's a `fix/`, `feat/`, or `chore/`.
+*   **Branch Immediately**: **NEVER** commit directly to `main`.
+    *   Command: `git checkout -b <type>/<descriptive-name>`
+*   **Sync First**: Ensure you branch off the latest `main`.
 
-2.  **Self-Verification Loop**:
-    *   **Wait** for CI checks (Unit Tests, Build, Lint).
-    *   **Check** coverage reports. Codecov must remain green.
-    *   **Fix** any failures autonomously *before* marking ready.
+#### Phase 2: Implementation & Verification 🧪
+*   **Code**: Apply changes adhering to engineering guidelines.
+*   **Test**: Run `npm test` (Unit) and `npm run test:e2e` (Visual) if applicable.
+*   **Commit**: Use conventional commits (e.g., `fix(core): ...`).
 
-3.  **Ready for Review**:
-    *   Once CI is green, promote the PR: `gh pr ready`.
-    *   This signals humans and Copilot to review.
+#### Phase 3: Delivery & Review 🚚
 
-4.  **Review & Iteration**:
-    *   **Wait** for Copilot/Human reviews.
-    *   **Analyze** feedback thoroughly.
-    *   **Resolve** every comment explicitly via code changes.
-    *   Repeat the verification loop if changes break tests.
+1.  **Delivery**:
+    *   **Push**: `git push origin <branch-name>`.
+    *   **Draft PR**: Create a draft to trigger CI silently.
+        *   Command: `gh pr create --draft`
 
-5.  **Merge**:
-    *   Only merge when: CI is Green AND Reviews are Approved.
-    *   Use `Squash and merge`.
+2.  **Verification**:
+    *   **CI Checks**: Monitor `gh pr checks`. **Must** be green before proceeding.
+    *   **Promote**: Only when CI passes, mark as ready.
+        *   Command: `gh pr ready`
+
+3.  **Review & Iteration**:
+    *   **Wait**: Allow time for Human/Copilot reviews.
+    *   **Respond**: Resolve **all** comments via code changes.
+    *   **Re-verify**: Ensure new changes pass CI loops.
+
+4.  **Merge**:
+    *   **Criteria**: Proceed only when CI is Green ✅ AND Reviews are Approved ✅.
+    *   **Strategy**: Use **Squash and merge** to maintain a clean history.
+
+#### Phase 4: Follow-through 🔄
+*   **Monitor**: Check for merge status (via `git branch --merged` or user confirmation).
+*   **Cleanup**: Once merged, proactively delete the local feature branch to keep the workspace clean.
+    *   Command: `git branch -d <branch-name>`
+*   **Resync**: Switch back to `main` and pull latest.
 
 ### 2. Testing Standards
 

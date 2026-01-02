@@ -170,16 +170,10 @@ export class LookAtProcessor implements InteractionProcessor {
       headBone.getWorldPosition(headPos);
       const camPos = this.camera.position.clone();
       
-      // Determine Avatar Forward direction in World Space
-      // (assuming -Z is forward in local space for standard models)
-      const headQuat = new THREE.Quaternion();
-      headBone.getWorldQuaternion(headQuat);
-      let forward = new THREE.Vector3(0, 0, 1).applyQuaternion(headQuat).normalize();
-
-      // If forward cannot be determined (near zero), fallback to camera direction
-      if (forward.lengthSq() < 1e-6) {
-        forward = new THREE.Vector3().subVectors(camPos, headPos).normalize();
-      }
+      // Determine Billboard Plane Normal (facing the camera)
+      // This ensures the interaction plane is always perpendicular to the view direction,
+      // avoiding "random" plane orientations caused by the current head rotation.
+      const forward = new THREE.Vector3().subVectors(camPos, headPos).normalize();
       
       // Place the fallback plane VIRTUAL_PLANE_OFFSET in front of the head
       this.planeCenter.copy(headPos).add(forward.multiplyScalar(VIRTUAL_PLANE_OFFSET));

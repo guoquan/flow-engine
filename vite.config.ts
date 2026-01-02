@@ -5,7 +5,7 @@ import { codecovVitePlugin } from '@codecov/vite-plugin';
 
 export default defineConfig({
   // Use /flow-engine/ if GITHUB_PAGES or BUILD_DEMO is true, otherwise root /
-  base: (process.env.GITHUB_PAGES === 'true' || process.env.BUILD_DEMO === 'true') ? '/flow-engine/' : '/',
+  base: (process.env.GITHUB_PAGES === 'true') ? '/flow-engine/' : '/',
   
   build: (process.env.BUILD_DEMO === 'true') 
     ? {

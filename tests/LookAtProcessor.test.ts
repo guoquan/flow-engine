@@ -100,6 +100,22 @@ describe('LookAtProcessor', () => {
     expect(headBone.quaternion.equals(initialQuaternion)).toBe(false);
   });
 
+  it('should handle camera inside head (zero distance) gracefully', () => {
+    // Move camera to head position (0,0,0)
+    camera.position.set(0, 0, 0);
+    headBone.position.set(0, 0, 0);
+    headBone.updateMatrixWorld(true);
+
+    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
+    
+    expect((processor as any).state).toBe('TRACKING');
+    
+    // Check if plane normal is valid (fallback logic worked)
+    const normal = (processor as any).activePlane.normal;
+    expect(normal.length()).toBeCloseTo(1);
+    expect(isNaN(normal.x)).toBe(false);
+  });
+
   it('should fallback to virtual plane if no models hit', () => {
     container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
     processor.update(currentTime, 0.016);

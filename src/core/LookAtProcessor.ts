@@ -171,12 +171,31 @@ export class LookAtProcessor implements InteractionProcessor {
       const camPos = this.camera.position.clone();
       
       // Determine Billboard Plane Normal (facing the camera)
-      // This ensures the interaction plane is always perpendicular to the view direction,
-      // avoiding "random" plane orientations caused by the current head rotation.
-      const forward = new THREE.Vector3().subVectors(camPos, headPos).normalize();
+      // This ensures the interaction plane is always perpendicular to the view direction.
+      const toHead = new THREE.Vector3().subVectors(camPos, headPos);
+      const forward = new THREE.Vector3();
+
+      // Handle edge case where camera and head are at (nearly) the same position:
+      // avoid normalizing a zero-length vector by falling back to the camera's
+      // viewing direction (if available), or a fixed world direction.
+      if (toHead.lengthSq() < NORMAL_THRESHOLD * NORMAL_THRESHOLD) {
+        if ('getWorldDirection' in this.camera && typeof (this.camera as any).getWorldDirection === 'function') {
+          (this.camera as THREE.Camera).getWorldDirection(forward);
+          // getWorldDirection returns the camera's forward (scene-facing) vector.
+          // Negate it so the plane normal approximately points toward the camera.
+          forward.negate();
+        } else {
+          // Fallback to a fixed direction if world direction is not available.
+          forward.set(0, 0, 1);
+        }
+      } else {
+        forward.copy(toHead).normalize();
+      }
       
       // Place the fallback plane VIRTUAL_PLANE_OFFSET in front of the head
-      this.planeCenter.copy(headPos).add(forward.multiplyScalar(VIRTUAL_PLANE_OFFSET));
+      // Note: Must clone forward to avoid modifying the normal vector itself
+      const planeOffset = forward.clone().multiplyScalar(VIRTUAL_PLANE_OFFSET);
+      this.planeCenter.copy(headPos).add(planeOffset);
       this.activePlane.setFromNormalAndCoplanarPoint(forward, this.planeCenter);
     }
 

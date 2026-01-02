@@ -50,11 +50,7 @@ jobs:
     - name: Determine Commit SHA
       id: sha
       run: |
-        if [ "${{ github.event_name }}" == "pull_request" ]; then
-          echo "COMMIT_SHA=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
-        else
-          echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
-        fi
+        echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
 
     - name: Build Demo
       run: BUILD_DEMO=true OUT_DIR=dist pnpm run build
@@ -107,9 +103,7 @@ jobs:
           
           console.log(`Generating report for PR #${prNumber}, Commit: ${shortSha}`);
           
-          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})
-
-`;
+          let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})\n\n`;
           
           const formatCaption = (filename) => {
             return filename.replace(/[-_]/g, ' ').replace(/\.png$/i, '').replace(/\b\w/g, c => c.toUpperCase());
@@ -123,9 +117,7 @@ jobs:
                 commentBody += 'No screenshots captured.';
               } else {
                 commentBody += `**Summary:** ${files.length} screenshots captured.\n\n`;
-                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})
-
-`;
+                commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})\n\n`;
                 
                 commentBody += `### Key Visuals\n`;
                 
@@ -138,11 +130,8 @@ jobs:
                   
                   if (isKey) {
                     const fullSizeUrl = `${baseUrl}/${file}`;
-                    commentBody += `#### ${formatCaption(file)}
-`;
-                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})
-
-`;
+                    commentBody += `#### ${formatCaption(file)}\n`;
+                    commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
                     displayed.push(file);
                   } else {
                     hidden.push(file);
@@ -207,7 +196,7 @@ jobs:
       if: always()
       uses: actions/github-script@v7
       env:
-        COMMENT_ID: ${{ github.event_name == 'pull_request' && steps.generate_comment.outputs.comment_id || '' }}
+        COMMENT_ID: ${{ steps.generate_comment.outputs.comment_id }}
       with:
         script: |
           const fs = require('fs');
@@ -229,14 +218,10 @@ jobs:
           
           let md = `# Visual E2E Report\n\n`;
           if (prNumber) {
-            md += `**PR:** [#${prNumber}](https://github.com/${owner}/${repo}/pull/${prNumber})
-
-`;
+            md += `**PR:** [#${prNumber}](https://github.com/${owner}/${repo}/pull/${prNumber})\n\n`;
           }
           if (commentId && prNumber) {
-            md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})
-
-`;
+            md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})\n\n`;
           }
           md += `**Commit:** [
 ${sha.substring(0,7)}

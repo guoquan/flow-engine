@@ -138,6 +138,22 @@ describe('LookAtProcessor', () => {
     expect(normal.z).toBe(1);
   });
 
+  it('should calculate billboard plane correctly in standard case (camera away from head)', () => {
+    // Camera at (0, 0, 10), Head at (0, 0, 0)
+    camera.position.set(0, 0, 10);
+    headBone.position.set(0, 0, 0);
+    headBone.updateMatrixWorld(true);
+
+    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
+    
+    expect((processor as any).state).toBe('TRACKING');
+    const normal = (processor as any).activePlane.normal;
+    // Vector from head to camera is (0, 0, 10), normalized is (0, 0, 1)
+    expect(normal.x).toBeCloseTo(0);
+    expect(normal.y).toBeCloseTo(0);
+    expect(normal.z).toBeCloseTo(1);
+  });
+
   it('should fallback to virtual plane if no models hit', () => {
     container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
     processor.update(currentTime, 0.016);

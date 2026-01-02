@@ -116,6 +116,28 @@ describe('LookAtProcessor', () => {
     expect(isNaN(normal.x)).toBe(false);
   });
 
+  it('should handle camera inside head gracefully even if getWorldDirection is missing', () => {
+    // Create a camera-like object without getWorldDirection
+    const simpleCamera = new THREE.Camera();
+    (simpleCamera as any).getWorldDirection = undefined;
+    
+    // Position at head
+    simpleCamera.position.set(0, 0, 0);
+    headBone.position.set(0, 0, 0);
+    headBone.updateMatrixWorld(true);
+
+    // Inject simple camera
+    (processor as any).camera = simpleCamera;
+
+    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
+    
+    expect((processor as any).state).toBe('TRACKING');
+    const normal = (processor as any).activePlane.normal;
+    expect(normal.x).toBe(0);
+    expect(normal.y).toBe(0);
+    expect(normal.z).toBe(1);
+  });
+
   it('should fallback to virtual plane if no models hit', () => {
     container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
     processor.update(currentTime, 0.016);

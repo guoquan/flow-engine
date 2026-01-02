@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 
-// Mock WebGPURenderer
+// Mock WebGPURenderer as a class
 vi.mock('three/webgpu', () => {
   class WebGPURenderer {
     constructor() {}
@@ -49,7 +49,7 @@ describe('FlowEngine', () => {
     const scene = new THREE.Group();
     scene.add(head);
 
-    // Mock the loader inside engine
+    // Mock loader
     vi.spyOn((engine as any).loader, 'load').mockResolvedValue({
         model: scene,
         config: { name: 'LookAtAvatar', modelSrc: '', lookAt: { headBoneName: 'Head' } },
@@ -110,5 +110,58 @@ describe('FlowEngine', () => {
     (engine as any).animController = { play: vi.fn() };
     engine.playAction('wave');
     expect((engine as any).animController.play).toHaveBeenCalledWith('wave');
+  });
+
+  // --- New Tests for Coverage ---
+
+  it('should load stage successfully', async () => {
+    const stageModel = new THREE.Group();
+    vi.spyOn((engine as any).stageLoader, 'load').mockResolvedValue({
+        model: stageModel,
+        config: {},
+        animations: []
+    });
+
+    await engine.loadStage('stage-url');
+    expect((engine as any).stageModel).toBe(stageModel);
+    expect((engine as any).scene.children).toContain(stageModel);
+  });
+
+  it('should toggle debug helpers', () => {
+    // Enable Debug
+    engine.setDebug(true);
+    expect(engine.isDebug).toBe(true);
+    expect((engine as any).debugTargetMesh).toBeDefined();
+    expect((engine as any).debugPlaneMesh).toBeDefined();
+    
+    // Disable Debug
+    engine.setDebug(false);
+    expect(engine.isDebug).toBe(false);
+    expect((engine as any).debugTargetMesh).toBeNull();
+  });
+
+  it('should update debug helpers in animate loop', () => {
+    engine.setDebug(true);
+    
+    // Mock lookAtProcessor.getDebugInfo
+    vi.spyOn((engine as any).lookAtProcessor, 'getDebugInfo').mockReturnValue({
+        isEngaged: true,
+        currentLookAt: new THREE.Vector3(1, 2, 3),
+        activePlane: { normal: new THREE.Vector3(0, 1, 0) },
+        planeCenter: new THREE.Vector3(0, 0, 0),
+        weight: 1
+    });
+
+    (engine as any).animate(1000);
+    
+    const targetMesh = (engine as any).debugTargetMesh;
+    expect(targetMesh.position.x).toBe(1);
+    expect(targetMesh.visible).toBe(true);
+  });
+
+  it('should handle window resize', () => {
+    const resizeSpy = vi.spyOn((engine as any).renderer, 'setSize');
+    window.dispatchEvent(new Event('resize'));
+    expect(resizeSpy).toHaveBeenCalled();
   });
 });

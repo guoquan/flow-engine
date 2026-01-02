@@ -23,7 +23,7 @@ module.exports = async ({ github, context, core }) => {
   if (commentId && prNumber) {
     md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})\n\n`;
   }
-  md += `**Commit:** [`${sha.substring(0,7)}`](https://github.com/${owner}/${repo}/commit/${sha})\n\n`;
+  md += `**Commit:** [\`${sha.substring(0,7)}\`](https://github.com/${owner}/${repo}/commit/${sha})\n\n`;
   md += `**Generated:** ${new Date().toUTCString()}\n\n`;
   
   md += `## Gallery\n\n`;

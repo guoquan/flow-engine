@@ -108,7 +108,9 @@ describe('LookAtProcessor', () => {
 
     container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
     
-    expect((processor as any).state).toBe('TRACKING');
+    // Accessing private state for verification
+    const internalState = (processor as any).state;
+    expect(internalState).toBe('TRACKING');
     
     // Check if plane normal is valid (fallback logic worked)
     const normal = (processor as any).activePlane.normal;
@@ -119,7 +121,11 @@ describe('LookAtProcessor', () => {
   it('should handle camera inside head gracefully even if getWorldDirection is missing', () => {
     // Create a camera-like object without getWorldDirection
     const simpleCamera = new THREE.Camera();
-    (simpleCamera as any).getWorldDirection = undefined;
+    
+    type CameraWithoutWorldDirection = Omit<THREE.Camera, 'getWorldDirection'> & {
+      getWorldDirection?: undefined;
+    };
+    (simpleCamera as CameraWithoutWorldDirection).getWorldDirection = undefined;
     
     // Position at head
     simpleCamera.position.set(0, 0, 0);
@@ -131,7 +137,8 @@ describe('LookAtProcessor', () => {
 
     container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
     
-    expect((processor as any).state).toBe('TRACKING');
+    const internalState = (processor as any).state;
+    expect(internalState).toBe('TRACKING');
     const normal = (processor as any).activePlane.normal;
     expect(normal.x).toBe(0);
     expect(normal.y).toBe(0);

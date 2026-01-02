@@ -178,9 +178,11 @@ export class LookAtProcessor implements InteractionProcessor {
       // Handle edge case where camera and head are at (nearly) the same position:
       // avoid normalizing a zero-length vector by falling back to the camera's
       // viewing direction (if available), or a fixed world direction.
-      if (toHead.lengthSq() < NORMAL_THRESHOLD * NORMAL_THRESHOLD) {
-        if ('getWorldDirection' in this.camera && typeof (this.camera as any).getWorldDirection === 'function') {
-          (this.camera as THREE.Camera).getWorldDirection(forward);
+      // Use a practical epsilon (1e-6) for numerical stability.
+      if (toHead.lengthSq() < 1e-6) {
+        const cameraWithDirection = this.camera as Partial<THREE.Camera>;
+        if ('getWorldDirection' in cameraWithDirection && typeof cameraWithDirection.getWorldDirection === 'function') {
+          cameraWithDirection.getWorldDirection(forward);
           // getWorldDirection returns the camera's forward (scene-facing) vector.
           // Negate it so the plane normal approximately points toward the camera.
           forward.negate();

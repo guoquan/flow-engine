@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,8 +36,7 @@ jobs:
 
       # --- 发布到 NPM (恢复 Token 模式用于首次发布) ---
       - name: Publish to NPM
-        if: ${{ secrets.NPM_TOKEN != '' }}
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

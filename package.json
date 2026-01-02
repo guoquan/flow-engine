@@ -19,7 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "preview": "vite preview",
+    "preview": "vite preview --host",
     "prepare": "npm run build"
   },
   "peerDependencies": {
@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@codecov/vite-plugin": "^1.9.1",
+    "@playwright/test": "^1.57.0",
     "@types/node": "^25.0.3",
     "@types/three": "^0.182.0",
     "@vitest/coverage-v8": "^4.0.16",

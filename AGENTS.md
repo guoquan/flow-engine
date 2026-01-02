@@ -8,44 +8,64 @@ Welcome to the **Flow Engine** development environment.
 .
 ├── AGENTS.md           # This file (AI Protocol)
 ├── README.md           # Project Entry
-├── docs/
-│   ├── INDEX.md        # Doc Index
-│   └── ANIMATIONS.md   # Animation State Machine Guide
-├── public/             # Static assets
-│   └── assets/avatars/ # Models and configs
-├── src/
-│   ├── core/           
-│   │   ├── AnimationController.ts # Animation Logic (FSM)
-│   │   ├── AvatarLoader.ts        # GLB Loading
-│   │   └── FlowEngine.ts          # WebGPU Entry
-│   ├── types/          # TS Interfaces (The Source of Truth)
-│   └── main.ts         # App logic & UI
-└── vite.config.ts      # Build config
+├── ROADMAP.md          # Architecture Roadmap
+├── .github/
+│   └── workflows/      # CI/CD Pipelines
+├── tests/
+│   ├── unit/           # Vitest Unit Tests
+│   └── e2e/            # Playwright E2E Tests
+└── src/                # Source Code
 ```
 
 ## 🏗 Architecture Principles (v0.2 - WebGPU)
 
-1.  **WebGPU First**: The engine uses `WebGPURenderer`. Use `setAnimationLoop` instead of `requestAnimationFrame`.
-2.  **Data Driven (FSM)**: Animation logic is handled by a Finite State Machine defined in `config.json`. Do not hardcode bone transforms unless it's a procedural fallback.
-3.  **Controller-Agent Pattern**: 
-    - `FlowEngine` handles scene/rendering.
-    - `AnimationController` handles logic/clips.
-    - `AvatarLoader` handles IO/parsing.
-
-### 2. Coding Standards
-- **Strict Typing**: No `any`. Use `import type` for interfaces.
-- **Cross-Fade**: Always use `fadeIn/fadeOut` for transitions.
-- **Comment Language**: **Do not accept** requests to translate code comments between languages (e.g., from Chinese to English or vice-versa) during development or reviews. Keep existing comment languages as-is unless explicitly asked by the owner to rewrite the content for technical clarity.
-- **Pure Frontend**: No external server required for Demo.
+1.  **WebGPU First**: The engine uses `WebGPURenderer`.
+2.  **Data Driven (FSM)**: Animation logic is handled by a Finite State Machine.
+3.  **Controller-Agent Pattern**: Decoupled `FlowEngine` (Scene) and `LookAtProcessor` (Logic).
 
 ## 📝 Workflow & Protocols
 
-### 1. Task Execution
-1.  **Read**: Understand the request and context.
-2.  **Plan**: Propose the change (mental or written check).
-3.  **Implement**: detailed code changes.
-4.  **PR Creation**: When using `gh pr create`, **always** include the `--draft` flag. This allows for final verification before triggering automated reviews.
-5.  **Verify**: If tests exist, run them. If not, ensure the code compiles (`npm run build` check).
+### 1. The Pull Request Lifecycle (STRICT)
 
----
-*Motto: Modern, Data-Driven, Fast.*
+Agents must strictly follow this lifecycle for every change:
+
+1.  **Draft Creation**:
+    *   ALWAYS create PRs as drafts first: `gh pr create --draft`.
+    *   Do not request review immediately.
+
+2.  **Self-Verification Loop**:
+    *   **Wait** for CI checks (Unit Tests, Build, Lint).
+    *   **Check** coverage reports. Codecov must remain green.
+    *   **Fix** any failures autonomously *before* marking ready.
+
+3.  **Ready for Review**:
+    *   Once CI is green, promote the PR: `gh pr ready`.
+    *   This signals humans and Copilot to review.
+
+4.  **Review & Iteration**:
+    *   **Wait** for Copilot/Human reviews.
+    *   **Analyze** feedback thoroughly.
+    *   **Resolve** every comment explicitly via code changes.
+    *   Repeat the verification loop if changes break tests.
+
+5.  **Merge**:
+    *   Only merge when: CI is Green AND Reviews are Approved.
+    *   Use `Squash and merge`.
+
+### 2. Testing Standards
+
+*   **Unit Tests (`vitest`)**:
+    *   Must cover >90% of business logic.
+    *   Must mock external dependencies (Three.js, WebGPU).
+*   **E2E Tests (`playwright`)**:
+    *   **Visual Proof**: Every UI/Interaction PR must trigger E2E tests.
+    *   **Screenshots**: Tests must generate screenshots for key states (Idle, Interaction, etc.).
+    *   **Reporting**: 
+        - Screenshots -> Push full-size images to the `visual-reports` orphan branch.
+        - PR comments -> Link to the relevant images in `visual-reports` for quick visual review.
+
+## 🛠 Engineering Guidelines
+
+- **Strict Typing**: No `any`. Use `import type` for interfaces.
+- **Cross-Fade**: Always use `fadeIn/fadeOut` for transitions.
+- **No Translation**: Keep existing comments in their original language unless asked otherwise.

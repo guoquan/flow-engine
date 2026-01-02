@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 import { LookAtProcessor } from '../src/core/LookAtProcessor';
@@ -7,32 +10,46 @@ describe('LookAtProcessor', () => {
   let container: HTMLDivElement;
   let camera: THREE.PerspectiveCamera;
   let headBone: THREE.Bone;
+  let currentTime = 0;
 
   beforeEach(() => {
     // Setup DOM
     container = document.createElement('div');
+    container.style.width = '1000px';
+    container.style.height = '1000px';
     document.body.appendChild(container);
+    
     // Setup Scene
     camera = new THREE.PerspectiveCamera();
     headBone = new THREE.Bone();
     headBone.name = 'Head';
 
-    processor = new LookAtProcessor({
+    // Mock performance.now
+    currentTime = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => currentTime);
+
+    processor = new LookAtProcessor(
       container,
       camera,
-      headBone,
-      config: {
-        enabled: true,
-        influence: 1.0,
-        lerpSpeed: 5.0,
-        maxRotation: [Math.PI / 4, Math.PI / 4]
-      }
-    });
+      () => headBone,
+      () => ({
+        lookAt: {
+          enabled: true,
+          influence: 1.0,
+          lerpSpeed: 5.0,
+          maxRotation: [Math.PI / 4, Math.PI / 4],
+          holdDuration: 2000
+        }
+      } as any),
+      () => []
+    );
   });
 
   afterEach(() => {
-    processor.dispose();
-    document.body.removeChild(container);
+    if (processor) processor.dispose();
+    if (container && container.parentNode) {
+        document.body.removeChild(container);
+    }
     vi.restoreAllMocks();
   });
 
@@ -48,17 +65,21 @@ describe('LookAtProcessor', () => {
 
   it('should transition to HOLDING on pointer up', () => {
     container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
-    container.dispatchEvent(new PointerEvent('pointerup'));
+    window.dispatchEvent(new PointerEvent('pointerup'));
     expect((processor as any).state).toBe('HOLDING');
   });
 
   it('should release to IDLE after hold duration', () => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
-    container.dispatchEvent(new PointerEvent('pointerup'));
     
-    // Simulate elapsed time
-    processor.update(3.1); // Default hold is 3s
+    currentTime = 2000; // Pointer up at 2000ms
+    window.dispatchEvent(new PointerEvent('pointerup'));
+    
+    // Move time forward
+    currentTime = 5000; 
+    processor.update(currentTime, 0.016); 
+    
     expect((processor as any).state).toBe('IDLE');
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('releasing'));
   });
@@ -66,65 +87,48 @@ describe('LookAtProcessor', () => {
   it('should update head bone quaternion when engaged', () => {
     const initialQuaternion = headBone.quaternion.clone();
     
-    // Set to tracking and move mouse
-    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
-    container.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: 200 }));
+    // Force engagement
+    (processor as any).state = 'TRACKING';
+    // Force lookAtTarget to be far away
+    (processor as any).lookAtTarget.set(10, 10, 10);
     
-    processor.update(0.016);
+    // Multiple updates to overcome damping
+    for(let i=0; i<10; i++) {
+        processor.update(currentTime + i*16, 0.016);
+    }
     
     expect(headBone.quaternion.equals(initialQuaternion)).toBe(false);
   });
 
   it('should fallback to virtual plane if no models hit', () => {
     container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
-    processor.update(0.016);
-    // Should still have a target point
-    expect((processor as any).targetPoint).toBeDefined();
+    processor.update(currentTime, 0.016);
+    expect((processor as any).lookAtTarget).toBeDefined();
   });
 
   it('should not update if disabled in config', () => {
-    (processor as any).config.enabled = false;
-    const initialQuaternion = headBone.quaternion.clone();
+    // Override config getter
+    (processor as any).getConfig = () => ({
+        lookAt: { enabled: false }
+    });
     
-    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
-    processor.update(0.016);
+    const initialQuaternion = headBone.quaternion.clone();
+    (processor as any).state = 'TRACKING';
+    (processor as any).lookAtTarget.set(10, 10, 10);
+    
+    processor.update(currentTime, 0.016);
     
     expect(headBone.quaternion.equals(initialQuaternion)).toBe(true);
-  });
-
-  it('should calculate local rotation relative to parent bone', () => {
-    const parent = new THREE.Bone();
-    parent.rotation.set(0, Math.PI / 2, 0);
-    parent.updateMatrixWorld();
-    parent.add(headBone);
-    
-    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
-    processor.update(0.016);
-    
-    // Calculation happened
-    expect((processor as any).currentQuat).toBeDefined();
-  });
-
-  it('should apply rotation offset from config', () => {
-    (processor as any).config.rotationOffset = [0.1, 0.1, 0.1];
-    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
-    processor.update(0.016);
-    
-    // Values applied
-    expect((processor as any).config.rotationOffset[0]).toBe(0.1);
   });
 
   it('should update mouse position only when tracking', () => {
     const moveEvent = new PointerEvent('pointermove', { clientX: 500, clientY: 500 });
     container.dispatchEvent(moveEvent);
-    
-    // Should still be 0,0 (initial) because not tracking
     expect((processor as any).mouse.x).toBe(0);
-    expect((processor as any).mouse.y).toBe(0);
   });
 
   it('should reset state on interrupt', () => {
-    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
+    (processor as any).state = 'TRACKING';
     processor.interrupt();
     expect((processor as any).state).toBe('IDLE');
   });

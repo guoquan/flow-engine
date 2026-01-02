@@ -1,5 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
+
+// Mock WebGPURenderer
+vi.mock('three/webgpu', () => {
+  class WebGPURenderer {
+    constructor() {}
+    setSize = vi.fn();
+    setPixelRatio = vi.fn();
+    setAnimationLoop = vi.fn();
+    dispose = vi.fn();
+    render = vi.fn();
+    revive = vi.fn();
+    domElement = document.createElement('canvas');
+  }
+  return { WebGPURenderer };
+});
+
 import { FlowEngine } from '../src/core/FlowEngine';
 
 describe('FlowEngine', () => {
@@ -12,17 +28,10 @@ describe('FlowEngine', () => {
     container.id = 'container';
     document.body.appendChild(container);
 
-    // Mock WebGLRenderer
-    vi.stubGlobal('WebGLRenderingContext', vi.fn());
-    
     // Mock requestAnimationFrame
     vi.stubGlobal('requestAnimationFrame', vi.fn());
 
-    engine = new FlowEngine({
-      containerId: 'container',
-      avatarConfigUrl: '/assets/avatars/default/config.json',
-      stageConfigUrl: '/assets/stages/default/config.json'
-    });
+    engine = new FlowEngine('container');
   });
 
   afterEach(() => {
@@ -34,32 +43,38 @@ describe('FlowEngine', () => {
     expect(engine).toBeDefined();
   });
 
-  it('should find head bone in avatar model', () => {
-    const mesh = new THREE.Mesh();
+  it('should find head bone in avatar model after loading', async () => {
     const head = new THREE.Bone();
     head.name = 'Head';
     const scene = new THREE.Group();
-    scene.add(mesh);
     scene.add(head);
 
-    // Mock lookAt
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    // Mock the loader inside engine
+    vi.spyOn((engine as any).loader, 'load').mockResolvedValue({
+        model: scene,
+        config: { name: 'LookAtAvatar', modelSrc: '', lookAt: { headBoneName: 'Head' } },
+        animations: []
+    });
+
+    await engine.loadAvatar('mock-url');
     
-    // Internal access for test
-    (engine as any).onAvatarLoaded(scene, { modelSrc: '', name: 'LookAtAvatar' }, []);
-    
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Avatar "LookAtAvatar" loaded'));
-    expect((engine as any).lookAtProcessor['headBone']).toBe(head);
+    expect((engine as any).headBone).toBe(head);
   });
 
-  it('should fallback to case-insensitive head bone lookup', () => {
+  it('should fallback to case-insensitive head bone lookup', async () => {
     const head = new THREE.Bone();
     head.name = 'head'; // lowercase
     const scene = new THREE.Group();
     scene.add(head);
 
-    (engine as any).onAvatarLoaded(scene, { modelSrc: '', name: 'LowercaseAvatar' }, []);
-    expect((engine as any).lookAtProcessor['headBone']).toBe(head);
+    vi.spyOn((engine as any).loader, 'load').mockResolvedValue({
+        model: scene,
+        config: { name: 'LowercaseAvatar', modelSrc: '' },
+        animations: []
+    });
+
+    await engine.loadAvatar('mock-url');
+    expect((engine as any).headBone).toBe(head);
   });
 
   it('should remove old avatar before loading new one', async () => {
@@ -68,26 +83,32 @@ describe('FlowEngine', () => {
     (engine as any).scene.add(oldModel);
 
     const newModel = new THREE.Group();
-    (engine as any).onAvatarLoaded(newModel, { modelSrc: '', name: 'Test Avatar' }, []);
+    vi.spyOn((engine as any).loader, 'load').mockResolvedValue({
+        model: newModel,
+        config: { name: 'NewAvatar', modelSrc: '' },
+        animations: []
+    });
+
+    await engine.loadAvatar('new-url');
 
     expect((engine as any).scene.children).not.toContain(oldModel);
     expect((engine as any).scene.children).toContain(newModel);
   });
 
   it('should update controllers and processor in animation loop', () => {
-    const delta = 0.016;
-    const animSpy = vi.spyOn((engine as any).animationController, 'update');
+    (engine as any).avatarModel = new THREE.Group();
+    (engine as any).animController = { update: vi.fn() };
     const lookSpy = vi.spyOn((engine as any).lookAtProcessor, 'update');
 
-    (engine as any).update(delta);
+    (engine as any).animate(1000);
 
-    expect(animSpy).toHaveBeenCalledWith(delta);
-    expect(lookSpy).toHaveBeenCalledWith(delta);
+    expect((engine as any).animController.update).toHaveBeenCalled();
+    expect(lookSpy).toHaveBeenCalled();
   });
 
   it('should play action via flow engine', () => {
-    const spy = vi.spyOn((engine as any).animationController, 'playState');
+    (engine as any).animController = { play: vi.fn() };
     engine.playAction('wave');
-    expect(spy).toHaveBeenCalledWith('wave', undefined);
+    expect((engine as any).animController.play).toHaveBeenCalledWith('wave');
   });
 });

@@ -170,19 +170,34 @@ export class LookAtProcessor implements InteractionProcessor {
       headBone.getWorldPosition(headPos);
       const camPos = this.camera.position.clone();
       
-      // Determine Avatar Forward direction in World Space
-      // (assuming -Z is forward in local space for standard models)
-      const headQuat = new THREE.Quaternion();
-      headBone.getWorldQuaternion(headQuat);
-      let forward = new THREE.Vector3(0, 0, 1).applyQuaternion(headQuat).normalize();
+      // Determine Billboard Plane Normal (facing the camera)
+      // This ensures the interaction plane is always perpendicular to the view direction.
+      const toHead = new THREE.Vector3().subVectors(camPos, headPos);
+      const forward = new THREE.Vector3();
 
-      // If forward cannot be determined (near zero), fallback to camera direction
-      if (forward.lengthSq() < 1e-6) {
-        forward = new THREE.Vector3().subVectors(camPos, headPos).normalize();
+      // Handle edge case where camera and head are at (nearly) the same position:
+      // avoid normalizing a zero-length vector by falling back to the camera's
+      // viewing direction (if available), or a fixed world direction.
+      // Use a practical epsilon (1e-6) for numerical stability.
+      if (toHead.lengthSq() < 1e-6) {
+        const cameraWithDirection = this.camera as Partial<THREE.Camera>;
+        if ('getWorldDirection' in cameraWithDirection && typeof cameraWithDirection.getWorldDirection === 'function') {
+          cameraWithDirection.getWorldDirection(forward);
+          // getWorldDirection returns the camera's forward (scene-facing) vector.
+          // Negate it so the plane normal approximately points toward the camera.
+          forward.negate();
+        } else {
+          // Fallback to a fixed direction if world direction is not available.
+          forward.set(0, 0, 1);
+        }
+      } else {
+        forward.copy(toHead).normalize();
       }
       
       // Place the fallback plane VIRTUAL_PLANE_OFFSET in front of the head
-      this.planeCenter.copy(headPos).add(forward.multiplyScalar(VIRTUAL_PLANE_OFFSET));
+      // Note: Must clone forward to avoid modifying the normal vector itself
+      const planeOffset = forward.clone().multiplyScalar(VIRTUAL_PLANE_OFFSET);
+      this.planeCenter.copy(headPos).add(planeOffset);
       this.activePlane.setFromNormalAndCoplanarPoint(forward, this.planeCenter);
     }
 

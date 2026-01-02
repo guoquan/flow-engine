@@ -100,6 +100,67 @@ describe('LookAtProcessor', () => {
     expect(headBone.quaternion.equals(initialQuaternion)).toBe(false);
   });
 
+  it('should handle camera inside head (zero distance) gracefully', () => {
+    // Move camera to head position (0,0,0)
+    camera.position.set(0, 0, 0);
+    headBone.position.set(0, 0, 0);
+    headBone.updateMatrixWorld(true);
+
+    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
+    
+    // Accessing private state for verification
+    const internalState = (processor as any).state;
+    expect(internalState).toBe('TRACKING');
+    
+    // Check if plane normal is valid (fallback logic worked)
+    const normal = (processor as any).activePlane.normal;
+    expect(normal.length()).toBeCloseTo(1);
+    expect(isNaN(normal.x)).toBe(false);
+  });
+
+  it('should handle camera inside head gracefully even if getWorldDirection is missing', () => {
+    // Create a camera-like object without getWorldDirection
+    const simpleCamera = new THREE.Camera();
+    
+    type CameraWithoutWorldDirection = Omit<THREE.Camera, 'getWorldDirection'> & {
+      getWorldDirection?: undefined;
+    };
+    (simpleCamera as CameraWithoutWorldDirection).getWorldDirection = undefined;
+    
+    // Position at head
+    simpleCamera.position.set(0, 0, 0);
+    headBone.position.set(0, 0, 0);
+    headBone.updateMatrixWorld(true);
+
+    // Inject simple camera
+    (processor as any).camera = simpleCamera;
+
+    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
+    
+    const internalState = (processor as any).state;
+    expect(internalState).toBe('TRACKING');
+    const normal = (processor as any).activePlane.normal;
+    expect(normal.x).toBe(0);
+    expect(normal.y).toBe(0);
+    expect(normal.z).toBe(1);
+  });
+
+  it('should calculate billboard plane correctly in standard case (camera away from head)', () => {
+    // Camera at (0, 0, 10), Head at (0, 0, 0)
+    camera.position.set(0, 0, 10);
+    headBone.position.set(0, 0, 0);
+    headBone.updateMatrixWorld(true);
+
+    container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
+    
+    expect((processor as any).state).toBe('TRACKING');
+    const normal = (processor as any).activePlane.normal;
+    // Vector from head to camera is (0, 0, 10), normalized is (0, 0, 1)
+    expect(normal.x).toBeCloseTo(0);
+    expect(normal.y).toBeCloseTo(0);
+    expect(normal.z).toBeCloseTo(1);
+  });
+
   it('should fallback to virtual plane if no models hit', () => {
     container.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100 }));
     processor.update(currentTime, 0.016);

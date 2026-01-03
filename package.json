@@ -1,6 +1,6 @@
 {
   "name": "@guoquan/flow-engine",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "A high-performance, WebGPU-based digital human engine.",
   "type": "module",
   "main": "./dist/flow.umd.js",
@@ -38,5 +38,9 @@
     "vite": "^7.2.4",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.0.16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/guoquan/flow-engine.git"
   }
 }

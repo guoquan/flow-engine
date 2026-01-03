@@ -47,11 +47,14 @@ For **every** update requirement, the Agent **must** autonomously drive the foll
     *   **Draft PR**: `gh pr create --draft`.
 
 2.  **Verification**:
-    *   **Monitor**: Use `gh pr checks --watch` or `gh run watch` for real-time CI status. **Must** be green.
+    *   **Monitor (MANDATORY)**: You **MUST** track CI progress in real-time. Use:
+        *   `gh pr checks --watch`
+        *   OR `gh run watch`
+    *   The PR **MUST** be Green ✅ before any further action.
     *   **Promote**: `gh pr ready`.
 
 3.  **Review & Iteration**:
-    *   **Respond**: Resolve all comments. Re-verify via `gh run watch`.
+    *   **Respond**: Resolve all comments. Re-verify via `gh pr checks --watch`.
 
 4.  **Merge**:
     *   **Criteria**: CI Green ✅ AND Reviews Approved ✅.

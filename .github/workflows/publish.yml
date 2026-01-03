@@ -50,12 +50,12 @@ jobs:
 
       # --- 使用带来源证明的可信发布 (Trusted Publishing with provenance) 发布到 NPM ---
       - name: Publish to NPM
-        if: "!secrets.NPM_TOKEN"
+        if: ${{ secrets.NPM_TOKEN == '' }}
         run: npm publish --access public --provenance
 
       # --- 如果设置了 NPM_TOKEN，则使用 Token 模式发布 (兼容模式) ---
       - name: Publish to NPM (Token Mode)
-        if: "secrets.NPM_TOKEN"
+        if: ${{ secrets.NPM_TOKEN != '' }}
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

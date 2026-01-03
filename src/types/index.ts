@@ -43,6 +43,27 @@ export interface AnimationStateConfig {
 }
 
 /**
+ * High-level Behavior States for the Agent Brain
+ */
+export enum AvatarBehaviorState {
+  IDLE = 'IDLE',
+  TALKING = 'TALKING',
+  THINKING = 'THINKING',
+  LISTENING = 'LISTENING',
+  EMOTIONAL = 'EMOTIONAL'
+}
+
+/**
+ * Encapsulates an intent to change behavior
+ */
+export interface BehaviorIntent {
+  state: AvatarBehaviorState;
+  text?: string;      // If TALKING, what is being said
+  emotion?: string;   // If EMOTIONAL, what is the mood
+  duration?: number;  // Optional timeout for the state (ms)
+}
+
+/**
  * Interface for autonomous behavior components
  */
 export interface InteractionProcessor {

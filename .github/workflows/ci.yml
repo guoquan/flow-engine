@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: ["main", "v[0-9]*"]
+    branches: ["main", "track/*"]
   push:
-    branches: ["main", "v[0-9]*"]
+    branches: ["main", "track/*"]
 
 permissions:
   contents: read

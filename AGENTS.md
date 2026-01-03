@@ -33,12 +33,12 @@ We use a **Versioned Track** model to support long-term incubation of major upgr
 *   **Maintenance**: Only accepts critical bug fixes and documentation refinements.
 *   **Merge Target**: `main`.
 
-### 2. Evolution Tracks (`v0.2`, `v0.3`, etc.)
+### 2. Evolution Tracks (`track/v0.2`, `track/v0.3`, etc.)
 *   **Status**: Active Incubation / Next-Gen.
-*   **Naming Pattern**: Must match **`v[0-9]*`** (e.g., `v0.2`, `v1.0`).
-*   **Conflict Avoidance**: Do **NOT** use `v*` as it conflicts with `visual-reports`.
-*   **GitHub Policy**: Ensure repository protection rules use `v[0-9]*` instead of `v*` to allow automated systems to push to non-versioned branches starting with 'v'.
-*   **Workflow**: Feature branches for the next generation are branched from and PR'd back into the corresponding version track (e.g., `feat/behavior-engine` -> `v0.2`).
+*   **Naming Pattern**: Must use the **`track/`** prefix followed by the version (e.g., `track/v0.2`).
+*   **Wildcard Pattern**: All CI/CD triggers and protection rules use **`track/*`**.
+*   **Isolation**: This naming uniquely identifies versioned tracks and prevents collisions with transient branches or system branches like `visual-reports`.
+*   **Workflow**: Feature branches for the next generation are branched from and PR'd back into the corresponding track (e.g., `feat/behavior-engine` -> `track/v0.2`).
 
 ### 3. Transient Workflows
 *   **Isolation**: All work must occur in `<type>/<description>` branches.

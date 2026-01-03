@@ -7,11 +7,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish:
+  publish-npm:
+    name: Publish to NPM
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
       id-token: write
     steps:
       - name: Checkout
@@ -36,15 +36,43 @@ jobs:
 
       # --- 使用带来源证明的可信发布 (Trusted Publishing with provenance) 发布到 NPM ---
       - name: Publish to NPM
+        if: ${{ secrets.NPM_TOKEN == '' }}
         run: npm publish --access public --provenance
 
-      # --- 发布到 GitHub Packages ---
-      - name: Setup Node for GPR
+      # --- 如果设置了 NPM_TOKEN，则使用 Token 模式发布 (兼容模式) ---
+      - name: Publish to NPM (Token Mode)
+        if: ${{ secrets.NPM_TOKEN != '' }}
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-gpr:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: 'https://npm.pkg.github.com'
           scope: '@guoquan.net'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
 
       - name: Publish to GitHub Packages
         run: npm publish

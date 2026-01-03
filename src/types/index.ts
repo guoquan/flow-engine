@@ -23,19 +23,19 @@ export interface BehaviorIntent {
   
   /** 
    * What is being said when the state is `TALKING`. 
-   * Useful for lip-sync or subtitles.
+   * Useful for lip-sync, subtitles, or speech synthesis.
    */
   text?: string;
   
   /** 
    * The current mood when the state is `EMOTIONAL`. 
-   * Useful for selecting facial expressions.
+   * Used to select appropriate facial expressions or emotional animations.
    */
   emotion?: string;
   
   /** 
    * Optional timeout for the state in milliseconds. 
-   * Reverts to `IDLE` after this duration.
+   * The brain will automatically revert to `IDLE` after this duration.
    */
   duration?: number;
 }

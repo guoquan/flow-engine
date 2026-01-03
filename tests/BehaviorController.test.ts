@@ -13,7 +13,7 @@ describe('BehaviorController', () => {
   });
 
   afterEach(() => {
-    performanceNowSpy.mockRestore();
+    vi.restoreAllMocks();
   });
 
   it('should initialize in IDLE state', () => {
@@ -41,12 +41,12 @@ describe('BehaviorController', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('should allow duplicate EMOTIONAL state transitions', () => {
+  it('should allow duplicate EMOTIONAL state transitions and update metadata', () => {
     brain.setIntent({ state: AvatarBehaviorStates.EMOTIONAL, emotion: 'happy' });
     const spy = vi.fn();
     brain.onStateChange = spy;
 
-    // Setting same emotional state again (e.g. different mood)
+    // Setting same emotional state again but with different mood
     brain.setIntent({ state: AvatarBehaviorStates.EMOTIONAL, emotion: 'sad' });
     
     expect(spy).toHaveBeenCalled();
@@ -74,9 +74,28 @@ describe('BehaviorController', () => {
     brain.setIntent({ state: AvatarBehaviorStates.THINKING, duration: 0 });
     expect(brain.getState()).toBe(AvatarBehaviorStates.THINKING);
 
-    // Next update (even same time) should trigger timeout
+    // Next update should trigger timeout
     brain.update(currentTime);
     expect(brain.getState()).toBe(AvatarBehaviorStates.IDLE);
+  });
+
+  it('should not re-trigger timeout if already in IDLE', () => {
+    let currentTime = 1000;
+    performanceNowSpy.mockImplementation(() => currentTime);
+    const consoleSpy = vi.spyOn(console, 'log');
+
+    // Force a state that will timeout
+    brain.setIntent({ state: AvatarBehaviorStates.THINKING, duration: 1000 });
+    
+    currentTime += 2000;
+    brain.update(currentTime); // First timeout
+    expect(brain.getState()).toBe(AvatarBehaviorStates.IDLE);
+    
+    const countAfterFirstTimeout = consoleSpy.mock.calls.length;
+    
+    // Call update again - should NOT log another timeout message
+    brain.update(currentTime + 100);
+    expect(consoleSpy.mock.calls.length).toBe(countAfterFirstTimeout);
   });
 
   it('should handle complex timeout sequences correctly', () => {
@@ -110,23 +129,29 @@ describe('BehaviorController', () => {
   });
 
   it('should prevent re-entrant calls to setIntent and recover from errors', () => {
-    const setIntentSpy = vi.spyOn(brain, 'setIntent');
+    const consoleSpy = vi.spyOn(console, 'log');
     
     brain.onStateChange = () => {
       // Synchronously call setIntent during a transition
+      // This should be ignored due to the lock
       brain.setIntent({ state: AvatarBehaviorStates.THINKING });
       throw new Error('Callback Failure');
     };
 
-    // This should trigger transition -> callback -> nested setIntent -> throw -> finally unlock
+    // This should trigger transition -> callback -> nested setIntent (blocked) -> throw -> finally unlock
     expect(() => {
       brain.setIntent({ state: AvatarBehaviorStates.TALKING });
     }).toThrow('Callback Failure');
     
-    // Verify nested call was blocked (only 1 valid transition call recorded in logs/state)
+    // Verify final state is TALKING (nested THINKING was ignored)
     expect(brain.getState()).toBe(AvatarBehaviorStates.TALKING);
     
-    // Verify recovery: subsequent calls work
+    // Verify nested call didn't log its transition
+    const transitionLogs = consoleSpy.mock.calls.filter(args => args[0].includes('Transition'));
+    expect(transitionLogs.length).toBe(1);
+    expect(transitionLogs[0][0]).toContain('IDLE -> TALKING');
+
+    // Verify recovery: subsequent calls work after error
     brain.onStateChange = undefined;
     brain.setIntent({ state: AvatarBehaviorStates.IDLE });
     expect(brain.getState()).toBe(AvatarBehaviorStates.IDLE);

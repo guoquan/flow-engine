@@ -25,27 +25,25 @@ Welcome to the **Flow Engine** development environment.
 
 ## 🌿 Branching Strategy
 
-We operate on a **Dual-Track** model to balance v0.1 stability with v0.2 innovation.
+We use a **Versioned Track** model to support long-term incubation of major upgrades without compromising the stability of the current release.
 
-### 1. Permanent Tracks
-*   **`main` (Stable/v0.1.x)**:
-    *   **Purpose**: Current production-ready code.
-    *   **Accepted Changes**: Critical bug fixes, security patches, and minor documentation refinements.
-    *   **Release**: Tagging `main` triggers stable releases.
-*   **`v0.2-dev` (Incubation/Next-Gen)**:
-    *   **Purpose**: Prototyping and implementing Phase 2-4 of the Roadmap.
-    *   **Accepted Changes**: All architectural refactoring, Behavior Engine, MCP integration, and Playground features.
-    *   **Status**: Protected. All updates must arrive via PR.
+### 1. Primary Track (`main`)
+*   **Status**: Stable / Production.
+*   **Scope**: v0.1.x series.
+*   **Maintenance**: Only accepts critical bug fixes and documentation refinements.
+*   **Merge Target**: `main`.
 
-### 2. Transient Workflows
-*   **Feature/Fix Isolation**: 
-    *   If targeting v0.1: Branch off `main` -> PR to `main`.
-    *   If targeting v0.2: Branch off `v0.2-dev` -> PR to `v0.2-dev`.
-*   **Naming Convention**: `<type>/<description>` (e.g., `feat/behavior-brain`, `fix/memory-leak`).
+### 2. Evolution Tracks (`v0.2`, `v0.3`, etc.)
+*   **Status**: Active Incubation / Next-Gen.
+*   **Purpose**: These are **full-tier** primary branches for major architectural shifts (Phase 2-4 of Roadmap).
+*   **Workflow**: Feature branches for the next generation are branched from and PR'd back into the corresponding version track (e.g., `feat/behavior-engine` -> `v0.2`).
+*   **Promotion**: Once a track (e.g., `v0.2`) is deemed mature and ready for general availability, it will be merged into `main` via a **Grand Release PR**, effectively upgrading the project's stable baseline.
 
-### 3. Sync & Promotion
-*   **Merging Down**: Periodic merges from `main` to `v0.2-dev` are required to ensure the incubation branch benefits from v0.1 stability fixes.
-*   **Promotion**: When the Behavior Engine and Playground are mature, `v0.2-dev` will be merged into `main` via a formal **Major Release PR (v0.2.0)**.
+### 3. Transient Workflows
+*   **Isolation**: All work must occur in `<type>/<description>` branches.
+*   **Context Awareness**: Agents **MUST** identify which track they are targeting before branching.
+    *   If fixing v0.1: Target `main`.
+    *   If building v0.2: Target `v0.2`.
 
 ## 📝 Workflow & Protocols
 

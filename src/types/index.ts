@@ -1,7 +1,53 @@
 /**
- * Avatar Configuration Interface
- * 定义数字人的元数据结构，对应资源包中的 config.json
+ * High-level Behavior States for the Agent Brain
  */
+export const AvatarBehaviorStates = {
+  IDLE: 'IDLE',
+  TALKING: 'TALKING',
+  THINKING: 'THINKING',
+  LISTENING: 'LISTENING',
+  EMOTIONAL: 'EMOTIONAL'
+} as const;
+
+export type AvatarBehaviorState = typeof AvatarBehaviorStates[keyof typeof AvatarBehaviorStates];
+
+/**
+ * Encapsulates an intent to change the avatar's high-level behavior.
+ * 
+ * This intent is typically forwarded to an `onStateChange` callback where 
+ * consumers (like AnimationController or Text-to-Speech) can react.
+ */
+export interface BehaviorIntent {
+  /** Target high-level behavior state for the avatar. */
+  state: AvatarBehaviorState;
+  
+  /** 
+   * What is being said when the state is `TALKING`. 
+   * Useful for lip-sync or subtitles.
+   */
+  text?: string;
+  
+  /** 
+   * The current mood when the state is `EMOTIONAL`. 
+   * Useful for selecting facial expressions.
+   */
+  emotion?: string;
+  
+  /** 
+   * Optional timeout for the state in milliseconds. 
+   * Reverts to `IDLE` after this duration.
+   */
+  duration?: number;
+}
+
+/**
+ * Interface for autonomous behavior components
+ */
+export interface InteractionProcessor {
+  update(timeMs: number, delta: number): void;
+  dispose(): void;
+}
+
 export interface AvatarConfig {
   name: string;
   modelSrc: string;
@@ -40,37 +86,6 @@ export interface AnimationStateConfig {
   timeScale?: number;
   /** Duration to hold the last frame before transitioning (seconds) */
   holdDuration?: number;
-}
-
-/**
- * High-level Behavior States for the Agent Brain
- */
-export const AvatarBehaviorStates = {
-  IDLE: 'IDLE',
-  TALKING: 'TALKING',
-  THINKING: 'THINKING',
-  LISTENING: 'LISTENING',
-  EMOTIONAL: 'EMOTIONAL'
-} as const;
-
-export type AvatarBehaviorState = typeof AvatarBehaviorStates[keyof typeof AvatarBehaviorStates];
-
-/**
- * Encapsulates an intent to change behavior
- */
-export interface BehaviorIntent {
-  state: AvatarBehaviorState;
-  text?: string;      // If TALKING, what is being said
-  emotion?: string;   // If EMOTIONAL, what is the mood
-  duration?: number;  // Optional timeout for the state (ms)
-}
-
-/**
- * Interface for autonomous behavior components
- */
-export interface InteractionProcessor {
-  update(timeMs: number, delta: number): void;
-  dispose(): void;
 }
 
 export interface StageConfig {

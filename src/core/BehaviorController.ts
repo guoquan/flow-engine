@@ -28,6 +28,8 @@ export class BehaviorController {
     if (this.stateTimeout !== null) {
       if (timeMs - this.stateStartTime >= this.stateTimeout) {
         console.log(`[Brain] State ${this.currentState} timed out, reverting to IDLE.`);
+        // 在触发状态切换前清除超时，防止在 IDLE 状态下循环触发
+        this.stateTimeout = null;
         this.setIntent({ state: AvatarBehaviorStates.IDLE }, timeMs);
       }
     }
@@ -52,7 +54,8 @@ export class BehaviorController {
     try {
       this.currentState = intent.state;
       this.stateStartTime = now;
-      this.stateTimeout = intent.duration || null;
+      // 使用 nullish coalescing 支持 duration: 0
+      this.stateTimeout = intent.duration ?? null;
 
       if (this.onStateChange) {
         this.onStateChange(this.currentState, intent);

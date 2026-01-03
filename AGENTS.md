@@ -25,9 +25,27 @@ Welcome to the **Flow Engine** development environment.
 
 ## 🌿 Branching Strategy
 
-- **`main`**: Stable branch for the **v0.1.x** series. Only critical fixes and minor refinements should be merged here.
-- **`v0.2-dev`**: The incubation branch for the **v0.2.0** architecture. All major features (Behavior Engine, Unified API, MCP) must target this branch.
-- **Promotion**: `v0.2-dev` will eventually be merged into `main` once the playground and core API are mature.
+We operate on a **Dual-Track** model to balance v0.1 stability with v0.2 innovation.
+
+### 1. Permanent Tracks
+*   **`main` (Stable/v0.1.x)**:
+    *   **Purpose**: Current production-ready code.
+    *   **Accepted Changes**: Critical bug fixes, security patches, and minor documentation refinements.
+    *   **Release**: Tagging `main` triggers stable releases.
+*   **`v0.2-dev` (Incubation/Next-Gen)**:
+    *   **Purpose**: Prototyping and implementing Phase 2-4 of the Roadmap.
+    *   **Accepted Changes**: All architectural refactoring, Behavior Engine, MCP integration, and Playground features.
+    *   **Status**: Protected. All updates must arrive via PR.
+
+### 2. Transient Workflows
+*   **Feature/Fix Isolation**: 
+    *   If targeting v0.1: Branch off `main` -> PR to `main`.
+    *   If targeting v0.2: Branch off `v0.2-dev` -> PR to `v0.2-dev`.
+*   **Naming Convention**: `<type>/<description>` (e.g., `feat/behavior-brain`, `fix/memory-leak`).
+
+### 3. Sync & Promotion
+*   **Merging Down**: Periodic merges from `main` to `v0.2-dev` are required to ensure the incubation branch benefits from v0.1 stability fixes.
+*   **Promotion**: When the Behavior Engine and Playground are mature, `v0.2-dev` will be merged into `main` via a formal **Major Release PR (v0.2.0)**.
 
 ## 📝 Workflow & Protocols
 

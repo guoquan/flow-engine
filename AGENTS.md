@@ -36,38 +36,35 @@ For **every** update requirement, the Agent **must** autonomously drive the foll
 *   **Sync First**: Ensure you branch off the latest `main`.
 
 #### Phase 2: Implementation & Verification 🧪
-*   **Code**: Apply changes adhering to engineering guidelines.
-*   **Test**: Run `npm test` (Unit) and `npm run test:e2e` (Visual) if applicable.
-*   **Commit**: Use conventional commits (e.g., `fix(core): ...`).
+*   **Commit**: Use **Conventional Commits** (e.g., `fix(core): ...`, `feat(api): ...`).
+*   **GPG Signing**: Use `--no-gpg-sign` for automated commits to avoid interactive agent prompts (e.g., 1Password). Humans will handle signing manually if needed.
+*   **Test**: Run `npm test`.
 
 #### Phase 3: Delivery & Review 🚚
 
 1.  **Delivery**:
     *   **Push**: `git push origin <branch-name>`.
-    *   **Draft PR**: Create a draft to trigger CI silently.
-        *   Command: `gh pr create --draft`
+    *   **Draft PR**: `gh pr create --draft`.
 
 2.  **Verification**:
-    *   **CI Checks**: Monitor `gh pr checks`. **Must** be green before proceeding.
-    *   **Promote**: Only when CI passes, mark as ready.
-        *   Command: `gh pr ready`
+    *   **Monitor (MANDATORY)**: You **MUST** track CI progress in real-time. Use:
+        *   `gh pr checks --watch`
+        *   OR `gh run watch`
+    *   The PR **MUST** be Green ✅ before any further action.
+    *   **Promote**: `gh pr ready`.
 
 3.  **Review & Iteration**:
-    *   **Wait**: Allow time for Human/Copilot reviews.
-    *   **Respond**: Resolve **all** comments via code changes.
-    *   **Re-verify**: Ensure new changes pass CI loops.
+    *   **Respond**: Resolve all comments. Re-verify via `gh pr checks --watch`.
 
 4.  **Merge**:
-    *   **Criteria**: Proceed only when CI is Green ✅ AND Reviews are Approved ✅.
-    *   **Strategy**: Use **Squash and merge** to maintain a clean history.
+    *   **Criteria**: CI Green ✅ AND Reviews Approved ✅.
+    *   **Strategy**: Use **Squash and merge**.
 
-#### Phase 4: Follow-through 🔄
-*   **Monitor**: Check for merge status (via `git branch --merged` or user confirmation).
-*   **Cleanup**: Once merged, proactively delete the local feature branch to keep the workspace clean.
-    *   Command: `git branch -d <branch-name>`
-*   **Resync**: Switch back to `main` and pull latest.
+### 2. Release & Versioning Standards
 
-### 2. Testing Standards
+*   **Semantic Versioning**: Adhere strictly to SemVer (Major.Minor.Patch).
+*   **Release Automation**: Pushing a tag (e.g., `v0.1.9`) triggers NPM/GPR publication.
+*   **GitHub Releases**: Every tag **must** have a corresponding GitHub Release with a clean summary (avoiding PR technical jargon). Use `gh release create`.
 
 *   **Unit Tests (`vitest`)**:
     *   Must cover >90% of business logic.

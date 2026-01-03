@@ -102,3 +102,27 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create-release:
+    name: Create GitHub Release
+    needs: [publish-npm, publish-gpr]
+    if: always() && (needs.publish-npm.result == 'success' || needs.publish-gpr.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if release already exists to ensure idempotency
+          if ! gh release view ${{ github.ref_name }} > /dev/null 2>&1; then
+            gh release create ${{ github.ref_name }} \
+              --title "Release ${{ github.ref_name }}" \
+              --generate-notes
+          else
+            echo "Release ${{ github.ref_name }} already exists. Skipping."
+          fi

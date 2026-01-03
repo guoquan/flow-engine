@@ -45,13 +45,15 @@ export interface AnimationStateConfig {
 /**
  * High-level Behavior States for the Agent Brain
  */
-export enum AvatarBehaviorState {
-  IDLE = 'IDLE',
-  TALKING = 'TALKING',
-  THINKING = 'THINKING',
-  LISTENING = 'LISTENING',
-  EMOTIONAL = 'EMOTIONAL'
-}
+export const AvatarBehaviorState = {
+  IDLE: 'IDLE',
+  TALKING: 'TALKING',
+  THINKING: 'THINKING',
+  LISTENING: 'LISTENING',
+  EMOTIONAL: 'EMOTIONAL'
+} as const;
+
+export type AvatarBehaviorState = typeof AvatarBehaviorState[keyof typeof AvatarBehaviorState];
 
 /**
  * Encapsulates an intent to change behavior

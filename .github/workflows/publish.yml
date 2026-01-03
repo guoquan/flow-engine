@@ -13,8 +13,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,9 +20,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          # 注意：为了使用 Trusted Publishing (OIDC)，我们不在此处设置 registry-url，
-          # 这样可以避免 setup-node 生成带有空 token 的 .npmrc 文件干扰 OIDC 流程。
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
@@ -54,17 +51,10 @@ jobs:
       - name: Rename package for NPM
         run: npm pkg set name=@guoquan.net/flow-engine
 
-      # --- 使用带来源证明的可信发布 (Trusted Publishing with provenance) 发布到 NPM ---
       - name: Publish to NPM
-        if: ${{ env.NPM_TOKEN == '' }}
+        # 官方文档指出：使用 Trusted Publishing 时，npm 会自动处理身份验证并生成 provenance。
+        # 且不需要 NODE_AUTH_TOKEN 环境变量。
         run: npm publish --access public --provenance
-
-      # --- 如果设置了 NPM_TOKEN，则使用 Token 模式发布 (兼容模式) ---
-      - name: Publish to NPM (Token Mode)
-        if: ${{ env.NPM_TOKEN != '' }}
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
   publish-gpr:
     name: Publish to GitHub Packages

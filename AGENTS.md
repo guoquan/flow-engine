@@ -44,7 +44,7 @@ We use a **Versioned Track** model to support long-term incubation of major upgr
 *   **Isolation**: All work must occur in `<type>/<description>` branches.
 *   **Context Awareness**: Agents **MUST** identify which track they are targeting before branching.
     *   If fixing v0.1: Target `main`.
-    *   If building v0.2: Target `v0.2`.
+    *   If building v0.2: Target `track/v0.2`.
 
 ## 📝 Workflow & Protocols
 
@@ -96,9 +96,9 @@ For **every** update requirement, the Agent **must** autonomously drive the foll
     *   **Visual Proof**: Every UI/Interaction PR must trigger E2E tests.
     *   **Screenshots**: Tests must generate screenshots for key states (Idle, Interaction, etc.).
     *   **Reporting**: 
-            - Screenshots -> Push full-size images to the `visual-reports` orphan branch.
-            - **Branch Policy**: The `visual-reports` branch **MUST NOT** be protected by strict PR rules. It must allow direct pushes from `github-actions[bot]` to function correctly.
-            - PR comments -> Link to the relevant images in `visual-reports` for quick visual review.
+        - Screenshots -> Push full-size images to the `visual-reports` orphan branch.
+        - **Branch Policy**: The `visual-reports` branch **MUST NOT** be protected by strict PR rules. It must allow direct pushes from `github-actions[bot]` to function correctly.
+        - PR comments -> Link to the relevant images in `visual-reports` for quick visual review.
 ## 🛠 Engineering Guidelines
 
 - **Strict Typing**: No `any`. Use `import type` for interfaces.

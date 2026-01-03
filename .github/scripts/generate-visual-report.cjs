@@ -23,12 +23,8 @@ module.exports = async ({ github, context, core }) => {
 `;
 
   if (!isDeploySuccess) {
-    commentBody += `> ⚠️ **Notice:** Automated screenshot upload to the 
--reports branch failed (likely due to branch protection). 
-`;
-    commentBody += `> Please check the **Download Artifacts** link below to view the full report locally.
-
-`;
+    commentBody += `> ⚠️ **Notice:** Automated screenshot upload to the visual-reports branch failed (likely due to branch protection). \n`;
+    commentBody += `> Please check the **Download Artifacts** link below to view the full report locally.\n\n`;
   }
   
   const formatCaption = (filename) => {

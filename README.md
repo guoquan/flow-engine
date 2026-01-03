@@ -1,40 +1,36 @@
-# Flow (服喽) 🌊
-`@guoquan.net/flow-engine`
+# Flow (服喽) Engine
 
-[![CI](https://github.com/guoquan/flow-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/guoquan/flow-engine/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/guoquan/flow-engine/graph/badge.svg?token=2T5SGUBMK4)](https://codecov.io/gh/guoquan/flow-engine)
-[![Deploy to GitHub Pages](https://github.com/guoquan/flow-engine/actions/workflows/deploy.yml/badge.svg)](https://github.com/guoquan/flow-engine/actions/workflows/deploy.yml)
+[![npm version](https://img.shields.io/npm/v/@guoquan.net/flow-engine.svg?style=flat-square)](https://www.npmjs.com/package/@guoquan.net/flow-engine)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[English](#english) | [中文](#中文)
+A high-performance, WebGPU-based digital human engine.
 
----
+## 🚀 Installation
 
-## English
+### Stable Versions (Recommended)
 
-> **"Flow: Convincing at first breath."**
+Install from the registry of your choice:
 
-**Flow** (distributed as `@guoquan.net/flow-engine`) is a high-performance, lightweight web-based digital human engine. It empowers web applications with lifelike AI avatars through simple API-driven interactions.
-
-### 🌟 Highlights
-- **Modern Rendering**: Based on WebGPU for next-gen performance and visual quality.
-- **Data-Driven**: Animation and behavior fully controlled via JSON configuration.
-- **Zero-Dependency Core**: Pure frontend architecture, easy to integrate into any project.
-
-### 🛠 Tech Stack
-- **Core**: TypeScript
-- **Rendering**: Three.js (WebGPU Renderer)
-- **Build**: Vite
-
-### 📦 Installation
-
-You can install the SDK directly from GitHub:
-
+**From NPM:**
 ```bash
-# Using npm
-npm install github:guoquan/flow-engine
+npm install @guoquan.net/flow-engine
+```
 
-# Using pnpm
-pnpm add github:guoquan/flow-engine
+**From GitHub Packages:**
+Add a `.npmrc` file to your project:
+```ini
+@guoquan:registry=https://npm.pkg.github.com
+```
+Then install:
+```bash
+npm install @guoquan/flow-engine
+```
+
+### Development / Latest Version
+
+Install directly from the GitHub repository:
+```bash
+npm install github:guoquan/flow-engine
 ```
 
 To use a specific version (recommended):

@@ -23,6 +23,12 @@ Welcome to the **Flow Engine** development environment.
 2.  **Data Driven (FSM)**: Animation logic is handled by a Finite State Machine.
 3.  **Controller-Agent Pattern**: Decoupled `FlowEngine` (Scene) and `LookAtProcessor` (Logic).
 
+## 🌿 Branching Strategy
+
+- **`main`**: Stable branch for the **v0.1.x** series. Only critical fixes and minor refinements should be merged here.
+- **`v0.2-dev`**: The incubation branch for the **v0.2.0** architecture. All major features (Behavior Engine, Unified API, MCP) must target this branch.
+- **Promotion**: `v0.2-dev` will eventually be merged into `main` once the playground and core API are mature.
+
 ## 📝 Workflow & Protocols
 
 ### 1. Agent Operating Procedure (Strict)

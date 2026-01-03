@@ -10,12 +10,26 @@ module.exports = async ({ github, context, core }) => {
   const shortSha = sha.substring(0, 7);
   const repo = context.repo.repo;
   const owner = context.repo.owner;
+  const deployOutcome = process.env.DEPLOY_OUTCOME;
+  const isDeploySuccess = deployOutcome === 'success';
+
   const baseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/visual-reports/${prNumber}/${sha}`;
   const treeUrl = `https://github.com/${owner}/${repo}/tree/visual-reports/${prNumber}/${sha}`;
   
-  console.log(`Generating report for PR #${prNumber}, Commit: ${shortSha}`);
+  console.log(`Generating report for PR #${prNumber}, Commit: ${shortSha}, Deploy Outcome: ${deployOutcome}`);
   
-  let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})\n\n`;
+  let commentBody = `## 📸 Visual E2E Report (Commit: ${shortSha})
+
+`;
+
+  if (!isDeploySuccess) {
+    commentBody += `> ⚠️ **Notice:** Automated screenshot upload to the 
+-reports branch failed (likely due to branch protection). 
+`;
+    commentBody += `> Please check the **Download Artifacts** link below to view the full report locally.
+
+`;
+  }
   
   const formatCaption = (filename) => {
     return filename.replace(/[-_]/g, ' ').replace(/\.png$/i, '').replace(/\b\w/g, c => c.toUpperCase());
@@ -28,10 +42,20 @@ module.exports = async ({ github, context, core }) => {
       if (files.length === 0) {
         commentBody += 'No screenshots captured.';
       } else {
-        commentBody += `**Summary:** ${files.length} screenshots captured.\n\n`;
-        commentBody += `📂 [Browse all images in branch](${treeUrl}) | 📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})\n\n`;
+        commentBody += `**Summary:** ${files.length} screenshots captured.
+
+`;
         
-        commentBody += `### Key Visuals\n`;
+        let links = [];
+        if (isDeploySuccess) {
+          links.push(`📂 [Browse all images in branch](${treeUrl})`);
+        }
+        links.push(`📦 [Download Artifacts](${process.env.GITHUB_SERVER_URL}/${owner}/${repo}/actions/runs/${context.runId})`);
+        
+        commentBody += links.join(' | ') + '\n\n';
+        
+        commentBody += `### Key Visuals
+`;
         
         const keyScreenshots = ['initial-state.png', 'debug-mode.png'];
         const displayed = [];
@@ -41,9 +65,20 @@ module.exports = async ({ github, context, core }) => {
           const isKey = keyScreenshots.some(k => file.includes(k));
           
           if (isKey) {
-            const fullSizeUrl = `${baseUrl}/${file}`;
-            commentBody += `#### ${formatCaption(file)}\n`;
-            commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
+            if (isDeploySuccess) {
+              const fullSizeUrl = `${baseUrl}/${file}`;
+              commentBody += `#### ${formatCaption(file)}
+`;
+              commentBody += `![${formatCaption(file)}](${fullSizeUrl})
+
+`;
+            } else {
+              commentBody += `#### ${formatCaption(file)}
+`;
+              commentBody += `*(Image available in Artifacts)*
+
+`;
+            }
             displayed.push(file);
           } else {
             hidden.push(file);
@@ -51,15 +86,38 @@ module.exports = async ({ github, context, core }) => {
         }
 
         if (hidden.length > 0) {
-          commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots...</strong></summary>\n\n`;
-          commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.\n\n`;
-          commentBody += `| Screenshot | Status |\n|---|---|
+          commentBody += `<details>
+<summary><strong>See ${hidden.length} more screenshots...</strong></summary>
+
 `;
-          for (const file of hidden) {
-             const fullSizeUrl = `${baseUrl}/${file}`;
-             commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |\n`;
+          
+          if (isDeploySuccess) {
+            commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.
+
+`;
+            commentBody += `| Screenshot | Status |
+|---|---|
+`;
+            for (const file of hidden) {
+               const fullSizeUrl = `${baseUrl}/${file}`;
+               commentBody += `| [${file}](${fullSizeUrl}) | ✅ Online |
+`;
+            }
+          } else {
+            commentBody += `These files are available in the GitHub Artifacts zip file.
+
+`;
+            commentBody += `| Screenshot | Status |
+|---|---|
+`;
+            for (const file of hidden) {
+               commentBody += `| ${file} | 📦 In Artifacts |
+`;
+            }
           }
-          commentBody += `\n</details>\n`;
+          commentBody += `
+</details>
+`;
         }
       }
     } else {
@@ -67,13 +125,10 @@ module.exports = async ({ github, context, core }) => {
     }
   } catch (error) {
     console.error(error);
-    commentBody += `\nError generating report: ${error.message}`;
+    commentBody += `
+Error generating report: ${error.message}`;
   }
   
-  console.log('Report Body Length:', commentBody.length);
-
-  // Always create a new comment as requested
-  console.log('Creating new comment');
   const response = await github.rest.issues.createComment({
     issue_number: prNumber,
     owner: owner,

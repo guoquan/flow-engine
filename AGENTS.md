@@ -95,9 +95,9 @@ For **every** update requirement, the Agent **must** autonomously drive the foll
     *   **Visual Proof**: Every UI/Interaction PR must trigger E2E tests.
     *   **Screenshots**: Tests must generate screenshots for key states (Idle, Interaction, etc.).
     *   **Reporting**: 
-        - Screenshots -> Push full-size images to the `visual-reports` orphan branch.
-        - PR comments -> Link to the relevant images in `visual-reports` for quick visual review.
-
+            - Screenshots -> Push full-size images to the `visual-reports` orphan branch.
+            - **Branch Policy**: The `visual-reports` branch **MUST NOT** be protected by strict PR rules. It must allow direct pushes from `github-actions[bot]` to function correctly.
+            - PR comments -> Link to the relevant images in `visual-reports` for quick visual review.
 ## 🛠 Engineering Guidelines
 
 - **Strict Typing**: No `any`. Use `import type` for interfaces.

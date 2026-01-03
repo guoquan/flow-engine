@@ -80,28 +80,10 @@ jobs:
         retention-days: 30
 
     # --- Visual Reporting Logic ---
-    
-    - name: Generate Visual Report Comment
-      id: generate_comment
-      if: github.event_name == 'pull_request' && always()
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const script = require('./.github/scripts/generate-visual-report.cjs');
-          await script({github, context, core});
 
-    - name: Generate Report README
-      if: always()
-      uses: actions/github-script@v7
-      env:
-        COMMENT_ID: ${{ steps.generate_comment.outputs.comment_id }}
-      with:
-        script: |
-          const script = require('./.github/scripts/generate-readme.cjs');
-          await script({github, context, core});
-
-    # --- Push to visual-reports branch (Versioned by SHA) ---
+    # 1. First, try to push to visual-reports branch
     - name: Deploy screenshots to visual-reports branch
+      id: deploy_screenshots
       if: always() && github.event_name == 'pull_request'
       uses: peaceiris/actions-gh-pages@v4
       continue-on-error: true
@@ -112,3 +94,26 @@ jobs:
         destination_dir: ${{ github.event.pull_request.number || 'main' }}/${{ env.COMMIT_SHA }}
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
+
+    # 2. Generate the PR comment (aware of push success/failure)
+    - name: Generate Visual Report Comment
+      id: generate_comment
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      env:
+        DEPLOY_OUTCOME: ${{ steps.deploy_screenshots.outcome }}
+      with:
+        script: |
+          const script = require('./.github/scripts/generate-visual-report.cjs');
+          await script({github, context, core});
+
+    # 3. Generate README for the branch (if push succeeded or for local reference)
+    - name: Generate Report README
+      if: always()
+      uses: actions/github-script@v7
+      env:
+        COMMENT_ID: ${{ steps.generate_comment.outputs.comment_id }}
+      with:
+        script: |
+          const script = require('./.github/scripts/generate-readme.cjs');
+          await script({github, context, core});

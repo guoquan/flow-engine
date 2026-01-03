@@ -20,7 +20,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24 # 使用最新的 Node.js 24 以获得 npm 11+ 对 Trusted Publishing 的最佳支持
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
@@ -51,7 +52,8 @@ jobs:
         run: npm pkg set name=@guoquan.net/flow-engine
 
       - name: Publish to NPM
-        # 使用 Trusted Publishing (OIDC)，无需设置 NODE_AUTH_TOKEN
+        # 官方文档指出：使用 Trusted Publishing 时，npm 会自动处理身份验证并生成 provenance。
+        # 且不需要 NODE_AUTH_TOKEN 环境变量。
         run: npm publish --access public --provenance
 
   publish-gpr:

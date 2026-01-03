@@ -99,9 +99,20 @@ npm install @guoquan/flow-engine
 
 #### 开发版 / 最新版本
 
-直接从 GitHub 仓库安装:
+直接从 GitHub 仓库安装。你可以使用 `#` 前缀指定分支、标签或提交哈希：
+
 ```bash
+# 安装 main 分支最新代码
 npm install github:guoquan/flow-engine
+
+# 指定分支
+npm install github:guoquan/flow-engine#develop
+
+# 指定标签
+npm install github:guoquan/flow-engine#v0.1.9
+
+# 指定提交哈希
+npm install github:guoquan/flow-engine#7834b6c
 ```
 
 ### 🌟 项目亮点

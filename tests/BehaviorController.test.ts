@@ -23,6 +23,28 @@ describe('BehaviorController', () => {
     expect(spy).toHaveBeenCalledWith(AvatarBehaviorState.THINKING, expect.any(Object));
   });
 
+  it('should ignore duplicate state transitions', () => {
+    brain.setIntent({ state: AvatarBehaviorState.THINKING });
+    const spy = vi.fn();
+    brain.onStateChange = spy;
+
+    // Setting same state again
+    brain.setIntent({ state: AvatarBehaviorState.THINKING });
+    
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('should allow duplicate EMOTIONAL state transitions', () => {
+    brain.setIntent({ state: AvatarBehaviorState.EMOTIONAL });
+    const spy = vi.fn();
+    brain.onStateChange = spy;
+
+    // Setting same emotional state again (e.g. different intensity)
+    brain.setIntent({ state: AvatarBehaviorState.EMOTIONAL });
+    
+    expect(spy).toHaveBeenCalled();
+  });
+
   it('should revert to IDLE after timeout', () => {
     vi.useFakeTimers();
     const now = 1000;

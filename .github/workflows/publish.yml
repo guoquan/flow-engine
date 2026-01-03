@@ -72,12 +72,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node for GPR
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@guoquan.net'
+          scope: '@guoquan'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3

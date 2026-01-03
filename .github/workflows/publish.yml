@@ -34,11 +34,9 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      # --- 发布到 NPM (恢复 Token 模式用于首次发布) ---
+      # --- 使用带来源证明的可信发布 (Trusted Publishing with provenance) 发布到 NPM ---
       - name: Publish to NPM
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # --- 发布到 GitHub Packages ---
       - name: Setup Node for GPR

@@ -42,9 +42,20 @@ npm install @guoquan/flow-engine
 
 #### Development / Latest Version
 
-Install directly from the GitHub repository:
+Install directly from the GitHub repository. You can specify a branch, tag, or commit hash using the `#` prefix:
+
 ```bash
+# Latest from main branch
 npm install github:guoquan/flow-engine
+
+# Specific branch
+npm install github:guoquan/flow-engine#develop
+
+# Specific tag
+npm install github:guoquan/flow-engine#v0.1.9
+
+# Specific commit hash
+npm install github:guoquan/flow-engine#7834b6c
 ```
 
 ### 🌟 Highlights

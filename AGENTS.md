@@ -23,6 +23,24 @@ Welcome to the **Flow Engine** development environment.
 2.  **Data Driven (FSM)**: Animation logic is handled by a Finite State Machine.
 3.  **Controller-Agent Pattern**: Decoupled `FlowEngine` (Scene) and `LookAtProcessor` (Logic).
 
+## 🌿 Branching Strategy
+
+We use a **Versioned Track** model to support long-term incubation of major upgrades without compromising the stability of the current release.
+
+### 1. Primary Track (`main`)
+*   **Status**: Stable / Production.
+*   **Merge Target**: `main`.
+
+### 2. Evolution Tracks (`track/v0.2`, `track/v0.3`, etc.)
+*   **Status**: Active Incubation / Next-Gen.
+*   **Naming Pattern**: Must use the **`track/`** prefix (e.g., `track/v0.2`).
+*   **Conflict Avoidance**: This prefix avoids wildcard collisions with system branches like `visual-reports`.
+*   **Workflow**: Feature branches for the next generation are branched from and PR'd back into the corresponding track.
+
+### 3. Transient Workflows
+*   **Isolation**: All work must occur in `<type>/<description>` branches.
+*   **Targeting**: agents **MUST** identify the correct target track before branching.
+
 ## 📝 Workflow & Protocols
 
 ### 1. Agent Operating Procedure (Strict)

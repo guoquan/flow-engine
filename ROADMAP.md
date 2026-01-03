@@ -30,7 +30,7 @@
 - [ ] **MCP (Model Context Protocol) Implementation**:
     - Build an MCP server wrapper for Flow Engine.
     - Allow agents to "see" the avatar state and "call tools" to move or speak.
-- [ ] **Skill Meta-data (`skill.md`)**:
+- [ ] **Skill metadata (`skill.md`)**:
     - Standardize avatar capabilities using the `skill.md` format for better agent discovery and usage.
 
 ### Phase 4: Flow Playground 🎡

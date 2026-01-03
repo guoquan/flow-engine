@@ -45,7 +45,7 @@ export interface AnimationStateConfig {
 /**
  * High-level Behavior States for the Agent Brain
  */
-export const AvatarBehaviorState = {
+export const AvatarBehaviorStates = {
   IDLE: 'IDLE',
   TALKING: 'TALKING',
   THINKING: 'THINKING',
@@ -53,7 +53,7 @@ export const AvatarBehaviorState = {
   EMOTIONAL: 'EMOTIONAL'
 } as const;
 
-export type AvatarBehaviorState = typeof AvatarBehaviorState[keyof typeof AvatarBehaviorState];
+export type AvatarBehaviorState = typeof AvatarBehaviorStates[keyof typeof AvatarBehaviorStates];
 
 /**
  * Encapsulates an intent to change behavior

@@ -35,9 +35,10 @@ We use a **Versioned Track** model to support long-term incubation of major upgr
 
 ### 2. Evolution Tracks (`v0.2`, `v0.3`, etc.)
 *   **Status**: Active Incubation / Next-Gen.
-*   **Purpose**: These are **full-tier** primary branches for major architectural shifts (Phase 2-4 of Roadmap).
+*   **Naming Pattern**: Must match **`v[0-9]*`** (e.g., `v0.2`, `v1.0`).
+*   **Conflict Avoidance**: Do **NOT** use `v*` as it conflicts with `visual-reports`.
+*   **GitHub Policy**: Ensure repository protection rules use `v[0-9]*` instead of `v*` to allow automated systems to push to non-versioned branches starting with 'v'.
 *   **Workflow**: Feature branches for the next generation are branched from and PR'd back into the corresponding version track (e.g., `feat/behavior-engine` -> `v0.2`).
-*   **Promotion**: Once a track (e.g., `v0.2`) is deemed mature and ready for general availability, it will be merged into `main` via a **Grand Release PR**, effectively upgrading the project's stable baseline.
 
 ### 3. Transient Workflows
 *   **Isolation**: All work must occur in `<type>/<description>` branches.

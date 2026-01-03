@@ -2,9 +2,9 @@ name: E2E Visual Tests
 
 on:
   pull_request:
-    branches: ["main", "v*"]
+    branches: ["main", "v[0-9]*"]
   push:
-    branches: ["main", "v*"]
+    branches: ["main", "v[0-9]*"]
 
 permissions:
   contents: write

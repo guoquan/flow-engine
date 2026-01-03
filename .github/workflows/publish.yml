@@ -50,6 +50,10 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Rename package for NPM
+        run: |
+          sed -i 's|"name": "@guoquan/flow-engine"|"name": "@guoquan.net/flow-engine"|' package.json
+
       # --- 使用带来源证明的可信发布 (Trusted Publishing with provenance) 发布到 NPM ---
       - name: Publish to NPM
         if: ${{ env.NPM_TOKEN == '' }}

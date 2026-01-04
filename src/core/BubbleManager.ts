@@ -9,9 +9,12 @@ export class BubbleManager {
   private offset = new THREE.Vector3(0, 2.2, 0); // Default head height offset
   private _tempVec = new THREE.Vector3();
 
-  constructor(containerId: string, camera: THREE.Camera) {
-    const parent = document.getElementById(containerId);
-    if (!parent) throw new Error('Container not found');
+  constructor(containerOrId: string | HTMLElement, camera: THREE.Camera) {
+    const parent = typeof containerOrId === 'string' 
+      ? document.getElementById(containerOrId) 
+      : containerOrId;
+
+    if (!parent) throw new Error(`Container not found: ${containerOrId}`);
     this.container = parent;
     this.camera = camera;
 

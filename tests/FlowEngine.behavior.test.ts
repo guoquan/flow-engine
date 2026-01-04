@@ -130,22 +130,58 @@ describe('FlowEngine Behavior Integration', () => {
     engine.processAgentResponse({ text: 'Speech only' });
     // @ts-ignore
     expect(engine.brain.getState()).toBe(AvatarBehaviorStates.TALKING);
+
+    // 3. Listening state
+    engine.processAgentResponse({ state: AvatarBehaviorStates.LISTENING });
+    // @ts-ignore
+    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.LISTENING);
   });
 
-  it('should execute interaction commands via protocol', () => {
+  it('should execute interaction commands and handle HOLDING timeout', () => {
     vi.useFakeTimers();
+    let currentTime = 1000;
+    const perfSpy = vi.spyOn(performance, 'now').mockImplementation(() => currentTime);
+
+    const mockModel = new THREE.Group();
+    // @ts-expect-error
+    engine.avatarModel = mockModel;
+    // @ts-expect-error
+    engine.headBone = new THREE.Object3D();
+    // @ts-expect-error
+    engine.currentAvatarConfig = { name: 'test', modelSrc: '', lookAt: { enabled: true } };
+
     // @ts-expect-error
     const lookAtSpy = vi.spyOn(engine.lookAtProcessor, 'setTarget');
     const targetPos = new THREE.Vector3(1, 2, 3);
 
     engine.processAgentResponse({
       actions: [
-        { type: 'interaction', name: 'lookAt', value: targetPos }
+        { type: 'interaction', name: 'lookAt', value: targetPos },
+        { type: 'expression', name: 'smile' } 
       ]
     });
 
     vi.runAllTimers();
     expect(lookAtSpy).toHaveBeenCalledWith(targetPos);
+
+    // Simulate mouse interaction to enter HOLDING
+    // @ts-ignore
+    engine.lookAtProcessor.onPointerDown({ clientX: 100, clientY: 100 });
+    // @ts-ignore
+    engine.lookAtProcessor.onPointerUp();
+    
+    // @ts-ignore
+    expect(engine.lookAtProcessor.state).toBe('HOLDING');
+
+    // Advance time
+    currentTime += 5000;
+    // @ts-ignore
+    engine.lookAtProcessor.update(currentTime, 0.1);
+    
+    // @ts-ignore
+    expect(engine.lookAtProcessor.state).toBe('IDLE');
+
+    perfSpy.mockRestore();
     vi.useRealTimers();
   });
 

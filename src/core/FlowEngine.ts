@@ -7,6 +7,7 @@ import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
 import { LookAtProcessor } from './LookAtProcessor';
 import { BehaviorController } from './BehaviorController';
+import { BubbleManager } from './BubbleManager';
 import { AvatarBehaviorStates, type AvatarConfig, type BehaviorIntent, type AvatarBehaviorState, type AgentResponse, type ActionCommand } from '../types';
 
 export class FlowEngine {
@@ -29,6 +30,7 @@ export class FlowEngine {
   // Components
   private lookAtProcessor: LookAtProcessor;
   private brain: BehaviorController;
+  private bubbleManager: BubbleManager;
   private currentAvatarConfig: AvatarConfig | null = null;
 
   // Debug Helpers
@@ -75,7 +77,7 @@ export class FlowEngine {
     this.controls.enableDamping = true;
     this.controls.target.set(0, 1, 0);
 
-    // 6. Initialize Processor
+    // 6. Initialize Processors
     this.lookAtProcessor = new LookAtProcessor(
       this.container,
       this.camera,
@@ -88,31 +90,38 @@ export class FlowEngine {
         return list;
       }
     );
+    
+    this.bubbleManager = new BubbleManager(containerId, this.camera);
 
     // 7. Connect Brain to Reflexes
-    this.brain.onStateChange = (state: AvatarBehaviorState, _intent: BehaviorIntent) => {
+    this.brain.onStateChange = (state: AvatarBehaviorState, intent: BehaviorIntent) => {
       if (!this.animController) return;
       
       switch (state) {
         case AvatarBehaviorStates.IDLE:
           this.animController.play('idle');
           this.lookAtProcessor.reset();
+          this.bubbleManager.hide();
           break;
         case AvatarBehaviorStates.TALKING:
           this.animController.play('talk');
           // Use clone to lock current position and avoid live-reference tracking issues
           this.lookAtProcessor.setTarget(this.camera.position.clone());
+          if (intent.text) this.bubbleManager.show(intent.text, 'speech');
           break;
         case AvatarBehaviorStates.THINKING:
           this.animController.play('thinking');
+          this.bubbleManager.show('...', 'thought');
           break;
         case AvatarBehaviorStates.LISTENING:
           this.animController.play('idle'); 
           this.lookAtProcessor.setTarget(this.camera.position.clone());
+          this.bubbleManager.hide();
           break;
         case AvatarBehaviorStates.EMOTIONAL:
           this.animController.play('idle');
           this.lookAtProcessor.setTarget(this.camera.position.clone());
+          this.bubbleManager.hide();
           break;
       }
     };
@@ -176,6 +185,10 @@ export class FlowEngine {
         }
       };
       this.animController.init(animConfig);
+    }
+
+    if (this.headBone) {
+      this.bubbleManager.setTarget(this.headBone);
     }
     
     console.log(`[Flow] Avatar "${config.name}" loaded.`);
@@ -385,6 +398,7 @@ export class FlowEngine {
     if (this.avatarModel) {
        if (this.animController) this.animController.update(delta);
        this.lookAtProcessor.update(_timeMs, delta);
+       this.bubbleManager.update();
     }
     this.updateDebugHelpers();
     if (this.stageModel && this.stageAnimController) this.stageAnimController.update(delta);

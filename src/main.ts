@@ -135,7 +135,13 @@ const init = async () => {
       jsonError.style.display = 'none';
       const data = JSON.parse(jsonInput.value);
       engine.processAgentResponse(data);
-      addLog(`[JSON] Executed`, 'agent');
+      
+      // Echo the text to Chat Log if present in JSON
+      if (data.text) {
+        addLog(data.text, 'agent');
+      } else {
+        addLog(`[JSON Action Executed]`, 'agent');
+      }
     } catch (e) {
       jsonError.textContent = (e as Error).message;
       jsonError.style.display = 'block';

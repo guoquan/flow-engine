@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as THREE from 'three';
 import { FlowEngine } from '../src/core/FlowEngine';
 import { AvatarBehaviorStates } from '../src/types';
 
@@ -32,15 +33,47 @@ describe('FlowEngine Behavior Integration', () => {
     expect(engine.setBehavior).toBeDefined();
   });
 
-  it('should change brain state when calling say()', () => {
+  it('should trigger animation when brain state changes', async () => {
+    // 1. Setup avatar with animController mocks
+    const mockModel = new THREE.Group();
+    const mockAnimController = {
+      play: vi.fn(),
+      init: vi.fn(),
+      update: vi.fn()
+    };
+    
+    // Inject mocks into the engine instance
+    (engine as any).avatarModel = mockModel;
+    (engine as any).animController = mockAnimController;
+
+    // 2. Trigger states via shorthand methods
     engine.say('Hello');
-    // @ts-ignore
-    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.TALKING);
+    expect(mockAnimController.play).toHaveBeenCalledWith('talk');
+
+    engine.think();
+    expect(mockAnimController.play).toHaveBeenCalledWith('thinking');
+
+    engine.setBehavior({ state: AvatarBehaviorStates.IDLE });
+    expect(mockAnimController.play).toHaveBeenCalledWith('idle');
+
+    engine.setBehavior({ state: AvatarBehaviorStates.LISTENING });
+    expect(mockAnimController.play).toHaveBeenLastCalledWith('idle');
   });
 
-  it('should change brain state when calling think()', () => {
-    engine.think();
+  it('should interrupt lookat and brain when playAction is called', () => {
+    const interruptSpy = vi.spyOn((engine as any).lookAtProcessor, 'interrupt');
+    const brainSpy = vi.spyOn((engine as any).brain, 'setIntent');
+    
+    engine.playAction('wave');
+    
+    expect(interruptSpy).toHaveBeenCalled();
+    expect(brainSpy).toHaveBeenCalledWith({ state: AvatarBehaviorStates.IDLE });
+  });
+
+  it('should re-init brain with debug when setDebug is called', () => {
+    engine.setDebug(true);
+    expect(engine.isDebug).toBe(true);
     // @ts-ignore
-    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.THINKING);
+    expect(engine.brain.debug).toBe(true);
   });
 });

@@ -89,7 +89,27 @@ export class FlowEngine {
       }
     );
 
-    // 7. Event Handlers
+    // 7. Connect Brain to Reflexes
+    this.brain.onStateChange = (state: AvatarBehaviorState) => {
+      if (!this.animController) return;
+      
+      switch (state) {
+        case AvatarBehaviorStates.IDLE:
+          this.animController.play('idle');
+          break;
+        case AvatarBehaviorStates.TALKING:
+          this.animController.play('talk');
+          break;
+        case AvatarBehaviorStates.THINKING:
+          this.animController.play('thinking');
+          break;
+        case AvatarBehaviorStates.LISTENING:
+          this.animController.play('idle'); 
+          break;
+      }
+    };
+
+    // 8. Event Handlers
     window.addEventListener('resize', this.onWindowResize.bind(this));
 
     // Start Loop (WebGPU Style)
@@ -147,26 +167,6 @@ export class FlowEngine {
       };
       this.animController.init(animConfig);
     }
-
-    // Connect Brain to Reflexes
-    this.brain.onStateChange = (state: AvatarBehaviorState) => {
-      if (!this.animController) return;
-      
-      switch (state) {
-        case AvatarBehaviorStates.IDLE:
-          this.animController.play('idle');
-          break;
-        case AvatarBehaviorStates.TALKING:
-          this.animController.play('talk');
-          break;
-        case AvatarBehaviorStates.THINKING:
-          this.animController.play('thinking');
-          break;
-        case AvatarBehaviorStates.LISTENING:
-          this.animController.play('idle'); // Use idle for now
-          break;
-      }
-    };
     
     console.log(`[Flow] Avatar "${config.name}" loaded.`);
   }

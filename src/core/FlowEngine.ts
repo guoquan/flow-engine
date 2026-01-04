@@ -7,7 +7,7 @@ import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
 import { LookAtProcessor } from './LookAtProcessor';
 import { BehaviorController } from './BehaviorController';
-import { AvatarBehaviorStates, type AvatarConfig, type BehaviorIntent, type AvatarBehaviorState } from '../types';
+import { AvatarBehaviorStates, type AvatarConfig, type BehaviorIntent, type AvatarBehaviorState, type AgentResponse, type ActionCommand } from '../types';
 
 export class FlowEngine {
   private container: HTMLElement;
@@ -90,7 +90,7 @@ export class FlowEngine {
     );
 
     // 7. Connect Brain to Reflexes
-    this.brain.onStateChange = (state: AvatarBehaviorState, intent: BehaviorIntent) => {
+    this.brain.onStateChange = (state: AvatarBehaviorState, _intent: BehaviorIntent) => {
       if (!this.animController) return;
       
       switch (state) {

@@ -119,4 +119,43 @@ describe('FlowEngine Behavior Integration', () => {
     
     vi.useRealTimers();
   });
+
+  it('should process AgentResponse with only state or only text', () => {
+    // 1. Only state
+    engine.processAgentResponse({ state: AvatarBehaviorStates.THINKING });
+    // @ts-ignore
+    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.THINKING);
+
+    // 2. Only text (defaults to TALKING)
+    engine.processAgentResponse({ text: 'Speech only' });
+    // @ts-ignore
+    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.TALKING);
+  });
+
+  it('should execute interaction commands via protocol', () => {
+    vi.useFakeTimers();
+    // @ts-expect-error
+    const lookAtSpy = vi.spyOn(engine.lookAtProcessor, 'setTarget');
+    const targetPos = new THREE.Vector3(1, 2, 3);
+
+    engine.processAgentResponse({
+      actions: [
+        { type: 'interaction', name: 'lookAt', value: targetPos }
+      ]
+    });
+
+    vi.runAllTimers();
+    expect(lookAtSpy).toHaveBeenCalledWith(targetPos);
+    vi.useRealTimers();
+  });
+
+  it('should ignore unknown command types gracefully', () => {
+    const consoleSpy = vi.spyOn(console, 'log');
+    // @ts-ignore - testing invalid type
+    engine.processAgentResponse({
+      actions: [{ type: 'unknown', name: 'void' }]
+    });
+    // Should not crash
+    expect(consoleSpy).toHaveBeenCalled();
+  });
 });

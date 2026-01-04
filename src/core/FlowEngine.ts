@@ -162,7 +162,9 @@ export class FlowEngine {
           walk: { clipName: 'Walking', loop: true },
           wave: { clipName: 'Wave', loop: false, next: 'idle' },
           talk: { clipName: 'Talk', loop: true },
-          thinking: { clipName: 'Thinking', loop: true }
+          thinking: { clipName: 'Thinking', loop: true },
+          dance: { clipName: 'Dance', loop: false, next: 'idle' },
+          bow: { clipName: 'Bow', loop: false, next: 'idle' }
         }
       };
       this.animController.init(animConfig);
@@ -190,9 +192,10 @@ export class FlowEngine {
     this.isDebug = enabled;
     if (enabled) {
       this.createDebugHelpers();
-      this.brain = new BehaviorController({ debug: true }); // Re-init with debug if toggled
+      this.brain.setDebugMode(true);
     } else {
       this.removeDebugHelpers();
+      this.brain.setDebugMode(false);
     }
   }
 
@@ -262,6 +265,11 @@ export class FlowEngine {
    * HIGH-LEVEL BEHAVIOR API
    */
 
+  /**
+   * Submit a 'TALKING' intent to the brain.
+   * @param text What is being said
+   * @param duration Time in ms to stay in talking state
+   */
   public say(text: string, duration: number = 3000) {
     this.brain.setIntent({ 
       state: AvatarBehaviorStates.TALKING, 
@@ -270,6 +278,10 @@ export class FlowEngine {
     });
   }
 
+  /**
+   * Submit a 'THINKING' intent to the brain.
+   * @param duration Time in ms to stay in thinking state
+   */
   public think(duration: number = 3000) {
     this.brain.setIntent({ 
       state: AvatarBehaviorStates.THINKING, 
@@ -277,10 +289,18 @@ export class FlowEngine {
     });
   }
 
+  /**
+   * Submit a complex behavior intent.
+   * @param intent The behavior intent object
+   */
   public setBehavior(intent: BehaviorIntent) {
     this.brain.setIntent(intent);
   }
 
+  /**
+   * Play a manual low-level action. Interrupts high-level brain state.
+   * @param action State name defined in config.animations.states
+   */
   public playAction(action: string) {
     this.lookAtProcessor.interrupt();
     this.brain.setIntent({ state: AvatarBehaviorStates.IDLE });

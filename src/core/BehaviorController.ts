@@ -24,6 +24,20 @@ export class BehaviorController {
   }
 
   /**
+   * Toggles debug logging mode without re-initializing the controller.
+   */
+  public setDebugMode(enabled: boolean) {
+    this.debug = enabled;
+  }
+
+  /**
+   * @returns Whether debug mode is currently enabled.
+   */
+  public isDebugEnabled(): boolean {
+    return this.debug;
+  }
+
+  /**
    * Drives the brain logic.
    * @param timeMs Consistent external timestamp (usually from requestAnimationFrame).
    */

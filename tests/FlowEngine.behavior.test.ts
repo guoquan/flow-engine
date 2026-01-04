@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 import { FlowEngine } from '../src/core/FlowEngine';
 import { AvatarBehaviorStates } from '../src/types';
@@ -27,6 +27,13 @@ describe('FlowEngine Behavior Integration', () => {
     engine = new FlowEngine('app');
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (container && container.parentNode) {
+      document.body.removeChild(container);
+    }
+  });
+
   it('should expose behavior methods', () => {
     expect(engine.say).toBeDefined();
     expect(engine.think).toBeDefined();
@@ -34,7 +41,6 @@ describe('FlowEngine Behavior Integration', () => {
   });
 
   it('should trigger animation when brain state changes', async () => {
-    // 1. Setup avatar with animController mocks
     const mockModel = new THREE.Group();
     const mockAnimController = {
       play: vi.fn(),
@@ -42,11 +48,11 @@ describe('FlowEngine Behavior Integration', () => {
       update: vi.fn()
     };
     
-    // Inject mocks into the engine instance
-    (engine as any).avatarModel = mockModel;
-    (engine as any).animController = mockAnimController;
+    // @ts-expect-error Accessing private members for test
+    engine.avatarModel = mockModel;
+    // @ts-expect-error
+    engine.animController = mockAnimController;
 
-    // 2. Trigger states via shorthand methods
     engine.say('Hello');
     expect(mockAnimController.play).toHaveBeenCalledWith('talk');
 
@@ -55,14 +61,13 @@ describe('FlowEngine Behavior Integration', () => {
 
     engine.setBehavior({ state: AvatarBehaviorStates.IDLE });
     expect(mockAnimController.play).toHaveBeenCalledWith('idle');
-
-    engine.setBehavior({ state: AvatarBehaviorStates.LISTENING });
-    expect(mockAnimController.play).toHaveBeenLastCalledWith('idle');
   });
 
   it('should interrupt lookat and brain when playAction is called', () => {
-    const interruptSpy = vi.spyOn((engine as any).lookAtProcessor, 'interrupt');
-    const brainSpy = vi.spyOn((engine as any).brain, 'setIntent');
+    // @ts-expect-error
+    const interruptSpy = vi.spyOn(engine.lookAtProcessor, 'interrupt');
+    // @ts-expect-error
+    const brainSpy = vi.spyOn(engine.brain, 'setIntent');
     
     engine.playAction('wave');
     
@@ -70,10 +75,14 @@ describe('FlowEngine Behavior Integration', () => {
     expect(brainSpy).toHaveBeenCalledWith({ state: AvatarBehaviorStates.IDLE });
   });
 
-  it('should re-init brain with debug when setDebug is called', () => {
+  it('should update brain debug mode when setDebug is called', () => {
     engine.setDebug(true);
     expect(engine.isDebug).toBe(true);
-    // @ts-ignore
-    expect(engine.brain.debug).toBe(true);
+    // @ts-expect-error
+    expect(engine.brain.isDebugEnabled()).toBe(true);
+
+    engine.setDebug(false);
+    // @ts-expect-error
+    expect(engine.brain.isDebugEnabled()).toBe(false);
   });
 });

@@ -97,18 +97,19 @@ const init = async () => {
         console.log('[Flow] Local Brain Decision:', { action, replyText });
         
         // Use high-level API
-        engine.say(replyText, 3000);
+        const sayDuration = 3000;
+        engine.say(replyText, sayDuration);
         
         // If it's a specific action, override
         if (action !== 'idle') {
           engine.playAction(action);
         }
 
-        // Hide text after a while (UI only, brain handles state)
+        // Hide text after the same duration as the behavior
         setTimeout(() => {
           responseEl.classList.remove('visible');
           statusEl.textContent = 'Ready (Idle)';
-        }, 3000);
+        }, sayDuration);
       }, 1000);
     };
 

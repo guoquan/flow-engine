@@ -2,8 +2,14 @@
 export { FlowEngine } from './core/FlowEngine';
 export { AvatarLoader } from './core/AvatarLoader';
 export { AnimationController } from './core/AnimationController';
+export { BehaviorController } from './core/BehaviorController';
 
 // Export Types
-export type { AvatarConfig, AnimationStateConfig } from './types';
+export type { 
+  AvatarConfig, 
+  AnimationStateConfig,
+  AvatarBehaviorState,
+  BehaviorIntent
+} from './types';
 
-// Future exports (e.g., specific utilities) can go here
+export { AvatarBehaviorStates } from './types';

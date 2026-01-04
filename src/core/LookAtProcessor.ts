@@ -169,6 +169,7 @@ export class LookAtProcessor implements InteractionProcessor {
    */
   public setTarget(position: THREE.Vector3) {
     this.state = LookAtState.OVERRIDE;
+    this.stateTimer = performance.now();
     this.lookAtTarget.copy(position);
   }
 

@@ -100,16 +100,19 @@ export class FlowEngine {
           break;
         case AvatarBehaviorStates.TALKING:
           this.animController.play('talk');
-          // Optional: Look at camera when talking to user
-          this.lookAtProcessor.setTarget(this.camera.position);
+          // Use clone to lock current position and avoid live-reference tracking issues
+          this.lookAtProcessor.setTarget(this.camera.position.clone());
           break;
         case AvatarBehaviorStates.THINKING:
           this.animController.play('thinking');
-          // Optional: Look slightly away or at a thinking point
           break;
         case AvatarBehaviorStates.LISTENING:
           this.animController.play('idle'); 
-          this.lookAtProcessor.setTarget(this.camera.position);
+          this.lookAtProcessor.setTarget(this.camera.position.clone());
+          break;
+        case AvatarBehaviorStates.EMOTIONAL:
+          this.animController.play('idle');
+          this.lookAtProcessor.setTarget(this.camera.position.clone());
           break;
       }
     };
@@ -308,6 +311,11 @@ export class FlowEngine {
    * @param response The structured message according to the Unified Action Protocol
    */
   public processAgentResponse(response: AgentResponse) {
+    if (!response || typeof response !== 'object') {
+      console.warn('[Flow] Invalid AgentResponse received:', response);
+      return;
+    }
+
     console.log('[Flow] Processing Agent Response:', response);
 
     // 1. Handle high-level state if explicitly provided
@@ -323,7 +331,7 @@ export class FlowEngine {
     }
 
     // 3. Execute discrete actions
-    if (response.actions && response.actions.length > 0) {
+    if (response.actions && Array.isArray(response.actions)) {
       response.actions.forEach(cmd => {
         setTimeout(() => {
           this.executeCommand(cmd);
@@ -334,11 +342,14 @@ export class FlowEngine {
 
   /**
    * Internal executor for discrete action commands.
+   * Note: Actions scheduled with delay may conflict if state changes rapidly.
    */
   private executeCommand(cmd: ActionCommand) {
+    if (!cmd || !cmd.type) return;
+
     switch (cmd.type) {
       case 'animation':
-        // Directly play animation without necessarily resetting the global brain state
+        // Directly play animation via animController to avoid brain-reset feedback loops
         if (this.animController) this.animController.play(cmd.name.toLowerCase());
         break;
       case 'expression':
@@ -348,6 +359,9 @@ export class FlowEngine {
         if (cmd.name === 'lookAt' && cmd.value instanceof THREE.Vector3) {
           this.lookAtProcessor.setTarget(cmd.value);
         }
+        break;
+      default:
+        console.warn('[Flow] Unknown action command type received:', cmd.type, cmd);
         break;
     }
   }

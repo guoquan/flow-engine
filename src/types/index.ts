@@ -42,11 +42,12 @@ export interface BehaviorIntent {
 
 /**
  * Represents a single discrete action to be performed by the avatar.
+ * @template T Type of the command value (e.g. THREE.Vector3, number)
  */
-export interface ActionCommand {
+export interface ActionCommand<T = any> {
   type: 'animation' | 'expression' | 'interaction';
   name: string;       // e.g. 'wave', 'smile', 'lookAt'
-  value?: any;        // Optional parameters (e.g. target position, intensity)
+  value?: T;          // Optional parameters
   delay?: number;     // Delay before execution (ms)
 }
 

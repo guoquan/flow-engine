@@ -69,6 +69,8 @@ const init = async () => {
       statusEl.textContent = 'Thinking...';
 
       // --- Local Brain Logic (No fetch needed) ---
+      engine.think(1000); // Trigger THINKING state
+
       let replyText = "我听到了。";
       let action = "idle";
 
@@ -87,19 +89,27 @@ const init = async () => {
       }
 
       // Handle Response
-      statusEl.textContent = `Action: ${action}`;
-      responseEl.textContent = replyText;
-      responseEl.classList.add('visible');
-
-      console.log('[Flow] Local Brain Decision:', { action, replyText });
-      
-      engine.playAction(action); 
-
-      // Hide text after a while
       setTimeout(() => {
-        responseEl.classList.remove('visible');
-        statusEl.textContent = 'Ready (Idle)';
-      }, 3000);
+        statusEl.textContent = `Action: ${action}`;
+        responseEl.textContent = replyText;
+        responseEl.classList.add('visible');
+
+        console.log('[Flow] Local Brain Decision:', { action, replyText });
+        
+        // Use high-level API
+        engine.say(replyText, 3000);
+        
+        // If it's a specific action, override
+        if (action !== 'idle') {
+          engine.playAction(action);
+        }
+
+        // Hide text after a while (UI only, brain handles state)
+        setTimeout(() => {
+          responseEl.classList.remove('visible');
+          statusEl.textContent = 'Ready (Idle)';
+        }, 3000);
+      }, 1000);
     };
 
     sendBtn.addEventListener('click', sendMessage);

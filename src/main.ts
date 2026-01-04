@@ -49,9 +49,16 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 // Init Engine
 const init = async () => {
   const statusEl = document.getElementById('loading-status')!;
-  const engine = new FlowEngine('canvas-container');
+  
+  // Expose necessary internal state for dashboard visualization
+  interface DebuggableEngine {
+    brain: { getState: () => string };
+  }
+  let engine: FlowEngine;
 
   try {
+    engine = new FlowEngine('canvas-container');
+    
     const baseUrl = import.meta.env.BASE_URL.endsWith('/') 
       ? import.meta.env.BASE_URL 
       : `${import.meta.env.BASE_URL}/`;
@@ -59,103 +66,104 @@ const init = async () => {
     await engine.loadAvatar(`${baseUrl}assets/avatars/expressive/config.json`);
     await engine.loadStage(`${baseUrl}assets/stages/default/config.json`);
     statusEl.textContent = 'Ready';
-  } catch (e) {
-    statusEl.textContent = 'Error loading assets';
-    console.error(e);
-  }
 
-  // --- UI Logic ---
+    // --- UI Logic (Only init if engine loads) ---
 
-  // 1. Dashboard
-  document.getElementById('check-debug')?.addEventListener('change', (e) => {
-    engine.setDebug((e.target as HTMLInputElement).checked);
-  });
-  document.getElementById('check-rotate')?.addEventListener('change', (e) => {
-    engine.isAutoRotate = (e.target as HTMLInputElement).checked;
-  });
+    // 1. Dashboard
+    document.getElementById('check-debug')?.addEventListener('change', (e) => {
+      engine.setDebug((e.target as HTMLInputElement).checked);
+    });
+    document.getElementById('check-rotate')?.addEventListener('change', (e) => {
+      engine.isAutoRotate = (e.target as HTMLInputElement).checked;
+    });
 
-  // 2. Chat System
-  const chatLog = document.getElementById('chat-log')!;
-  const chatInput = document.getElementById('chat-input') as HTMLInputElement;
-  
-  const addLog = (text: string, type: 'user' | 'agent') => {
-    const msg = document.createElement('div');
-    msg.className = `msg ${type}`;
-    msg.textContent = text;
-    chatLog.appendChild(msg);
-    chatLog.scrollTop = chatLog.scrollHeight;
-  };
-
-  const handleUserMessage = async () => {
-    const text = chatInput.value.trim();
-    if (!text) return;
+    // 2. Chat System
+    const chatLog = document.getElementById('chat-log')!;
+    const chatInput = document.getElementById('chat-input') as HTMLInputElement;
     
-    addLog(text, 'user');
-    chatInput.value = '';
+    const addLog = (text: string, type: 'user' | 'agent') => {
+      const msg = document.createElement('div');
+      msg.className = `msg ${type}`;
+      msg.textContent = text;
+      chatLog.appendChild(msg);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    };
 
-    // Mock Agent Logic
-    engine.think(1000); // Simulate processing
-    
-    setTimeout(() => {
-      let response: AgentResponse = { text: "I heard you." };
-
-      if (text.match(/hello|hi/i)) {
-        response = {
-          text: "Hello there! I am Flow Engine.",
-          state: 'TALKING',
-          actions: [{ type: 'animation', name: 'wave' }]
-        };
-      } else if (text.match(/dance/i)) {
-        response = {
-          text: "Look at this move!",
-          state: 'EMOTIONAL',
-          actions: [{ type: 'animation', name: 'dance' }]
-        };
-      } else if (text.match(/look/i)) {
-        response = {
-          text: "I am tracking your cursor now.",
-          state: 'LISTENING'
-        };
-      }
-
-      addLog(response.text || "...", 'agent');
-      engine.processAgentResponse(response);
-    }, 800);
-  };
-
-  document.getElementById('chat-send')?.addEventListener('click', handleUserMessage);
-  chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleUserMessage(); });
-
-  // 3. Protocol Tester
-  const jsonInput = document.getElementById('json-input') as HTMLTextAreaElement;
-  const jsonError = document.getElementById('json-error')!;
-
-  document.getElementById('json-send')?.addEventListener('click', () => {
-    try {
-      jsonError.style.display = 'none';
-      const data = JSON.parse(jsonInput.value);
-      engine.processAgentResponse(data);
+    const handleUserMessage = async () => {
+      const text = chatInput.value.trim();
+      if (!text) return;
       
-      // Echo the text to Chat Log if present in JSON
-      if (data.text) {
-        addLog(data.text, 'agent');
-      } else {
-        addLog(`[JSON Action Executed]`, 'agent');
-      }
-    } catch (e) {
-      jsonError.textContent = (e as Error).message;
-      jsonError.style.display = 'block';
-    }
-  });
+      addLog(text, 'user');
+      chatInput.value = '';
 
-  // 4. Polling for Brain State (Temporary until FlowEngine exposes event)
-  setInterval(() => {
-    const stateEl = document.getElementById('brain-state');
-    if (stateEl) {
-      // @ts-ignore: Accessing private brain for visualization
-      stateEl.textContent = engine.brain.getState(); 
-    }
-  }, 200);
+      // Mock Agent Logic
+      engine.think(1000); // Simulate processing
+      
+      setTimeout(() => {
+        let response: AgentResponse = { text: "I heard you." };
+
+        if (text.match(/hello|hi/i)) {
+          response = {
+            text: "Hello there! I am Flow Engine.",
+            state: 'TALKING',
+            actions: [{ type: 'animation', name: 'wave' }]
+          };
+        } else if (text.match(/dance/i)) {
+          response = {
+            text: "Look at this move!",
+            state: 'EMOTIONAL',
+            actions: [{ type: 'animation', name: 'dance' }]
+          };
+        } else if (text.match(/look/i)) {
+          response = {
+            text: "I am tracking your cursor now.",
+            state: 'LISTENING'
+          };
+        }
+
+        addLog(response.text || "...", 'agent');
+        engine.processAgentResponse(response);
+      }, 800);
+    };
+
+    document.getElementById('chat-send')?.addEventListener('click', handleUserMessage);
+    chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleUserMessage(); });
+
+    // 3. Protocol Tester
+    const jsonInput = document.getElementById('json-input') as HTMLTextAreaElement;
+    const jsonError = document.getElementById('json-error')!;
+
+    document.getElementById('json-send')?.addEventListener('click', () => {
+      try {
+        jsonError.style.display = 'none';
+        const data = JSON.parse(jsonInput.value);
+        engine.processAgentResponse(data);
+        
+        // Echo the text to Chat Log if present in JSON
+        if (data.text) {
+          addLog(data.text, 'agent');
+        } else {
+          addLog(`[JSON Action Executed]`, 'agent');
+        }
+      } catch (e) {
+        jsonError.textContent = (e as Error).message;
+        jsonError.style.display = 'block';
+      }
+    });
+
+    // 4. Polling for Brain State
+    setInterval(() => {
+      const stateEl = document.getElementById('brain-state');
+      if (stateEl) {
+        const debugEngine = engine as unknown as DebuggableEngine;
+        stateEl.textContent = debugEngine.brain.getState(); 
+      }
+    }, 200);
+
+  } catch (e) {
+    statusEl.textContent = 'Error loading assets. Check console.';
+    console.error('Engine Init Failed:', e);
+  }
 };
 
 init();

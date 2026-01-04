@@ -41,6 +41,35 @@ export interface BehaviorIntent {
 }
 
 /**
+ * Represents a single discrete action to be performed by the avatar.
+ * @template T Type of the command value (e.g. THREE.Vector3, number)
+ */
+export interface ActionCommand<T = any> {
+  type: 'animation' | 'expression' | 'interaction';
+  name: string;       // e.g. 'wave', 'smile', 'lookAt'
+  value?: T;          // Optional parameters
+  delay?: number;     // Delay before execution (ms)
+}
+
+/**
+ * Standard data structure for Agent-to-Avatar communication.
+ * Agents are encouraged to respond with this JSON structure.
+ */
+export interface AgentResponse {
+  /** The text content to be spoken by the avatar. */
+  text?: string;
+  
+  /** High-level behavior state to enter. */
+  state?: AvatarBehaviorState;
+  
+  /** Discrete actions to perform alongside the speech. */
+  actions?: ActionCommand[];
+  
+  /** Global emotion to set. */
+  emotion?: string;
+}
+
+/**
  * Interface for autonomous behavior components
  */
 export interface InteractionProcessor {

@@ -48,9 +48,9 @@ describe('FlowEngine Behavior Integration', () => {
       update: vi.fn()
     };
     
-    // @ts-expect-error Accessing private members for test
+    // @ts-expect-error: assigning mock model to private avatarModel
     engine.avatarModel = mockModel;
-    // @ts-expect-error
+    // @ts-expect-error: assigning mock controller to private animController
     engine.animController = mockAnimController;
 
     engine.say('Hello');
@@ -64,9 +64,9 @@ describe('FlowEngine Behavior Integration', () => {
   });
 
   it('should interrupt lookat and brain when playAction is called', () => {
-    // @ts-expect-error
+    // @ts-expect-error: spying on private lookAtProcessor
     const interruptSpy = vi.spyOn(engine.lookAtProcessor, 'interrupt');
-    // @ts-expect-error
+    // @ts-expect-error: spying on private brain
     const brainSpy = vi.spyOn(engine.brain, 'setIntent');
     
     engine.playAction('wave');
@@ -78,11 +78,133 @@ describe('FlowEngine Behavior Integration', () => {
   it('should update brain debug mode when setDebug is called', () => {
     engine.setDebug(true);
     expect(engine.isDebug).toBe(true);
-    // @ts-expect-error
+    // @ts-expect-error: accessing internal brain method
     expect(engine.brain.isDebugEnabled()).toBe(true);
 
     engine.setDebug(false);
-    // @ts-expect-error
+    // @ts-expect-error: accessing internal brain method
     expect(engine.brain.isDebugEnabled()).toBe(false);
+  });
+
+  it('should process structured AgentResponse correctly', () => {
+    vi.useFakeTimers();
+    const mockAnimController = {
+      play: vi.fn(),
+      init: vi.fn(),
+      update: vi.fn()
+    };
+    // @ts-expect-error: inject mock controller
+    engine.animController = mockAnimController;
+
+    // Test text-only response
+    engine.processAgentResponse({ text: 'Hello' });
+    // @ts-expect-error: access private brain
+    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.TALKING);
+    expect(mockAnimController.play).toHaveBeenCalledWith('talk');
+
+    // Test response with explicit state and actions
+    engine.processAgentResponse({
+      state: AvatarBehaviorStates.EMOTIONAL,
+      emotion: 'happy',
+      actions: [
+        { type: 'animation', name: 'wave' }
+      ]
+    });
+    
+    vi.runAllTimers();
+
+    // @ts-expect-error: access private brain
+    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.EMOTIONAL);
+    expect(mockAnimController.play).toHaveBeenCalledWith('wave');
+    
+    vi.useRealTimers();
+  });
+
+  it('should process AgentResponse with only state or only text', () => {
+    // 1. Only state
+    engine.processAgentResponse({ state: AvatarBehaviorStates.THINKING });
+    // @ts-expect-error: access private brain
+    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.THINKING);
+
+    // 2. Only text (defaults to TALKING)
+    engine.processAgentResponse({ text: 'Speech only' });
+    // @ts-expect-error: access private brain
+    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.TALKING);
+
+    // 3. Listening state
+    engine.processAgentResponse({ state: AvatarBehaviorStates.LISTENING });
+    // @ts-expect-error: access private brain
+    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.LISTENING);
+  });
+
+  it('should execute interaction commands and handle HOLDING timeout', () => {
+    vi.useFakeTimers();
+    let currentTime = 1000;
+    const perfSpy = vi.spyOn(performance, 'now').mockImplementation(() => currentTime);
+
+    const mockModel = new THREE.Group();
+    // @ts-expect-error: inject test doubles
+    engine.avatarModel = mockModel;
+    // @ts-expect-error
+    engine.headBone = new THREE.Object3D();
+    // @ts-expect-error
+    engine.currentAvatarConfig = { name: 'test', modelSrc: '', lookAt: { enabled: true } };
+
+    // @ts-expect-error: spy on private processor
+    const lookAtSpy = vi.spyOn(engine.lookAtProcessor, 'setTarget');
+    const targetPos = new THREE.Vector3(1, 2, 3);
+
+    engine.processAgentResponse({
+      actions: [
+        { type: 'interaction', name: 'lookAt', value: targetPos },
+        { type: 'expression', name: 'smile' } 
+      ]
+    });
+
+    vi.runAllTimers();
+    expect(lookAtSpy).toHaveBeenCalledWith(expect.any(THREE.Vector3));
+
+    // Simulate mouse interaction to enter HOLDING
+    // @ts-expect-error: trigger private event handler
+    engine.lookAtProcessor.onPointerDown({ clientX: 100, clientY: 100 });
+    // @ts-expect-error
+    engine.lookAtProcessor.onPointerUp();
+    
+    // @ts-expect-error: verify private state
+    expect(engine.lookAtProcessor.state).toBe('HOLDING');
+
+    // Advance time
+    currentTime += 5000;
+    // @ts-expect-error: trigger update
+    engine.lookAtProcessor.update(currentTime, 0.1);
+    
+    // @ts-expect-error: verify final state
+    expect(engine.lookAtProcessor.state).toBe('IDLE');
+
+    perfSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('should ignore unknown command types gracefully', () => {
+    vi.useFakeTimers();
+    const consoleSpy = vi.spyOn(console, 'warn');
+    // @ts-expect-error: testing invalid type payload
+    engine.processAgentResponse({
+      actions: [{ type: 'unknown', name: 'void' }]
+    });
+    
+    vi.runAllTimers();
+    // Should log warning
+    expect(consoleSpy).toHaveBeenCalled();
+    expect(consoleSpy.mock.calls[0][0]).toContain('Unknown action command type');
+    vi.useRealTimers();
+  });
+
+  it('should reject invalid response objects', () => {
+    const consoleSpy = vi.spyOn(console, 'warn');
+    // @ts-expect-error: testing invalid input
+    engine.processAgentResponse(null);
+    expect(consoleSpy).toHaveBeenCalled();
+    expect(consoleSpy.mock.calls[0][0]).toContain('Invalid AgentResponse');
   });
 });

@@ -7,7 +7,7 @@ import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
 import { LookAtProcessor } from './LookAtProcessor';
 import { BehaviorController } from './BehaviorController';
-import { AvatarBehaviorStates, type AvatarConfig, type BehaviorIntent, type AvatarBehaviorState } from '../types';
+import { AvatarBehaviorStates, type AvatarConfig, type BehaviorIntent, type AvatarBehaviorState, type AgentResponse, type ActionCommand } from '../types';
 
 export class FlowEngine {
   private container: HTMLElement;
@@ -90,21 +90,29 @@ export class FlowEngine {
     );
 
     // 7. Connect Brain to Reflexes
-    this.brain.onStateChange = (state: AvatarBehaviorState) => {
+    this.brain.onStateChange = (state: AvatarBehaviorState, _intent: BehaviorIntent) => {
       if (!this.animController) return;
       
       switch (state) {
         case AvatarBehaviorStates.IDLE:
           this.animController.play('idle');
+          this.lookAtProcessor.reset();
           break;
         case AvatarBehaviorStates.TALKING:
           this.animController.play('talk');
+          // Use clone to lock current position and avoid live-reference tracking issues
+          this.lookAtProcessor.setTarget(this.camera.position.clone());
           break;
         case AvatarBehaviorStates.THINKING:
           this.animController.play('thinking');
           break;
         case AvatarBehaviorStates.LISTENING:
           this.animController.play('idle'); 
+          this.lookAtProcessor.setTarget(this.camera.position.clone());
+          break;
+        case AvatarBehaviorStates.EMOTIONAL:
+          this.animController.play('idle');
+          this.lookAtProcessor.setTarget(this.camera.position.clone());
           break;
       }
     };
@@ -295,6 +303,67 @@ export class FlowEngine {
    */
   public setBehavior(intent: BehaviorIntent) {
     this.brain.setIntent(intent);
+  }
+
+  /**
+   * Processes a structured response from an AI Agent.
+   * This is the primary bridge for Agent-to-Avatar interaction.
+   * @param response The structured message according to the Unified Action Protocol
+   */
+  public processAgentResponse(response: AgentResponse) {
+    if (!response || typeof response !== 'object') {
+      console.warn('[Flow] Invalid AgentResponse received:', response);
+      return;
+    }
+
+    console.log('[Flow] Processing Agent Response:', response);
+
+    // 1. Handle high-level state if explicitly provided
+    if (response.state) {
+      this.brain.setIntent({ 
+        state: response.state,
+        text: response.text,
+        emotion: response.emotion
+      });
+    } else if (response.text) {
+      // 2. Default to TALKING if text is present but state is omitted
+      this.say(response.text);
+    }
+
+    // 3. Execute discrete actions
+    if (response.actions && Array.isArray(response.actions)) {
+      response.actions.forEach(cmd => {
+        setTimeout(() => {
+          this.executeCommand(cmd);
+        }, cmd.delay || 0);
+      });
+    }
+  }
+
+  /**
+   * Internal executor for discrete action commands.
+   * Note: Actions scheduled with delay may conflict if state changes rapidly.
+   */
+  private executeCommand(cmd: ActionCommand) {
+    if (!cmd || !cmd.type) return;
+
+    switch (cmd.type) {
+      case 'animation':
+        // Directly play animation via animController to avoid brain-reset feedback loops
+        if (this.animController) this.animController.play(cmd.name.toLowerCase());
+        break;
+      case 'expression':
+        // Future: Emotional blending/morph targets
+        break;
+      case 'interaction':
+        if (cmd.name === 'lookAt' && cmd.value instanceof THREE.Vector3) {
+          this.lookAtProcessor.setTarget(cmd.value);
+        }
+        break;
+      default:
+        console.warn('[Flow] Unknown action command type received:', cmd.type, cmd);
+        break;
+    }
   }
 
   /**

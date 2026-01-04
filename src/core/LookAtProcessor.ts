@@ -4,7 +4,8 @@ import type { InteractionProcessor, AvatarConfig } from '../types';
 const LookAtState = {
   IDLE: 'IDLE',
   TRACKING: 'TRACKING',
-  HOLDING: 'HOLDING'
+  HOLDING: 'HOLDING',
+  OVERRIDE: 'OVERRIDE'
 } as const;
 type LookAtState = typeof LookAtState[keyof typeof LookAtState];
 
@@ -80,7 +81,6 @@ export class LookAtProcessor implements InteractionProcessor {
     if (!headBone || !config || config.lookAt?.enabled === false) return;
 
     // --- 1. Capture Base Animation State ---
-    // Note: This refers to the AnimationController's internal mixer result for this frame.
     const animationQuat = headBone.quaternion.clone();
 
     if (!this.outputQuaternion) {
@@ -91,7 +91,7 @@ export class LookAtProcessor implements InteractionProcessor {
     this.updateState(timeMs, config);
 
     // --- 3. Determine the "Virtual Target" (Instantaneous Goal) ---
-    const isInteracting = (this.state === LookAtState.TRACKING || this.state === LookAtState.HOLDING);
+    const isInteracting = (this.state !== LookAtState.IDLE);
     
     if (isInteracting) {
       // GOAL: Look at the target point
@@ -99,7 +99,6 @@ export class LookAtProcessor implements InteractionProcessor {
       this.weight = 1;
     } else {
       // GOAL: Follow the animation
-      // Smoothing system gradually blends to the animation quaternion when released
       this._targetQuat.copy(animationQuat);
       this.weight = 0;
     }
@@ -124,7 +123,7 @@ export class LookAtProcessor implements InteractionProcessor {
 
     this.lookAtProxy.position.copy(headWorldPos);
     this.lookAtProxy.lookAt(this.lookAtTarget);
-    this.lookAtProxy.updateMatrixWorld(); // Ensure matrix is current
+    this.lookAtProxy.updateMatrixWorld(); 
     
     const rotOffset = config.lookAt?.rotationOffset || [0, 0, 0];
     this._offsetQuat.setFromEuler(new THREE.Euler(...rotOffset));
@@ -156,9 +155,29 @@ export class LookAtProcessor implements InteractionProcessor {
         }
         break;
       
+      case LookAtState.OVERRIDE:
+        // Stay in override until manually reset or new interaction
+        break;
+
       case LookAtState.IDLE:
         break;
     }
+  }
+
+  /**
+   * Set a manual world-space target for the avatar to look at.
+   */
+  public setTarget(position: THREE.Vector3) {
+    this.state = LookAtState.OVERRIDE;
+    this.stateTimer = performance.now();
+    this.lookAtTarget.copy(position);
+  }
+
+  /**
+   * Return the LookAt system to IDLE state.
+   */
+  public reset() {
+    this.state = LookAtState.IDLE;
   }
 
   private onPointerDown(event: PointerEvent) {

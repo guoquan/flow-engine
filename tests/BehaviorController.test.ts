@@ -8,7 +8,8 @@ describe('BehaviorController', () => {
   let performanceNowSpy: SpyInstance;
 
   beforeEach(() => {
-    brain = new BehaviorController();
+    // Enable debug for test verification of logs
+    brain = new BehaviorController({ debug: true });
     performanceNowSpy = vi.spyOn(performance, 'now');
   });
 
@@ -68,7 +69,7 @@ describe('BehaviorController', () => {
   });
 
   it('should handle duration: 0 as an immediate timeout', () => {
-    let currentTime = 1000;
+    const currentTime = 1000;
     performanceNowSpy.mockImplementation(() => currentTime);
 
     brain.setIntent({ state: AvatarBehaviorStates.THINKING, duration: 0 });
@@ -80,21 +81,21 @@ describe('BehaviorController', () => {
   });
 
   it('should not re-trigger timeout if already in IDLE', () => {
-    let currentTime = 1000;
+    const currentTime = 1000;
     performanceNowSpy.mockImplementation(() => currentTime);
     const consoleSpy = vi.spyOn(console, 'log');
 
     // Force a state that will timeout
     brain.setIntent({ state: AvatarBehaviorStates.THINKING, duration: 1000 });
     
-    currentTime += 2000;
-    brain.update(currentTime); // First timeout
+    // Trigger timeout
+    brain.update(currentTime + 2000); 
     expect(brain.getState()).toBe(AvatarBehaviorStates.IDLE);
     
     const countAfterFirstTimeout = consoleSpy.mock.calls.length;
     
     // Call update again - should NOT log another timeout message
-    brain.update(currentTime + 100);
+    brain.update(currentTime + 3000);
     expect(consoleSpy.mock.calls.length).toBe(countAfterFirstTimeout);
   });
 
@@ -132,28 +133,32 @@ describe('BehaviorController', () => {
     const consoleSpy = vi.spyOn(console, 'log');
     
     brain.onStateChange = () => {
-      // Synchronously call setIntent during a transition
-      // This should be ignored due to the lock
+      // Blocked nested call
       brain.setIntent({ state: AvatarBehaviorStates.THINKING });
       throw new Error('Callback Failure');
     };
 
-    // This should trigger transition -> callback -> nested setIntent (blocked) -> throw -> finally unlock
     expect(() => {
       brain.setIntent({ state: AvatarBehaviorStates.TALKING });
     }).toThrow('Callback Failure');
     
-    // Verify final state is TALKING (nested THINKING was ignored)
     expect(brain.getState()).toBe(AvatarBehaviorStates.TALKING);
     
-    // Verify nested call didn't log its transition
     const transitionLogs = consoleSpy.mock.calls.filter(args => args[0].includes('Transition'));
     expect(transitionLogs.length).toBe(1);
     expect(transitionLogs[0][0]).toContain('IDLE -> TALKING');
 
-    // Verify recovery: subsequent calls work after error
+    // Recovery
     brain.onStateChange = undefined;
     brain.setIntent({ state: AvatarBehaviorStates.IDLE });
     expect(brain.getState()).toBe(AvatarBehaviorStates.IDLE);
+  });
+
+  it('should remain silent when debug is disabled', () => {
+    const silentBrain = new BehaviorController({ debug: false });
+    const consoleSpy = vi.spyOn(console, 'log');
+    
+    silentBrain.setIntent({ state: AvatarBehaviorStates.TALKING });
+    expect(consoleSpy).not.toHaveBeenCalled();
   });
 });

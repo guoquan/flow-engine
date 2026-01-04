@@ -6,7 +6,8 @@ import { AvatarLoader } from './AvatarLoader';
 import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
 import { LookAtProcessor } from './LookAtProcessor';
-import type { AvatarConfig } from '../types';
+import { BehaviorController } from './BehaviorController';
+import { AvatarBehaviorStates, type AvatarConfig, type BehaviorIntent, type AvatarBehaviorState } from '../types';
 
 export class FlowEngine {
   private container: HTMLElement;
@@ -27,6 +28,7 @@ export class FlowEngine {
 
   // Components
   private lookAtProcessor: LookAtProcessor;
+  private brain: BehaviorController;
   private currentAvatarConfig: AvatarConfig | null = null;
 
   // Debug Helpers
@@ -43,6 +45,7 @@ export class FlowEngine {
     this.clock = new THREE.Clock();
     this.loader = new AvatarLoader();
     this.stageLoader = new StageLoader();
+    this.brain = new BehaviorController();
 
     // 1. Scene
     this.scene = new THREE.Scene();
@@ -86,7 +89,27 @@ export class FlowEngine {
       }
     );
 
-    // 7. Event Handlers
+    // 7. Connect Brain to Reflexes
+    this.brain.onStateChange = (state: AvatarBehaviorState) => {
+      if (!this.animController) return;
+      
+      switch (state) {
+        case AvatarBehaviorStates.IDLE:
+          this.animController.play('idle');
+          break;
+        case AvatarBehaviorStates.TALKING:
+          this.animController.play('talk');
+          break;
+        case AvatarBehaviorStates.THINKING:
+          this.animController.play('thinking');
+          break;
+        case AvatarBehaviorStates.LISTENING:
+          this.animController.play('idle'); 
+          break;
+      }
+    };
+
+    // 8. Event Handlers
     window.addEventListener('resize', this.onWindowResize.bind(this));
 
     // Start Loop (WebGPU Style)
@@ -138,6 +161,8 @@ export class FlowEngine {
           idle: { clipName: 'Idle', loop: true },
           walk: { clipName: 'Walking', loop: true },
           wave: { clipName: 'Wave', loop: false, next: 'idle' },
+          talk: { clipName: 'Talk', loop: true },
+          thinking: { clipName: 'Thinking', loop: true },
           dance: { clipName: 'Dance', loop: false, next: 'idle' },
           bow: { clipName: 'Bow', loop: false, next: 'idle' }
         }
@@ -165,8 +190,13 @@ export class FlowEngine {
 
   public setDebug(enabled: boolean) {
     this.isDebug = enabled;
-    if (enabled) this.createDebugHelpers();
-    else this.removeDebugHelpers();
+    if (enabled) {
+      this.createDebugHelpers();
+      this.brain.setDebugMode(true);
+    } else {
+      this.removeDebugHelpers();
+      this.brain.setDebugMode(false);
+    }
   }
 
   private createDebugHelpers() {
@@ -231,13 +261,58 @@ export class FlowEngine {
 
   public isAutoRotate = false;
 
+  /**
+   * HIGH-LEVEL BEHAVIOR API
+   */
+
+  /**
+   * Submit a 'TALKING' intent to the brain.
+   * @param text What is being said
+   * @param duration Time in ms to stay in talking state
+   */
+  public say(text: string, duration: number = 3000) {
+    this.brain.setIntent({ 
+      state: AvatarBehaviorStates.TALKING, 
+      text, 
+      duration 
+    });
+  }
+
+  /**
+   * Submit a 'THINKING' intent to the brain.
+   * @param duration Time in ms to stay in thinking state
+   */
+  public think(duration: number = 3000) {
+    this.brain.setIntent({ 
+      state: AvatarBehaviorStates.THINKING, 
+      duration 
+    });
+  }
+
+  /**
+   * Submit a complex behavior intent.
+   * @param intent The behavior intent object
+   */
+  public setBehavior(intent: BehaviorIntent) {
+    this.brain.setIntent(intent);
+  }
+
+  /**
+   * Play a manual low-level action. Interrupts high-level brain state.
+   * @param action State name defined in config.animations.states
+   */
   public playAction(action: string) {
     this.lookAtProcessor.interrupt();
+    this.brain.setIntent({ state: AvatarBehaviorStates.IDLE });
     if (this.animController) this.animController.play(action.toLowerCase());
   }
 
   private animate(_timeMs: number) {
     const delta = this.clock.getDelta();
+    
+    // Update Brain
+    this.brain.update(_timeMs);
+
     if (this.avatarModel) {
        if (this.animController) this.animController.update(delta);
        this.lookAtProcessor.update(_timeMs, delta);

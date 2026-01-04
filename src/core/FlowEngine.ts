@@ -90,21 +90,26 @@ export class FlowEngine {
     );
 
     // 7. Connect Brain to Reflexes
-    this.brain.onStateChange = (state: AvatarBehaviorState) => {
+    this.brain.onStateChange = (state: AvatarBehaviorState, intent: BehaviorIntent) => {
       if (!this.animController) return;
       
       switch (state) {
         case AvatarBehaviorStates.IDLE:
           this.animController.play('idle');
+          this.lookAtProcessor.reset();
           break;
         case AvatarBehaviorStates.TALKING:
           this.animController.play('talk');
+          // Optional: Look at camera when talking to user
+          this.lookAtProcessor.setTarget(this.camera.position);
           break;
         case AvatarBehaviorStates.THINKING:
           this.animController.play('thinking');
+          // Optional: Look slightly away or at a thinking point
           break;
         case AvatarBehaviorStates.LISTENING:
           this.animController.play('idle'); 
+          this.lookAtProcessor.setTarget(this.camera.position);
           break;
       }
     };
@@ -295,6 +300,56 @@ export class FlowEngine {
    */
   public setBehavior(intent: BehaviorIntent) {
     this.brain.setIntent(intent);
+  }
+
+  /**
+   * Processes a structured response from an AI Agent.
+   * This is the primary bridge for Agent-to-Avatar interaction.
+   * @param response The structured message according to the Unified Action Protocol
+   */
+  public processAgentResponse(response: AgentResponse) {
+    console.log('[Flow] Processing Agent Response:', response);
+
+    // 1. Handle high-level state if explicitly provided
+    if (response.state) {
+      this.brain.setIntent({ 
+        state: response.state,
+        text: response.text,
+        emotion: response.emotion
+      });
+    } else if (response.text) {
+      // 2. Default to TALKING if text is present but state is omitted
+      this.say(response.text);
+    }
+
+    // 3. Execute discrete actions
+    if (response.actions && response.actions.length > 0) {
+      response.actions.forEach(cmd => {
+        setTimeout(() => {
+          this.executeCommand(cmd);
+        }, cmd.delay || 0);
+      });
+    }
+  }
+
+  /**
+   * Internal executor for discrete action commands.
+   */
+  private executeCommand(cmd: ActionCommand) {
+    switch (cmd.type) {
+      case 'animation':
+        // Directly play animation without necessarily resetting the global brain state
+        if (this.animController) this.animController.play(cmd.name.toLowerCase());
+        break;
+      case 'expression':
+        // Future: Emotional blending/morph targets
+        break;
+      case 'interaction':
+        if (cmd.name === 'lookAt' && cmd.value instanceof THREE.Vector3) {
+          this.lookAtProcessor.setTarget(cmd.value);
+        }
+        break;
+    }
   }
 
   /**

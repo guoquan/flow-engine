@@ -85,4 +85,38 @@ describe('FlowEngine Behavior Integration', () => {
     // @ts-expect-error
     expect(engine.brain.isDebugEnabled()).toBe(false);
   });
+
+  it('should process structured AgentResponse correctly', () => {
+    vi.useFakeTimers();
+    const mockAnimController = {
+      play: vi.fn(),
+      init: vi.fn(),
+      update: vi.fn()
+    };
+    // @ts-expect-error
+    engine.animController = mockAnimController;
+
+    // Test text-only response
+    engine.processAgentResponse({ text: 'Hello' });
+    // @ts-ignore
+    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.TALKING);
+    expect(mockAnimController.play).toHaveBeenCalledWith('talk');
+
+    // Test response with explicit state and actions
+    engine.processAgentResponse({
+      state: AvatarBehaviorStates.EMOTIONAL,
+      emotion: 'happy',
+      actions: [
+        { type: 'animation', name: 'wave' }
+      ]
+    });
+    
+    vi.runAllTimers();
+
+    // @ts-ignore
+    expect(engine.brain.getState()).toBe(AvatarBehaviorStates.EMOTIONAL);
+    expect(mockAnimController.play).toHaveBeenCalledWith('wave');
+    
+    vi.useRealTimers();
+  });
 });

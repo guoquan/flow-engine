@@ -55,7 +55,7 @@ export class FlowEngine {
     // 2. Camera
     this.camera = new THREE.PerspectiveCamera(
       45, 
-      window.innerWidth / window.innerHeight, 
+      this.container.clientWidth / this.container.clientHeight, 
       0.1, 
       100
     );
@@ -63,7 +63,7 @@ export class FlowEngine {
 
     // 3. Renderer (WebGPU)
     this.renderer = new WebGPURenderer({ antialias: true, alpha: true });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.container.appendChild(this.renderer.domElement);
 
@@ -262,9 +262,9 @@ export class FlowEngine {
   }
 
   private onWindowResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
   }
 
   public isAutoRotate = false;

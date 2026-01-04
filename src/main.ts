@@ -1,127 +1,155 @@
 import './style.css';
 import { FlowEngine } from './core/FlowEngine';
+import type { AgentResponse } from './types';
 
+// Inject Layout
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div id="canvas-container"></div>
-  <div id="ui-overlay">
-    <h1>Flow (服喽)</h1>
-    <p>Status: <span id="status">Initializing...</span></p>
-    <p style="font-size: 0.8rem; color: #00d2ff;">Tip: Click & Hold anywhere to track! (Advanced LookAt v6)</p>
-    <div id="controls" style="margin-top: 10px; pointer-events: auto;">
-      <label style="margin-right: 15px;">
-        <input type="checkbox" id="auto-rotate" /> Auto Rotate
-      </label>
-      <label>
-        <input type="checkbox" id="debug-mode" /> Debug Mode
-      </label>
+  <div id="canvas-container">
+    <div style="position: absolute; top: 10px; left: 10px; pointer-events: none; opacity: 0.6;">
+      <h1>Flow Engine v0.2</h1>
+      <div id="loading-status">Initializing...</div>
     </div>
   </div>
   
-  <div id="ai-response"></div>
+  <div id="sidebar">
+    <div class="panel">
+      <h2>Dashboard</h2>
+      <div class="control-group">
+        <label><input type="checkbox" id="check-debug"> Debug Mode</label>
+        <label><input type="checkbox" id="check-rotate"> Auto Rotate</label>
+        <div class="status-indicator">Brain State: <span id="brain-state">IDLE</span></div>
+      </div>
+    </div>
 
-  <div id="chat-container">
-    <input type="text" id="user-input" placeholder="Say hello..." />
-    <button id="send-btn">Send</button>
+    <div class="panel" style="display: flex; flex-direction: column; gap: 8px;">
+      <h2>Chat</h2>
+      <div id="chat-log"></div>
+      <div style="display: flex; gap: 4px;">
+        <input type="text" id="chat-input" placeholder="Talk to avatar..." />
+        <button id="chat-send">Send</button>
+      </div>
+    </div>
+
+    <div class="panel" style="flex: 1; display: flex; flex-direction: column;">
+      <h2>Protocol Tester</h2>
+      <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 4px;">Send raw JSON (Unified Action Protocol):</p>
+      <textarea id="json-input">{
+  "text": "Checking systems.",
+  "state": "THINKING",
+  "actions": [
+    { "type": "animation", "name": "wave", "delay": 1000 }
+  ]
+}</textarea>
+      <div id="json-error"></div>
+      <button id="json-send" style="margin-top: 8px;">Process JSON</button>
+    </div>
   </div>
 `;
 
-// Initialize Engine
+// Init Engine
 const init = async () => {
-  const statusEl = document.getElementById('status')!;
+  const statusEl = document.getElementById('loading-status')!;
+  const engine = new FlowEngine('canvas-container');
+
   try {
-    console.log('[Flow] Creating engine instance...');
-    const engine = new FlowEngine('canvas-container');
-    
-    statusEl.textContent = 'Loading Avatar...';
-    
-    // Load the real GLB avatar (handle base path for GH Pages)
     const baseUrl = import.meta.env.BASE_URL.endsWith('/') 
       ? import.meta.env.BASE_URL 
       : `${import.meta.env.BASE_URL}/`;
       
     await engine.loadAvatar(`${baseUrl}assets/avatars/expressive/config.json`);
     await engine.loadStage(`${baseUrl}assets/stages/default/config.json`);
+    statusEl.textContent = 'Ready';
+  } catch (e) {
+    statusEl.textContent = 'Error loading assets';
+    console.error(e);
+  }
+
+  // --- UI Logic ---
+
+  // 1. Dashboard
+  document.getElementById('check-debug')?.addEventListener('change', (e) => {
+    engine.setDebug((e.target as HTMLInputElement).checked);
+  });
+  document.getElementById('check-rotate')?.addEventListener('change', (e) => {
+    engine.isAutoRotate = (e.target as HTMLInputElement).checked;
+  });
+
+  // 2. Chat System
+  const chatLog = document.getElementById('chat-log')!;
+  const chatInput = document.getElementById('chat-input') as HTMLInputElement;
+  
+  const addLog = (text: string, type: 'user' | 'agent') => {
+    const msg = document.createElement('div');
+    msg.className = `msg ${type}`;
+    msg.textContent = text;
+    chatLog.appendChild(msg);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  };
+
+  const handleUserMessage = async () => {
+    const text = chatInput.value.trim();
+    if (!text) return;
     
-    statusEl.textContent = 'Ready (Idle)';
+    addLog(text, 'user');
+    chatInput.value = '';
 
-    // Controls Logic
-    const autoRotateCheck = document.getElementById('auto-rotate') as HTMLInputElement;
-    autoRotateCheck.addEventListener('change', (e) => {
-      engine.isAutoRotate = (e.target as HTMLInputElement).checked;
-    });
+    // Mock Agent Logic
+    engine.think(1000); // Simulate processing
+    
+    setTimeout(() => {
+      let response: AgentResponse = { text: "I heard you." };
 
-    const debugCheck = document.getElementById('debug-mode') as HTMLInputElement;
-    debugCheck.addEventListener('change', (e) => {
-      engine.setDebug((e.target as HTMLInputElement).checked);
-    });
-
-    // Chat Interaction Logic
-    const inputEl = document.getElementById('user-input') as HTMLInputElement;
-    const sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
-    const responseEl = document.getElementById('ai-response')!;
-
-    const sendMessage = async () => {
-      const text = inputEl.value.trim().toLowerCase();
-      if (!text) return;
-
-      // UI State
-      inputEl.value = '';
-      statusEl.textContent = 'Thinking...';
-
-      // --- Local Brain Logic (No fetch needed) ---
-      engine.think(1000); // Trigger THINKING state
-
-      let replyText = "我听到了。";
-      let action = "idle";
-
-      if (text.includes("你好") || text.includes("hello")) {
-        replyText = "你好呀！很高兴见到你。";
-        action = "wave";
-      } else if (text.includes("跳舞") || text.includes("dance")) {
-        replyText = "好的，给你表演一段！";
-        action = "dance";
-      } else if (text.includes("再见") || text.includes("bye")) {
-        replyText = "下次再聊，拜拜！";
-        action = "bow";
-      } else if (text.includes("死") || text.includes("death") || text.includes("die")) {
-        replyText = "系统故障...重启中...";
-        action = "death";
+      if (text.match(/hello|hi/i)) {
+        response = {
+          text: "Hello there! I am Flow Engine.",
+          state: 'TALKING',
+          actions: [{ type: 'animation', name: 'wave' }]
+        };
+      } else if (text.match(/dance/i)) {
+        response = {
+          text: "Look at this move!",
+          state: 'EMOTIONAL',
+          actions: [{ type: 'animation', name: 'dance' }]
+        };
+      } else if (text.match(/look/i)) {
+        response = {
+          text: "I am tracking your cursor now.",
+          state: 'LISTENING'
+        };
       }
 
-      // Handle Response
-      setTimeout(() => {
-        statusEl.textContent = `Action: ${action}`;
-        responseEl.textContent = replyText;
-        responseEl.classList.add('visible');
+      addLog(response.text || "...", 'agent');
+      engine.processAgentResponse(response);
+    }, 800);
+  };
 
-        console.log('[Flow] Local Brain Decision:', { action, replyText });
-        
-        // Use high-level API
-        const sayDuration = 3000;
-        engine.say(replyText, sayDuration);
-        
-        // If it's a specific action, override
-        if (action !== 'idle') {
-          engine.playAction(action);
-        }
+  document.getElementById('chat-send')?.addEventListener('click', handleUserMessage);
+  chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleUserMessage(); });
 
-        // Hide text after the same duration as the behavior
-        setTimeout(() => {
-          responseEl.classList.remove('visible');
-          statusEl.textContent = 'Ready (Idle)';
-        }, sayDuration);
-      }, 1000);
-    };
+  // 3. Protocol Tester
+  const jsonInput = document.getElementById('json-input') as HTMLTextAreaElement;
+  const jsonError = document.getElementById('json-error')!;
 
-    sendBtn.addEventListener('click', sendMessage);
-    inputEl.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
-    });
+  document.getElementById('json-send')?.addEventListener('click', () => {
+    try {
+      jsonError.style.display = 'none';
+      const data = JSON.parse(jsonInput.value);
+      engine.processAgentResponse(data);
+      addLog(`[JSON] Executed`, 'agent');
+    } catch (e) {
+      jsonError.textContent = (e as Error).message;
+      jsonError.style.display = 'block';
+    }
+  });
 
-  } catch (err) {
-    console.error(err);
-    document.getElementById('status')!.textContent = 'Error!';
-  }
+  // 4. Polling for Brain State (Temporary until FlowEngine exposes event)
+  setInterval(() => {
+    const stateEl = document.getElementById('brain-state');
+    if (stateEl) {
+      // @ts-ignore: Accessing private brain for visualization
+      stateEl.textContent = engine.brain.getState(); 
+    }
+  }, 200);
 };
 
 init();

@@ -101,6 +101,7 @@ export class FlowMcpServer {
         case "play_action":
           return this.handlePlayAction(args as { action: string });
         default:
+          // Should be unreachable due to earlier validation
           throw new Error(`Unknown tool: ${name}`);
       }
     });

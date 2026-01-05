@@ -40,21 +40,6 @@ To let Claude control your avatar, add the following configuration to your `clau
 **MacOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
-```json
-{
-  "mcpServers": {
-    "flow-engine": {
-      "command": "node",
-      "args": ["/ABSOLUTE/PATH/TO/flow-engine/src/mcp/server.ts"],
-      "env": {
-        "NODE_OPTIONS": "--loader ts-node/esm"
-      }
-    }
-  }
-}
-```
-*Note: For a smoother experience, we recommend pointing to the compiled JS if available, or using `tsx` if running from source.*
-
 **Recommended (using `npm run mcp` wrapper):**
 ```json
 {
@@ -77,7 +62,7 @@ The MCP server exposes the following tools to the AI agent:
 #### `say`
 Makes the avatar speak with a text bubble and animation.
 *   **text** (string, required): The content to speak.
-*   **duration** (number, optional): How long to display the bubble (ms). Default: 3000.
+*   **duration** (number, optional): How long to display the text in the bubble (ms). Default: 3000.
 
 #### `think`
 Makes the avatar enter a thinking state.
@@ -99,7 +84,7 @@ graph LR
     C -- WebGPU --> D[3D Avatar];
 ```
 
-**Current Status (v0.2):**
+**Current Status (v0.1.10):**
 The MCP Server currently logs actions to `stderr` as a placeholder. In **Phase 4**, we will implement the WebSocket bridge to forward these commands to the live browser session.
 
 ---
@@ -162,7 +147,7 @@ MCP 服务器向 AI Agent 暴露了以下工具：
 #### `say` (说话)
 让数字人说话，显示气泡并播放说话动画。
 *   **text** (string, 必填): 说话内容。
-*   **duration** (number, 可选): 气泡显示时长 (毫秒)。默认: 3000。
+*   **duration** (number, 可选): 文字在气泡中的显示时长 (毫秒)。默认: 3000。
 
 #### `think` (思考)
 让数字人进入思考状态。
@@ -184,5 +169,5 @@ graph LR
     C -- WebGPU --> D[3D Avatar];
 ```
 
-**当前状态 (v0.2):**
+**当前状态 (v0.1.10):**
 MCP Server 目前仅将动作日志输出到 `stderr` 作为占位符。在 **Phase 4** 中，我们将实现 WebSocket 桥接，将指令实时转发到浏览器会话中。

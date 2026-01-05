@@ -92,10 +92,16 @@ engine.playAction('dance');
 ---
 
 ### ⚙️ Configuration Schemas
-The engine uses Zod schemas to validate inputs. You can import these types for TypeScript safety:
+The engine uses Zod schemas to validate inputs internally.
+
+While the concrete schema types exist inside the library, they are currently not exported as part of the public API. Instead, you can rely on the method signatures or derive types using TypeScript's utility types:
 
 ```typescript
-import type { SayParams, ThinkParams } from '@guoquan/flow-engine/schemas/actions';
+import type { FlowEngine } from '@guoquan/flow-engine';
+
+// Derive parameter types from the engine methods
+type SayParams = Parameters<FlowEngine['say']>[0];
+type ThinkParams = Parameters<FlowEngine['think']>[0];
 ```
 
 ---
@@ -175,6 +181,7 @@ engine.think({ text: "Hmm...", duration: 5000 });
 直接触发底层的动画状态，绕过部分高级行为逻辑。适用于特定的手势，如挥手或鞠躬。
 
 **签名:**
+**签名:**
 ```typescript
 playAction(action: string): void
 ```
@@ -188,8 +195,12 @@ engine.playAction('dance');
 ---
 
 ### ⚙️ 配置模式 (Schemas)
-引擎使用 Zod 模式来验证输入。您可以导入这些类型以获得 TypeScript 类型安全：
+引擎使用 Zod 模式来验证输入。您可以通过 `FlowEngine` 方法签名来推导参数类型，从而获得 TypeScript 类型安全：
 
 ```typescript
-import type { SayParams, ThinkParams } from '@guoquan/flow-engine/schemas/actions';
+import type { FlowEngine } from '@guoquan/flow-engine';
+
+// 从引擎方法推导参数类型
+type SayParams = Parameters<FlowEngine['say']>[0];
+type ThinkParams = Parameters<FlowEngine['think']>[0];
 ```

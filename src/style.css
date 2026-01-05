@@ -109,6 +109,7 @@ textarea {
   flex-direction: column;
   gap: 8px;
   max-height: 300px;
+  min-height: 150px;
 }
 
 .msg {
@@ -134,11 +135,63 @@ textarea {
   font-size: 0.8rem;
   color: #888;
   margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
+
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #444;
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+.badge.idle { background: #444; }
+.badge.talking { background: #2e7d32; }
+.badge.thinking { background: #f57f17; color: #000; }
+.badge.listening { background: #1565c0; }
+.badge.emotional { background: #c62828; }
 
 #json-error {
   color: #ff4444;
   font-size: 0.8rem;
   margin-top: 4px;
+  display: none;
+}
+
+/* New Playground UI */
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.input-row {
+  display: flex;
+  gap: 4px;
+}
+
+.input-row input {
+  flex: 1;
+}
+
+.icon-btn {
+  padding: 0 10px;
+  font-weight: bold;
+}
+
+.label-small {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-bottom: -4px;
+  display: block;
+}
+
+/* Collapsible Panels */
+.panel.collapsed .panel-content {
   display: none;
 }

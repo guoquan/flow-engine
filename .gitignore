@@ -29,4 +29,6 @@ dist-e2e
 playwright-report
 test-results
 test-results-visual
+dist-docs
+
 

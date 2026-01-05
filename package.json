@@ -21,7 +21,8 @@
     "test:coverage": "vitest run --coverage",
     "preview": "vite preview --host",
     "prepare": "npm run build",
-    "mcp": "tsx src/mcp/server.ts"
+    "mcp": "tsx src/mcp/server.ts",
+    "docs:generate": "tsx scripts/generate-api-docs.ts"
   },
   "peerDependencies": {
     "three": ">=0.170.0"
@@ -46,8 +47,9 @@
     "url": "https://github.com/guoquan/flow-engine.git"
   },
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^8.4.0",
     "@modelcontextprotocol/sdk": "^1.25.1",
-    "zod": "^3.25.76",
+    "zod": "^4.3.5",
     "zod-to-json-schema": "^3.25.1"
   }
 }

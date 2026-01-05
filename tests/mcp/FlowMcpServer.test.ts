@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FlowMcpServer } from '../../src/mcp/server';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-// Mock the MCP SDK
+// Mock the MCP SDK Server
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => {
   return {
     Server: class {
-      private handlers = new Map();
+      public handlers = new Map();
       constructor() {}
       setRequestHandler(schema: any, handler: any) {
         this.handlers.set(schema, handler);
@@ -13,6 +14,7 @@ vi.mock('@modelcontextprotocol/sdk/server/index.js', () => {
       async callHandler(schema: any, params: any) {
         const handler = this.handlers.get(schema);
         if (handler) return handler(params);
+        return null;
       }
       connect = vi.fn();
     }
@@ -35,46 +37,47 @@ describe('FlowMcpServer', () => {
   it('should register tools correctly', async () => {
     // @ts-ignore - access private server to verify registration
     const mcpServer = server.server;
-    const listToolsHandler = mcpServer.handlers.get(expect.anything()); // ListToolsRequestSchema
     
-    // We can't easily import the schemas in the mock easily without more setup, 
-    // but we can check if the handler returns the expected tools.
-    // In our implementation, we set handlers in the constructor.
+    // Check if handler is registered for ListToolsRequestSchema
+    expect(mcpServer.handlers.has(ListToolsRequestSchema)).toBe(true);
+
+    // Manual trigger
+    const result = await mcpServer.callHandler(ListToolsRequestSchema, {});
     
-    // Manual trigger for mock
-    const result = await mcpServer.callHandler(expect.anything(), {});
-    if (result && result.tools) {
-      expect(result.tools).toHaveLength(3);
-      expect(result.tools[0].name).toBe('say');
-    }
+    expect(result).toBeDefined();
+    expect(result.tools).toBeDefined();
+    expect(result.tools).toHaveLength(3);
+    expect(result.tools[0].name).toBe('say');
   });
 
   it('should handle tool calls correctly', async () => {
     // @ts-ignore
     const mcpServer = server.server;
     
+    expect(mcpServer.handlers.has(CallToolRequestSchema)).toBe(true);
+
     // Simulate a 'say' call
-    const sayResult = await mcpServer.callHandler(expect.anything(), {
+    const sayResult = await mcpServer.callHandler(CallToolRequestSchema, {
       params: {
         name: 'say',
         arguments: { text: 'Test message' }
       }
     });
     
-    if (sayResult && sayResult.content) {
-      expect(sayResult.content[0].text).toContain('Test message');
-    }
+    expect(sayResult).toBeDefined();
+    expect(sayResult.content).toBeDefined();
+    expect(sayResult.content[0].text).toContain('Test message');
 
     // Simulate a 'play_action' call
-    const actionResult = await mcpServer.callHandler(expect.anything(), {
+    const actionResult = await mcpServer.callHandler(CallToolRequestSchema, {
       params: {
         name: 'play_action',
         arguments: { action: 'wave' }
       }
     });
 
-    if (actionResult && actionResult.content) {
-      expect(actionResult.content[0].text).toContain('wave');
-    }
+    expect(actionResult).toBeDefined();
+    expect(actionResult.content).toBeDefined();
+    expect(actionResult.content[0].text).toContain('wave');
   });
 });

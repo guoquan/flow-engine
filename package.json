@@ -20,7 +20,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "preview": "vite preview --host",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "mcp": "tsx src/mcp/server.ts"
   },
   "peerDependencies": {
     "three": ">=0.170.0"
@@ -34,6 +35,7 @@
     "cross-env": "^10.1.0",
     "jsdom": "^27.4.0",
     "three": "^0.182.0",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vite-plugin-dts": "^4.5.4",

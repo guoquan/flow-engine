@@ -5,6 +5,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { fileURLToPath } from "url";
 
 /**
  * FlowMcpServer
@@ -78,6 +79,10 @@ export class FlowMcpServer {
       const { name } = request.params;
       const args = request.params.arguments;
 
+      if (!args) {
+        throw new Error("Missing arguments");
+      }
+
       switch (name) {
         case "say":
           return this.handleSay(args as { text: string; duration?: number });
@@ -91,25 +96,55 @@ export class FlowMcpServer {
     });
   }
 
+  /**
+   * Placeholder implementation for the "say" tool.
+   *
+   * NOTE: This method does not currently talk to a real FlowEngine instance.
+   * In a production setup, this should delegate to FlowEngine.say() via
+   * an IPC or WebSocket connection to the running FlowEngine process.
+   */
   private async handleSay(args: { text: string; duration?: number }) {
-    // In a real implementation, this would send a message to the browser
-    console.error(`[MCP] Executing say: "${args.text}"`);
+    const durationInfo = args.duration !== undefined ? ` for ${args.duration} ms` : "";
+    console.error(`[MCP] Executing say: "${args.text}"${durationInfo}`);
     return {
-      content: [{ type: "text", text: `Avatar is now saying: "${args.text}"` }],
+      content: [
+        { 
+          type: "text", 
+          text: `Avatar is now saying: "${args.text}"${durationInfo} (stub: no connected FlowEngine)` 
+        }
+      ],
     };
   }
 
+  /**
+   * Placeholder implementation for the "think" tool.
+   */
   private async handleThink(args: { text?: string; duration?: number }) {
-    console.error(`[MCP] Executing think: "${args.text || "..."}"`);
+    const thought = args.text || "...";
+    const durationInfo = args.duration !== undefined ? ` for ${args.duration} ms` : "";
+    console.error(`[MCP] Executing think: "${thought}"${durationInfo}`);
     return {
-      content: [{ type: "text", text: `Avatar is now thinking: "${args.text || "..."}"` }],
+      content: [
+        { 
+          type: "text", 
+          text: `Avatar is now thinking: "${thought}"${durationInfo} (stub: no connected FlowEngine)` 
+        }
+      ],
     };
   }
 
+  /**
+   * Placeholder implementation for the "play_action" tool.
+   */
   private async handlePlayAction(args: { action: string }) {
     console.error(`[MCP] Executing play_action: ${args.action}`);
     return {
-      content: [{ type: "text", text: `Avatar is now playing action: ${args.action}` }],
+      content: [
+        { 
+          type: "text", 
+          text: `Avatar is now playing action: ${args.action} (stub: no connected FlowEngine)` 
+        }
+      ],
     };
   }
 
@@ -120,10 +155,25 @@ export class FlowMcpServer {
   }
 }
 
-// Entry point for CLI usage
-if (import.meta.url.endsWith(process.argv[1]) || process.argv[1]?.endsWith('server.js')) {
+/**
+ * Programmatic entry point for running the Flow MCP server via CLI-style usage.
+ */
+export async function runFlowMcpServerCli(): Promise<never> {
   const server = new FlowMcpServer();
-  server.run().catch((error) => {
+  try {
+    await server.run();
+  } catch (error) {
+    console.error("Fatal error in MCP server:", error);
+    process.exit(1);
+  }
+  // The server should keep the process alive
+  return new Promise(() => {}); 
+}
+
+// Entry point for CLI usage
+const currentPath = fileURLToPath(import.meta.url);
+if (process.argv[1] === currentPath || process.argv[1]?.endsWith("server.ts")) {
+  runFlowMcpServerCli().catch((error) => {
     console.error("Fatal error in MCP server:", error);
     process.exit(1);
   });

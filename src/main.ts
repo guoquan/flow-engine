@@ -19,6 +19,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <label><input type="checkbox" id="check-debug"> Debug Mode</label>
         <label><input type="checkbox" id="check-rotate"> Auto Rotate</label>
         <div class="status-indicator">Brain State: <span id="brain-state" class="badge">IDLE</span></div>
+        <div class="status-indicator">MCP Bridge: <span id="mcp-status" class="badge" style="background: #444;">Disconnected</span></div>
       </div>
     </div>
 
@@ -258,6 +259,61 @@ const init = async () => {
         stateEl.className = 'badge ' + debugEngine.brain.getState().toLowerCase();
       }
     }, 200);
+
+    // 7. MCP Bridge (WebSocket Client)
+    const connectMcpBridge = () => {
+      const statusEl = document.getElementById('mcp-status')!;
+      console.log('[MCP-Bridge] Connecting...');
+      
+      const ws = new WebSocket('ws://localhost:3001');
+      
+      ws.onopen = () => {
+        console.log('[MCP-Bridge] Connected');
+        statusEl.textContent = 'Connected';
+        statusEl.style.background = '#2e7d32'; // Green
+      };
+
+      ws.onclose = () => {
+        console.log('[MCP-Bridge] Disconnected. Retrying in 3s...');
+        statusEl.textContent = 'Disconnected';
+        statusEl.style.background = '#c62828'; // Red
+        setTimeout(connectMcpBridge, 3000);
+      };
+
+      ws.onerror = (err) => {
+        console.error('[MCP-Bridge] Error:', err);
+        ws.close();
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data as string);
+          console.log('[MCP-Bridge] Received:', data);
+
+          switch (data.type) {
+            case 'say':
+              engine.say({ text: data.text, duration: data.duration });
+              addLog(`[MCP] Say: ${data.text}`, 'agent');
+              break;
+            case 'think':
+              engine.think({ text: data.text, duration: data.duration });
+              addLog(`[MCP] Think: ${data.text}`, 'agent');
+              break;
+            case 'play_action':
+              engine.playAction(data.action);
+              addLog(`[MCP] Action: ${data.action}`, 'agent');
+              break;
+            default:
+              console.warn('[MCP-Bridge] Unknown message type:', data.type);
+          }
+        } catch (e) {
+          console.error('[MCP-Bridge] Failed to process message:', e);
+        }
+      };
+    };
+
+    // Start connection
+    connectMcpBridge();
 
   } catch (e) {
     statusEl.textContent = 'Error loading assets. Check console.';

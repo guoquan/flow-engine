@@ -7,6 +7,7 @@ import {
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { fileURLToPath } from "url";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { WebSocketServer, WebSocket } from 'ws';
 import { SaySchema, ThinkSchema, PlayActionSchema } from "../schemas/actions.js";
 import type { SayData, ThinkData, PlayActionData } from "../schemas/actions.js";
 
@@ -14,11 +15,12 @@ import type { SayData, ThinkData, PlayActionData } from "../schemas/actions.js";
  * FlowMcpServer
  * A Model Context Protocol server that exposes Flow Engine capabilities as tools.
  * 
- * Note: This server acts as a bridge. In a real production scenario, 
- * it would connect to a running FlowEngine instance via WebSockets or another IPC mechanism.
+ * Note: This server acts as a bridge. It connects to the FlowEngine instance via WebSocket.
  */
 export class FlowMcpServer {
   private server: Server;
+  private wss: WebSocketServer;
+  private clients: Set<WebSocket> = new Set();
 
   constructor() {
     this.server = new Server(
@@ -32,6 +34,25 @@ export class FlowMcpServer {
         },
       }
     );
+
+    // Initialize WebSocket Server for bridging to Browser
+    this.wss = new WebSocketServer({ port: 3001 });
+    
+    this.wss.on('connection', (ws) => {
+      console.error('[MCP-Bridge] Client connected');
+      this.clients.add(ws);
+
+      ws.on('close', () => {
+        console.error('[MCP-Bridge] Client disconnected');
+        this.clients.delete(ws);
+      });
+      
+      ws.on('error', (err) => {
+        console.error('[MCP-Bridge] Client error:', err);
+      });
+    });
+
+    console.error('[MCP-Bridge] WebSocket server listening on port 3001');
 
     this.setupTools();
   }
@@ -92,49 +113,76 @@ export class FlowMcpServer {
     });
   }
 
+  private broadcast(message: any) {
+    const payload = JSON.stringify(message);
+    let count = 0;
+    this.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(payload);
+        count++;
+      }
+    });
+    return count;
+  }
+
   /**
-   * Placeholder implementation for the "say" tool.
+   * Implementation for the "say" tool.
    */
   private async handleSay(args: SayData) {
     const durationInfo = ` for ${args.duration} ms`;
     console.error(`[MCP] Executing say: "${args.text}"${durationInfo}`);
+    
+    const sent = this.broadcast({ type: 'say', ...args });
+
     return {
       content: [
         { 
           type: "text", 
-          text: `Avatar is now saying: "${args.text}"${durationInfo} (stub: no connected FlowEngine)` 
+          text: sent > 0 
+            ? `Command sent to ${sent} client(s): Say "${args.text}"` 
+            : `Command acknowledged but no frontend clients connected. (Say "${args.text}")`
         }
       ],
     };
   }
 
   /**
-   * Placeholder implementation for the "think" tool.
+   * Implementation for the "think" tool.
    */
   private async handleThink(args: ThinkData) {
     const thought = args.text;
     const durationInfo = ` for ${args.duration} ms`;
     console.error(`[MCP] Executing think: "${thought}"${durationInfo}`);
+
+    const sent = this.broadcast({ type: 'think', ...args });
+
     return {
       content: [
         { 
           type: "text", 
-          text: `Avatar is now thinking: "${thought}"${durationInfo} (stub: no connected FlowEngine)` 
+          text: sent > 0
+            ? `Command sent to ${sent} client(s): Think "${thought}"`
+            : `Command acknowledged but no frontend clients connected. (Think "${thought}")`
         }
       ],
     };
   }
 
   /**
-   * Placeholder implementation for the "play_action" tool.
+   * Implementation for the "play_action" tool.
    */
   private async handlePlayAction(args: PlayActionData) {
     console.error(`[MCP] Executing play_action: ${args.action}`);
+    
+    const sent = this.broadcast({ type: 'play_action', ...args });
+
     return {
       content: [
         { 
           type: "text", 
-          text: `Avatar is now playing action: ${args.action} (stub: no connected FlowEngine)` 
+          text: sent > 0
+            ? `Command sent to ${sent} client(s): Play action "${args.action}"`
+            : `Command acknowledged but no frontend clients connected. (Play "${args.action}")`
         }
       ],
     };

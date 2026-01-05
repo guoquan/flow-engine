@@ -56,19 +56,29 @@ describe('FlowMcpServer', () => {
     
     expect(mcpServer.handlers.has(CallToolRequestSchema)).toBe(true);
 
-    // Simulate a 'say' call
+    // 1. Simulate a 'say' call
     const sayResult = await mcpServer.callHandler(CallToolRequestSchema, {
       params: {
         name: 'say',
-        arguments: { text: 'Test message' }
+        arguments: { text: 'Test message', duration: 5000 }
       }
     });
     
     expect(sayResult).toBeDefined();
-    expect(sayResult.content).toBeDefined();
     expect(sayResult.content[0].text).toContain('Test message');
+    expect(sayResult.content[0].text).toContain('5000 ms');
 
-    // Simulate a 'play_action' call
+    // 2. Simulate a 'think' call
+    const thinkResult = await mcpServer.callHandler(CallToolRequestSchema, {
+      params: {
+        name: 'think',
+        arguments: { text: 'Pondering...' }
+      }
+    });
+    expect(thinkResult).toBeDefined();
+    expect(thinkResult.content[0].text).toContain('Pondering...');
+
+    // 3. Simulate a 'play_action' call
     const actionResult = await mcpServer.callHandler(CallToolRequestSchema, {
       params: {
         name: 'play_action',
@@ -77,7 +87,28 @@ describe('FlowMcpServer', () => {
     });
 
     expect(actionResult).toBeDefined();
-    expect(actionResult.content).toBeDefined();
     expect(actionResult.content[0].text).toContain('wave');
+  });
+
+  it('should handle error cases correctly', async () => {
+    // @ts-ignore
+    const mcpServer = server.server;
+
+    // 1. Unknown tool
+    await expect(mcpServer.callHandler(CallToolRequestSchema, {
+      params: { name: 'unknown_tool', arguments: {} }
+    })).rejects.toThrow('Unknown tool');
+
+    // 2. Missing required arguments (say requires text)
+    await expect(mcpServer.callHandler(CallToolRequestSchema, {
+      params: { name: 'say', arguments: {} }
+    })).rejects.toThrow('Missing required argument: text');
+
+    // 3. Optional arguments should not throw (think requires nothing)
+    const result = await mcpServer.callHandler(CallToolRequestSchema, {
+      params: { name: 'think', arguments: {} }
+    });
+    expect(result).toBeDefined();
+    expect(result.content[0].text).toContain('thinking');
   });
 });

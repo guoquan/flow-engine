@@ -301,11 +301,13 @@ export class FlowEngine {
 
   /**
    * Submit a 'THINKING' intent to the brain.
+   * @param text What is being thought (optional)
    * @param duration Time in ms to stay in thinking state
    */
-  public think(duration: number = 3000) {
+  public think(text?: string, duration: number = 3000) {
     this.brain.setIntent({ 
       state: AvatarBehaviorStates.THINKING, 
+      text,
       duration 
     });
   }

@@ -79,8 +79,18 @@ export class FlowMcpServer {
       const { name } = request.params;
       const args = request.params.arguments;
 
-      if (!args) {
-        throw new Error("Missing arguments");
+      // Validate required arguments for specific tools
+      const tool = tools.find(t => t.name === name);
+      if (!tool) {
+        throw new Error(`Unknown tool: ${name}`);
+      }
+
+      // Check for required fields in inputSchema
+      const requiredFields = (tool.inputSchema as any)?.required || [];
+      for (const field of requiredFields) {
+        if (!args || !(field in args)) {
+          throw new Error(`Missing required argument: ${field}`);
+        }
       }
 
       switch (name) {
@@ -172,7 +182,11 @@ export async function runFlowMcpServerCli(): Promise<never> {
 
 // Entry point for CLI usage
 const currentPath = fileURLToPath(import.meta.url);
-if (process.argv[1] === currentPath || process.argv[1]?.endsWith("server.ts")) {
+if (
+  process.argv[1] === currentPath || 
+  process.argv[1]?.endsWith("server.ts") || 
+  process.argv[1]?.endsWith("server.js")
+) {
   runFlowMcpServerCli().catch((error) => {
     console.error("Fatal error in MCP server:", error);
     process.exit(1);

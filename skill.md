@@ -48,6 +48,7 @@ This skill provides high-level control over a digital human avatar rendered by t
 ## Dependencies
 *   **@guoquan/flow-engine**: current release, Core rendering and behavior engine.
 *   **THREE.js**: r170+, Underlying 3D math and scene graph.
+*   **Zod**: ^3.x, Schema validation and type safety.
 
 ## Maintainers
 *   Flow Engine Team - [guoquan.net](https://guoquan.net)

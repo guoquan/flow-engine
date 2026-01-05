@@ -6,6 +6,9 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { fileURLToPath } from "url";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import { SaySchema, ThinkSchema, PlayActionSchema } from "../schemas/actions.js";
+import type { SayParams, ThinkParams, PlayActionParams } from "../schemas/actions.js";
 
 /**
  * FlowMcpServer
@@ -34,40 +37,28 @@ export class FlowMcpServer {
   }
 
   private setupTools() {
+    // Generate JSON Schemas from Zod definitions
+    // We cast to any because zod-to-json-schema returns a type that might be slightly
+    // more specific or different than what MCP Tool types strictly expect, but structure is compatible.
+    const sayToolSchema = zodToJsonSchema(SaySchema) as any;
+    const thinkToolSchema = zodToJsonSchema(ThinkSchema) as any;
+    const playActionToolSchema = zodToJsonSchema(PlayActionSchema) as any;
+
     const tools: Tool[] = [
       {
         name: "say",
         description: "Make the avatar speak a specific text bubble.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            text: { type: "string", description: "The text to speak" },
-            duration: { type: "number", description: "Duration in milliseconds (optional)" },
-          },
-          required: ["text"],
-        },
+        inputSchema: sayToolSchema,
       },
       {
         name: "think",
         description: "Make the avatar enter a thinking state with a thought bubble.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            text: { type: "string", description: "The thought text (optional, defaults to '...')" },
-            duration: { type: "number", description: "Duration in milliseconds (optional)" },
-          },
-        },
+        inputSchema: thinkToolSchema,
       },
       {
         name: "play_action",
         description: "Play a specific animation action (e.g., 'wave', 'bow', 'dance').",
-        inputSchema: {
-          type: "object",
-          properties: {
-            action: { type: "string", description: "The name of the animation to play" },
-          },
-          required: ["action"],
-        },
+        inputSchema: playActionToolSchema,
       },
     ];
 
@@ -79,29 +70,21 @@ export class FlowMcpServer {
       const { name } = request.params;
       const args = request.params.arguments;
 
-      // Validate required arguments for specific tools
-      const tool = tools.find(t => t.name === name);
-      if (!tool) {
-        throw new Error(`Unknown tool: ${name}`);
-      }
-
-      // Check for required fields in inputSchema
-      const requiredFields = (tool.inputSchema as any)?.required || [];
-      for (const field of requiredFields) {
-        if (!args || !(field in args)) {
-          throw new Error(`Missing required argument: ${field}`);
-        }
-      }
-
       switch (name) {
-        case "say":
-          return this.handleSay(args as { text: string; duration?: number });
-        case "think":
-          return this.handleThink(args as { text?: string; duration?: number });
-        case "play_action":
-          return this.handlePlayAction(args as { action: string });
+        case "say": {
+          // Use Zod to validate and parse
+          const parsed = SaySchema.parse(args);
+          return this.handleSay(parsed);
+        }
+        case "think": {
+          const parsed = ThinkSchema.parse(args);
+          return this.handleThink(parsed);
+        }
+        case "play_action": {
+          const parsed = PlayActionSchema.parse(args);
+          return this.handlePlayAction(parsed);
+        }
         default:
-          // Should be unreachable due to earlier validation
           throw new Error(`Unknown tool: ${name}`);
       }
     });
@@ -109,12 +92,8 @@ export class FlowMcpServer {
 
   /**
    * Placeholder implementation for the "say" tool.
-   *
-   * NOTE: This method does not currently talk to a real FlowEngine instance.
-   * In a production setup, this should delegate to FlowEngine.say() via
-   * an IPC or WebSocket connection to the running FlowEngine process.
    */
-  private async handleSay(args: { text: string; duration?: number }) {
+  private async handleSay(args: SayParams) {
     const durationInfo = args.duration !== undefined ? ` for ${args.duration} ms` : "";
     console.error(`[MCP] Executing say: "${args.text}"${durationInfo}`);
     return {
@@ -130,7 +109,7 @@ export class FlowMcpServer {
   /**
    * Placeholder implementation for the "think" tool.
    */
-  private async handleThink(args: { text?: string; duration?: number }) {
+  private async handleThink(args: ThinkParams) {
     const thought = args.text || "...";
     const durationInfo = args.duration !== undefined ? ` for ${args.duration} ms` : "";
     console.error(`[MCP] Executing think: "${thought}"${durationInfo}`);
@@ -147,7 +126,7 @@ export class FlowMcpServer {
   /**
    * Placeholder implementation for the "play_action" tool.
    */
-  private async handlePlayAction(args: { action: string }) {
+  private async handlePlayAction(args: PlayActionParams) {
     console.error(`[MCP] Executing play_action: ${args.action}`);
     return {
       content: [

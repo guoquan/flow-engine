@@ -32,6 +32,8 @@
     - Allow agents to "see" the avatar state and "call tools" to move or speak.
 - [x] **Skill metadata (`skill.md`)**:
     - Standardize avatar capabilities using the `skill.md` format for better agent discovery and usage.
+- [x] **Schema-First Architecture**:
+    - Unified Zod schemas for internal API and MCP tools to ensure 100% consistency.
 
 ### Phase 4: Flow Playground (Next Step) 🏗️
 **Goal**: Transform the default deployment into a versatile playground for developers.

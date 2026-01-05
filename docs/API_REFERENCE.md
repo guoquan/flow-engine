@@ -181,7 +181,6 @@ engine.think({ text: "Hmm...", duration: 5000 });
 直接触发底层的动画状态，绕过部分高级行为逻辑。适用于特定的手势，如挥手或鞠躬。
 
 **签名:**
-**签名:**
 ```typescript
 playAction(action: string): void
 ```

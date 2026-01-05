@@ -97,7 +97,7 @@ const init = async () => {
       chatInput.value = '';
 
       // Mock Agent Logic
-      engine.think(1000); // Simulate processing
+      engine.think(undefined, 1000); // Simulate processing
       
       setTimeout(() => {
         let response: AgentResponse = { text: "I heard you." };

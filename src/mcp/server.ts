@@ -38,11 +38,10 @@ export class FlowMcpServer {
 
   private setupTools() {
     // Generate JSON Schemas from Zod definitions
-    // We cast to any because zod-to-json-schema returns a type that might be slightly
-    // more specific or different than what MCP Tool types strictly expect, but structure is compatible.
-    const sayToolSchema = zodToJsonSchema(SaySchema) as any;
-    const thinkToolSchema = zodToJsonSchema(ThinkSchema) as any;
-    const playActionToolSchema = zodToJsonSchema(PlayActionSchema) as any;
+    // Cast to the MCP Tool inputSchema type; zod-to-json-schema produces compatible JSON Schema.
+    const sayToolSchema = zodToJsonSchema(SaySchema) as Tool["inputSchema"];
+    const thinkToolSchema = zodToJsonSchema(ThinkSchema) as Tool["inputSchema"];
+    const playActionToolSchema = zodToJsonSchema(PlayActionSchema) as Tool["inputSchema"];
 
     const tools: Tool[] = [
       {
@@ -94,7 +93,7 @@ export class FlowMcpServer {
    * Placeholder implementation for the "say" tool.
    */
   private async handleSay(args: SayData) {
-    const durationInfo = args.duration !== undefined ? ` for ${args.duration} ms` : "";
+    const durationInfo = ` for ${args.duration} ms`;
     console.error(`[MCP] Executing say: "${args.text}"${durationInfo}`);
     return {
       content: [
@@ -110,8 +109,8 @@ export class FlowMcpServer {
    * Placeholder implementation for the "think" tool.
    */
   private async handleThink(args: ThinkData) {
-    const thought = args.text || "...";
-    const durationInfo = args.duration !== undefined ? ` for ${args.duration} ms` : "";
+    const thought = args.text;
+    const durationInfo = ` for ${args.duration} ms`;
     console.error(`[MCP] Executing think: "${thought}"${durationInfo}`);
     return {
       content: [

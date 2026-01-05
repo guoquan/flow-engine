@@ -71,7 +71,15 @@ describe('FlowEngine Behavior Integration', () => {
     engine.say('Hello');
     expect(mockAnimController.play).toHaveBeenCalledWith('talk');
 
+    // Test object style say
+    engine.say({ text: 'Hello Object', duration: 5000 });
+    expect(mockAnimController.play).toHaveBeenCalledWith('talk');
+
     engine.think();
+    expect(mockAnimController.play).toHaveBeenCalledWith('thinking');
+
+    // Test object style think
+    engine.think({ text: 'Thinking Object', duration: 2000 });
     expect(mockAnimController.play).toHaveBeenCalledWith('thinking');
 
     engine.setBehavior({ state: AvatarBehaviorStates.IDLE });

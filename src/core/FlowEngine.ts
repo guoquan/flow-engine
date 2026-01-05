@@ -111,7 +111,7 @@ export class FlowEngine {
           break;
         case AvatarBehaviorStates.THINKING:
           this.animController.play('thinking');
-          this.bubbleManager.show('...', 'thought');
+          this.bubbleManager.show(intent.text || '...', 'thought');
           break;
         case AvatarBehaviorStates.LISTENING:
           this.animController.play('idle'); 

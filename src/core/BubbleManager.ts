@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const HEAD_OFFSET_Y = 2.5; // Slightly higher for 3D bubbles
+const HEAD_OFFSET_Y = 0.6; // Reduced offset to be closer to head
 const BUBBLE_SCALE = 1.0;
 
 export class BubbleManager {
@@ -36,14 +36,14 @@ export class BubbleManager {
     const material = new THREE.SpriteMaterial({ 
       map: this.texture, 
       transparent: true,
-      depthTest: false, // Ensure it draws on top of some things, or use standard occlusion
+      depthTest: false,
       depthWrite: false
     });
     
     this.sprite = new THREE.Sprite(material);
-    this.sprite.scale.set(2, 1, 1); // Aspect ratio for the canvas
+    this.sprite.scale.set(1.5, 0.75, 1); // Reduced scale slightly for better fit
     this.sprite.visible = false;
-    this.sprite.renderOrder = 999; // Draw late to appear in front
+    this.sprite.renderOrder = 999;
 
     this.scene.add(this.sprite);
   }
@@ -67,7 +67,6 @@ export class BubbleManager {
   public update() {
     if (!this.visible || !this.target) return;
 
-    // Simple 3D tracking: Position above the head
     const targetPos = new THREE.Vector3();
     this.target.getWorldPosition(targetPos);
     this.sprite.position.copy(targetPos).add(this.offset);
@@ -86,19 +85,22 @@ export class BubbleManager {
     const borderRadius = 40;
     const tailHeight = 40;
     
-    // Measure Text to adjust bubble size (simplified: fixed max width, variable internal padding)
     ctx.font = 'bold 40px "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // Draw Background
     ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
     ctx.shadowBlur = 10;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 5;
 
-    const rectW = w - padding * 2;
+    // Determine content area
+    // Ensure minimum width for thought bubbles so they don't look squashed
+    let rectW = w - padding * 2;
+    // For thought bubbles, we might want to center the content more tightly if it's short
+    // But for simplicity, we keep the full width canvas but draw a centered shape
+    
     const rectH = h - tailHeight - padding * 2;
     const rectX = padding;
     const rectY = padding;
@@ -114,12 +116,13 @@ export class BubbleManager {
         ctx.fill();
     } else {
         // Thought bubble (cloud)
+        // Draw a more robust cloud shape using bezier curves
         this.drawCloud(ctx, rectX, rectY, rectW, rectH);
         
         // Small circles for thought tail
         ctx.beginPath();
-        ctx.arc(w / 2 - 20, rectY + rectH + 10, 8, 0, Math.PI * 2);
-        ctx.arc(w / 2, rectY + rectH + 30, 6, 0, Math.PI * 2);
+        ctx.arc(w / 2 - 20, rectY + rectH + 15, 8, 0, Math.PI * 2);
+        ctx.arc(w / 2 - 10, rectY + rectH + 35, 5, 0, Math.PI * 2);
         ctx.fill();
     }
 
@@ -127,11 +130,10 @@ export class BubbleManager {
     ctx.fillStyle = '#000000';
     ctx.shadowBlur = 0;
     
-    // Simple word wrap
     const words = text.split(' ');
     let line = '';
     const lineHeight = 50;
-    const maxWidth = rectW - 40;
+    const maxWidth = rectW - 60; // More padding for text
     const lines = [];
 
     for (let n = 0; n < words.length; n++) {
@@ -156,7 +158,6 @@ export class BubbleManager {
         y += lineHeight;
     }
 
-    // Update texture
     this.texture.needsUpdate = true;
   }
 
@@ -177,24 +178,28 @@ export class BubbleManager {
 
   private drawCloud(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
     ctx.beginPath();
-    const radius = 30;
     
-    // Draw multiple overlapping circles
-    // Top
-    ctx.arc(x + w * 0.2, y + h * 0.3, radius, Math.PI, Math.PI * 2); // Top Left
-    ctx.arc(x + w * 0.5, y + h * 0.1, radius * 1.2, Math.PI, Math.PI * 2); // Top Center
-    ctx.arc(x + w * 0.8, y + h * 0.3, radius, Math.PI, Math.PI * 2); // Top Right
-
-    // Right
-    ctx.arc(x + w * 0.9, y + h * 0.5, radius * 0.8, -Math.PI/2, Math.PI/2);
+    // More organic cloud shape using bezier curves
+    // Start from left-bottom
+    const startX = x + w * 0.2;
+    const startY = y + h * 0.8;
     
-    // Bottom
-    ctx.arc(x + w * 0.8, y + h * 0.7, radius, 0, Math.PI);
-    ctx.arc(x + w * 0.5, y + h * 0.9, radius * 1.2, 0, Math.PI);
-    ctx.arc(x + w * 0.2, y + h * 0.7, radius, 0, Math.PI);
-
-    // Left
-    ctx.arc(x + w * 0.1, y + h * 0.5, radius * 0.8, Math.PI/2, Math.PI * 1.5);
+    ctx.moveTo(startX, startY);
+    
+    // Left bump
+    ctx.bezierCurveTo(x - 20, y + h * 0.8, x - 20, y + h * 0.3, x + w * 0.1, y + h * 0.3);
+    
+    // Top-Left bump
+    ctx.bezierCurveTo(x + w * 0.1, y - 20, x + w * 0.4, y - 20, x + w * 0.5, y + h * 0.1);
+    
+    // Top-Right bump
+    ctx.bezierCurveTo(x + w * 0.6, y - 20, x + w + 20, y + h * 0.1, x + w * 0.9, y + h * 0.4);
+    
+    // Right bump
+    ctx.bezierCurveTo(x + w + 30, y + h * 0.5, x + w + 10, y + h + 10, x + w * 0.7, y + h * 0.9);
+    
+    // Bottom bump
+    ctx.bezierCurveTo(x + w * 0.5, y + h + 20, x + w * 0.3, y + h + 10, startX, startY);
     
     ctx.closePath();
     ctx.fill();

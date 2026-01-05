@@ -37,14 +37,14 @@
 - [x] **Visual API Documentation (TypeDoc)**:
     - Standard TypeScript SDK documentation generated from source code.
 
-### Phase 4: Flow Playground (Next Step) 🏗️
+### Phase 4: Flow Playground (In Progress) 🏗️
 **Goal**: Transform the default deployment into a versatile playground for developers.
 
-- [ ] **Interactive Control Panel**:
+- [x] **Interactive Control Panel**:
     - **Action Buttons**: Quick triggers for `wave`, `bow`, `say`, `think`.
     - **State Monitor**: Real-time display of Brain states (`IDLE`, `TALKING`, etc.).
     - **JSON Console**: Manual input for `AgentResponse` payloads.
-- [ ] **Dynamic Asset Loading**:
+- [x] **Dynamic Asset Loading**:
     - UI inputs to load custom `.glb` models and `config.json` files from URLs.
 - [ ] **MCP Bridge (WebSocket)**:
     - Connect the browser playground to the local MCP server to receive commands in real-time.

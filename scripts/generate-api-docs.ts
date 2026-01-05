@@ -86,6 +86,7 @@ fs.writeFileSync(
 );
 
 // 6. Generate a standalone HTML viewer using Scalar
+// We inline the spec content to allow opening the file directly (file:// protocol) without CORS issues.
 const html = `
 <!doctype html>
 <html>
@@ -96,9 +97,7 @@ const html = `
     <style>body { margin: 0; }</style>
   </head>
   <body>
-    <script
-      id="api-reference"
-      data-url="./openapi.json"></script>
+    <script id="api-reference" data-spec='${JSON.stringify(openApiDoc).replace(/'/g, "&apos;")}'></script>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   </body>
 </html>

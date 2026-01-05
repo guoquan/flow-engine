@@ -9,23 +9,23 @@
     - Hybrid Raycasting (Physical Objects > Virtual Plane).
     - Billboard-style interaction plane.
 
-### Phase 2: Behavior Engine & Unified API (Next Step) 🏗️
+### Phase 2: Behavior Engine & Unified API (Completed) ✅
 **Goal**: Implement a high-level state machine and standardized interface for avatar control.
 
-- [ ] **Behavior Controller (Global Brain)**:
+- [x] **Behavior Controller (Global Brain)**:
     - Implement a centralized state machine to manage high-level behaviors.
     - Standard States: `IDLE`, `TALKING`, `THINKING`, `LISTENING`, `EMOTIONAL_EXPRESSION`.
-- [ ] **Unified Action API**:
+- [x] **Unified Action API**:
     - **Call/Callback Pattern**: Simple methods to trigger actions (e.g., `engine.say(text)`, `engine.think()`).
     - **Standardized Data Structures**: Define consistent schemas for state exchange and action requests.
-- [ ] **Subsystem Refactoring**:
+- [x] **Subsystem Refactoring**:
     - Convert `LookAtProcessor` and `AnimationController` into pure "Reflex Organs" managed by the Brain.
     - Priority system to handle conflicting animations vs. interactions.
 
-### Phase 3: Agent Protocols & MCP Integration 🤖
+### Phase 3: Agent Protocols & MCP Integration (Next Step) 🤖
 **Goal**: Enable seamless control of avatars by AI agents through industry-standard protocols.
 
-- [ ] **Agent Instruction Mapping**:
+- [x] **Agent Instruction Mapping**:
     - Allow agents to control the avatar via structured fields in text responses (e.g., `{"action": "wave", "speech": "Hello"}`).
 - [ ] **MCP (Model Context Protocol) Implementation**:
     - Build an MCP server wrapper for Flow Engine.

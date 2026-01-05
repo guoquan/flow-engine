@@ -1,0 +1,12 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "dist-docs",
+  "name": "Flow Engine SDK",
+  "includeVersion": true,
+  "readme": "README.md",
+  "lightHighlightTheme": "light-plus",
+  "darkHighlightTheme": "dark-plus",
+  "titleLink": "https://github.com/guoquan/flow-engine",
+  "cleanOutputDir": true
+}

@@ -34,8 +34,8 @@
     - Standardize avatar capabilities using the `skill.md` format for better agent discovery and usage.
 - [x] **Schema-First Architecture**:
     - Unified Zod schemas for internal API and MCP tools to ensure 100% consistency.
-- [x] **Visual API Documentation (OpenAPI)**:
-    - Interactive documentation generated from Zod schemas using Scalar.
+- [x] **Visual API Documentation (TypeDoc)**:
+    - Standard TypeScript SDK documentation generated from source code.
 
 ### Phase 4: Flow Playground (Next Step) 🏗️
 **Goal**: Transform the default deployment into a versatile playground for developers.

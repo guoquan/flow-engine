@@ -1,24 +1,20 @@
 import { z } from 'zod';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-
-// Initialize OpenAPI extensions for Zod
-extendZodWithOpenApi(z);
 
 // Shared Zod schemas for Flow Engine actions
 
 export const SaySchema = z.object({
-  text: z.string().describe("The text content to speak.").openapi({ example: "Hello, I am Flow Engine!" }),
-  duration: z.number().default(3000).describe("Duration in milliseconds to stay in the talking state.").openapi({ example: 3000 }),
-}).openapi("Say");
+  text: z.string().describe("The text content to speak."),
+  duration: z.number().default(3000).describe("Duration in milliseconds to stay in the talking state."),
+});
 
 export const ThinkSchema = z.object({
-  text: z.string().default("...").describe("The thought text content (e.g., '...').").openapi({ example: "Analyzing..." }),
-  duration: z.number().default(3000).describe("Duration in milliseconds to stay in the thinking state.").openapi({ example: 3000 }),
-}).openapi("Think");
+  text: z.string().default("...").describe("The thought text content (e.g., '...')."),
+  duration: z.number().default(3000).describe("Duration in milliseconds to stay in the thinking state."),
+});
 
 export const PlayActionSchema = z.object({
-  action: z.string().describe("The name of the animation clip to play (e.g., 'wave', 'bow', 'dance').").openapi({ example: "wave" }),
-}).openapi("PlayAction");
+  action: z.string().describe("The name of the animation clip to play (e.g., 'wave', 'bow', 'dance')."),
+});
 
 // Use z.input to allow passing partial objects (with optional defaults) to the API
 export type SayParams = z.input<typeof SaySchema>;

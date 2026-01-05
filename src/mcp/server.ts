@@ -8,7 +8,7 @@ import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { fileURLToPath } from "url";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { SaySchema, ThinkSchema, PlayActionSchema } from "../schemas/actions.js";
-import type { SayParams, ThinkParams, PlayActionParams } from "../schemas/actions.js";
+import type { SayData, ThinkData, PlayActionData } from "../schemas/actions.js";
 
 /**
  * FlowMcpServer
@@ -93,7 +93,7 @@ export class FlowMcpServer {
   /**
    * Placeholder implementation for the "say" tool.
    */
-  private async handleSay(args: SayParams) {
+  private async handleSay(args: SayData) {
     const durationInfo = args.duration !== undefined ? ` for ${args.duration} ms` : "";
     console.error(`[MCP] Executing say: "${args.text}"${durationInfo}`);
     return {
@@ -109,7 +109,7 @@ export class FlowMcpServer {
   /**
    * Placeholder implementation for the "think" tool.
    */
-  private async handleThink(args: ThinkParams) {
+  private async handleThink(args: ThinkData) {
     const thought = args.text || "...";
     const durationInfo = args.duration !== undefined ? ` for ${args.duration} ms` : "";
     console.error(`[MCP] Executing think: "${thought}"${durationInfo}`);
@@ -126,7 +126,7 @@ export class FlowMcpServer {
   /**
    * Placeholder implementation for the "play_action" tool.
    */
-  private async handlePlayAction(args: PlayActionParams) {
+  private async handlePlayAction(args: PlayActionData) {
     console.error(`[MCP] Executing play_action: ${args.action}`);
     return {
       content: [

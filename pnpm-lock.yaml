@@ -10,13 +10,13 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(hono@4.11.3)(zod@4.3.5)
+        version: 1.25.1(hono@4.11.3)(zod@3.25.76)
       zod:
-        specifier: ^4.3.5
-        version: 4.3.5
+        specifier: ^3.25.76
+        version: 3.25.76
       zod-to-json-schema:
         specifier: ^3.25.1
-        version: 3.25.1(zod@4.3.5)
+        version: 3.25.1(zod@3.25.76)
     devDependencies:
       '@codecov/vite-plugin':
         specifier: ^1.9.1
@@ -1641,9 +1641,6 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
-  zod@4.3.5:
-    resolution: {integrity: sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==}
-
 snapshots:
 
   '@acemir/cssom@0.9.30': {}
@@ -1885,7 +1882,7 @@ snapshots:
 
   '@microsoft/tsdoc@0.16.0': {}
 
-  '@modelcontextprotocol/sdk@1.25.1(hono@4.11.3)(zod@4.3.5)':
+  '@modelcontextprotocol/sdk@1.25.1(hono@4.11.3)(zod@3.25.76)':
     dependencies:
       '@hono/node-server': 1.19.7(hono@4.11.3)
       ajv: 8.17.1
@@ -1901,8 +1898,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.3.5
-      zod-to-json-schema: 3.25.1(zod@4.3.5)
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.1(zod@3.25.76)
     transitivePeerDependencies:
       - hono
       - supports-color
@@ -3172,10 +3169,8 @@ snapshots:
 
   yallist@4.0.0: {}
 
-  zod-to-json-schema@3.25.1(zod@4.3.5):
+  zod-to-json-schema@3.25.1(zod@3.25.76):
     dependencies:
-      zod: 4.3.5
+      zod: 3.25.76
 
   zod@3.25.76: {}
-
-  zod@4.3.5: {}

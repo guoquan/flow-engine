@@ -9,7 +9,7 @@ import { LookAtProcessor } from './LookAtProcessor';
 import { BehaviorController } from './BehaviorController';
 import { BubbleManager } from './BubbleManager';
 import { AvatarBehaviorStates, type AvatarConfig, type BehaviorIntent, type AvatarBehaviorState, type AgentResponse, type ActionCommand } from '../types';
-import type { SayParams, ThinkParams } from '../schemas/actions';
+import { SaySchema, ThinkSchema, type SayParams, type ThinkParams } from '../schemas/actions';
 
 export class FlowEngine {
   private container: HTMLElement;
@@ -292,7 +292,8 @@ export class FlowEngine {
    * @param params Conversation parameters (text, duration)
    */
   public say(params: SayParams | string) {
-    const data = typeof params === 'string' ? { text: params } : params;
+    const raw = typeof params === 'string' ? { text: params } : params;
+    const data = SaySchema.parse(raw);
     this.brain.setIntent({ 
       state: AvatarBehaviorStates.TALKING, 
       text: data.text, 
@@ -305,7 +306,8 @@ export class FlowEngine {
    * @param params Thought parameters (text, duration)
    */
   public think(params?: ThinkParams | string) {
-    const data = typeof params === 'string' ? { text: params } : (params || {});
+    const raw = typeof params === 'string' ? { text: params } : (params || {});
+    const data = ThinkSchema.parse(raw);
     this.brain.setIntent({ 
       state: AvatarBehaviorStates.THINKING, 
       text: data.text,

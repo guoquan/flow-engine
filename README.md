@@ -63,6 +63,24 @@ npm install github:guoquan/flow-engine#7834b6c
 - **Data-Driven**: Animation and behavior fully controlled via JSON configuration.
 - **Zero-Dependency Core**: Pure frontend architecture, easy to integrate into any project.
 
+### 🏗️ Architecture
+Flow Engine adopts a **Controller-Agent** pattern:
+*   **FlowEngine**: The core scene manager and renderer (WebGPU).
+*   **BehaviorController (Brain)**: A finite state machine managing high-level states (`IDLE`, `TALKING`, `THINKING`).
+*   **LookAtProcessor (Reflex)**: Procedural animation system for eye contact and head tracking.
+*   **MCP Server (Bridge)**: A Node.js server enabling external AI agents to drive the avatar.
+
+### 🤖 AI Agent Integration (MCP)
+Flow Engine includes a built-in **Model Context Protocol (MCP)** server. This allows AI models (like Claude or Gemini) to "see" and "control" the avatar as a tool.
+
+```bash
+# Start the MCP Server
+npm run mcp
+```
+
+*   👉 **[Read the MCP Integration Guide](./docs/MCP_GUIDE.md)**
+*   👉 **[API Reference](./docs/API_REFERENCE.md)**
+
 ### 📚 Documentation
 Please visit **[docs/](./docs/)** for the full documentation and API references.
 
@@ -119,6 +137,24 @@ npm install github:guoquan/flow-engine#7834b6c
 - **现代化渲染**：基于 WebGPU，提供下一代渲染性能与视觉效果。
 - **数据驱动**：动画与行为完全通过 JSON 配置文件控制。
 - **零依赖核心**：纯前端架构，无需后端即可运行，易于集成。
+
+### 🏗️ 架构设计
+Flow Engine 采用 **Controller-Agent** 模式：
+*   **FlowEngine**: 核心场景管理器与渲染器 (WebGPU)。
+*   **BehaviorController (大脑)**: 有限状态机，管理高级行为状态 (`IDLE`, `TALKING`, `THINKING`)。
+*   **LookAtProcessor (反射)**: 程序化动画系统，负责眼神接触与头部追踪。
+*   **MCP Server (桥梁)**: 一个 Node.js 服务，允许外部 AI Agent 驱动数字人。
+
+### 🤖 AI Agent 集成 (MCP)
+Flow Engine 内置了 **Model Context Protocol (MCP)** 服务器。这使得 AI 模型（如 Claude 或 Gemini）能够将数字人视为一个“工具”并进行控制。
+
+```bash
+# 启动 MCP 服务器
+npm run mcp
+```
+
+*   👉 **[阅读 MCP 集成指南](./docs/MCP_GUIDE.md)**
+*   👉 **[API 参考文档](./docs/API_REFERENCE.md)**
 
 ### 📚 文档索引
 请访问 **[docs/](./docs/)** 查看完整文档与 API 说明。

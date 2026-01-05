@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const HEAD_OFFSET_Y = 0.6; // Reduced offset to be closer to head
+const HEAD_OFFSET_Y = 1.2; // Adjusted offset for better clearance
 const BUBBLE_SCALE = 1.0;
 
 export class BubbleManager {

@@ -1,5 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
+import { FlowEngine } from '../src/core/FlowEngine';
+import { AnimationController } from '../src/core/AnimationController';
+
+// Mock Canvas API for BubbleManager
+HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+  clearRect: vi.fn(),
+  beginPath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  quadraticCurveTo: vi.fn(),
+  closePath: vi.fn(),
+  fill: vi.fn(),
+  arc: vi.fn(),
+  measureText: vi.fn().mockReturnValue({ width: 10 }),
+  fillText: vi.fn(),
+});
 
 // Mock WebGPURenderer as a class
 vi.mock('three/webgpu', () => {

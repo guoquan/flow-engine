@@ -91,7 +91,7 @@ export class FlowEngine {
       }
     );
     
-    this.bubbleManager = new BubbleManager(containerId, this.camera);
+    this.bubbleManager = new BubbleManager(this.scene, this.camera);
 
     // 7. Connect Brain to Reflexes
     this.brain.onStateChange = (state: AvatarBehaviorState, intent: BehaviorIntent) => {

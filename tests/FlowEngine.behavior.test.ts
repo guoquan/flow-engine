@@ -3,6 +3,21 @@ import * as THREE from 'three';
 import { FlowEngine } from '../src/core/FlowEngine';
 import { AvatarBehaviorStates } from '../src/types';
 
+// Mock Canvas API for BubbleManager
+HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+  clearRect: vi.fn(),
+  beginPath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  bezierCurveTo: vi.fn(),
+  quadraticCurveTo: vi.fn(),
+  closePath: vi.fn(),
+  fill: vi.fn(),
+  arc: vi.fn(),
+  measureText: vi.fn().mockReturnValue({ width: 10 }),
+  fillText: vi.fn(),
+});
+
 // Mock WebGPURenderer using a class to satisfy 'new' constructor call
 vi.mock('three/webgpu', () => {
   return {

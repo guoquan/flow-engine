@@ -9,6 +9,7 @@ import { LookAtProcessor } from './LookAtProcessor';
 import { BehaviorController } from './BehaviorController';
 import { BubbleManager } from './BubbleManager';
 import { AvatarBehaviorStates, type AvatarConfig, type BehaviorIntent, type AvatarBehaviorState, type AgentResponse, type ActionCommand } from '../types';
+import { SaySchema, ThinkSchema, type SayParams, type ThinkParams } from '../schemas/actions';
 
 export class FlowEngine {
   private container: HTMLElement;
@@ -288,27 +289,29 @@ export class FlowEngine {
 
   /**
    * Submit a 'TALKING' intent to the brain.
-   * @param text What is being said
-   * @param duration Time in ms to stay in talking state
+   * @param params Conversation parameters (text, duration)
    */
-  public say(text: string, duration: number = 3000) {
+  public say(params: SayParams | string) {
+    const raw = typeof params === 'string' ? { text: params } : params;
+    const data = SaySchema.parse(raw);
     this.brain.setIntent({ 
       state: AvatarBehaviorStates.TALKING, 
-      text, 
-      duration 
+      text: data.text, 
+      duration: data.duration 
     });
   }
 
   /**
    * Submit a 'THINKING' intent to the brain.
-   * @param text What is being thought (optional)
-   * @param duration Time in ms to stay in thinking state
+   * @param params Thought parameters (text, duration)
    */
-  public think(text?: string, duration: number = 3000) {
+  public think(params?: ThinkParams | string) {
+    const raw = typeof params === 'string' ? { text: params } : (params || {});
+    const data = ThinkSchema.parse(raw);
     this.brain.setIntent({ 
       state: AvatarBehaviorStates.THINKING, 
-      text,
-      duration 
+      text: data.text,
+      duration: data.duration 
     });
   }
 

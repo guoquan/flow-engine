@@ -1,11 +1,9 @@
 import * as THREE from 'three';
 
 const HEAD_OFFSET_Y = 1.2; // Adjusted offset for better clearance
-const BUBBLE_SCALE = 1.0;
 
 export class BubbleManager {
   private scene: THREE.Scene;
-  private camera: THREE.Camera;
   private sprite: THREE.Sprite;
   private target: THREE.Object3D | null = null;
   private offset = new THREE.Vector3(0, HEAD_OFFSET_Y, 0);
@@ -16,9 +14,8 @@ export class BubbleManager {
   private ctx: CanvasRenderingContext2D;
   private texture: THREE.CanvasTexture;
 
-  constructor(scene: THREE.Scene, camera: THREE.Camera) {
+  constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.camera = camera;
 
     // Initialize Canvas
     this.canvas = document.createElement('canvas');

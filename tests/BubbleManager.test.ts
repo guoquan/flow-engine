@@ -32,7 +32,7 @@ describe('BubbleManager', () => {
   beforeEach(() => {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera();
-    manager = new BubbleManager(scene, camera);
+    manager = new BubbleManager(scene);
   });
 
   afterEach(() => {

@@ -1,0 +1,8 @@
+{
+  "id": "flow-bot-01",
+  "name": "Flow Bot",
+  "modelSrc": "model.glb",
+  "scale": 1.5,
+  "initialPosition": [0, -1, 0],
+  "version": "1.0.0"
+}

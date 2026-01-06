@@ -29,13 +29,9 @@ describe('FlowMcpServer WebSocket Bridge', () => {
     });
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     client.close();
-    // Close server - currently FlowMcpServer doesn't expose close(), 
-    // so we might leave handles open. Ideally, refactor server to have .close().
-    // For now, we accept this limitation in test environment or force exit.
-    // Accessing private wss to close it
-    (server as any).wss.close();
+    await server.close();
   });
 
   it('should broadcast "say" command to connected client', async () => {

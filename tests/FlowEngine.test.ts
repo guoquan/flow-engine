@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as THREE from 'three';
 import { FlowEngine } from '../src/core/FlowEngine';
-import { AnimationController } from '../src/core/AnimationController';
+import * as THREE from 'three';
+import { AvatarBehaviorStates } from '../src/types';
 
 // Mock Canvas API for BubbleManager
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({

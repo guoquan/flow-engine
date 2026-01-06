@@ -261,23 +261,40 @@ const init = async () => {
     }, 200);
 
     // 7. MCP Bridge (WebSocket Client)
+    let reconnectDelay = 1000;
+    const MAX_RECONNECT_DELAY = 30000;
+
     const connectMcpBridge = () => {
       const statusEl = document.getElementById('mcp-status')!;
-      console.log('[MCP-Bridge] Connecting...');
       
-      const ws = new WebSocket('ws://localhost:3001');
+      // Build WebSocket URL based on current location (avoids hardcoded localhost)
+      const getMcpWebSocketUrl = () => {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const hostname = window.location.hostname || 'localhost';
+        const port = '3001';
+        return `${protocol}//${hostname}:${port}`;
+      };
+
+      const url = getMcpWebSocketUrl();
+      console.log(`[MCP-Bridge] Connecting to ${url}...`);
+      
+      const ws = new WebSocket(url);
       
       ws.onopen = () => {
         console.log('[MCP-Bridge] Connected');
         statusEl.textContent = 'Connected';
         statusEl.style.background = '#2e7d32'; // Green
+        reconnectDelay = 1000; // Reset delay on successful connection
       };
 
       ws.onclose = () => {
-        console.log('[MCP-Bridge] Disconnected. Retrying in 3s...');
+        console.log(`[MCP-Bridge] Disconnected. Retrying in ${reconnectDelay}ms...`);
         statusEl.textContent = 'Disconnected';
         statusEl.style.background = '#c62828'; // Red
-        setTimeout(connectMcpBridge, 3000);
+        
+        setTimeout(connectMcpBridge, reconnectDelay);
+        // Exponential backoff
+        reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
       };
 
       ws.onerror = (err) => {
@@ -308,6 +325,8 @@ const init = async () => {
           }
         } catch (e) {
           console.error('[MCP-Bridge] Failed to process message:', e);
+          // Close the WebSocket on parse/processing errors to avoid inconsistent state
+          ws.close();
         }
       };
     };

@@ -1,16 +1,44 @@
 import { test, expect } from '@playwright/test';
 import { WebSocketServer } from 'ws';
 
+const MCP_BRIDGE_PORT = 3001;
+
 test.describe('MCP Bridge Integration', () => {
   let wss: WebSocketServer;
   
   test.beforeAll(async () => {
-    // Start a mock WS server
-    wss = new WebSocketServer({ port: 3001 });
+    // Start a mock WS server on port 3001
+    // Note: We use 3001 because the frontend currently expects this port.
+    // We add error handling for EADDRINUSE to provide better feedback if the real server is running.
+    return new Promise<void>((resolve, reject) => {
+      const server = new WebSocketServer({ port: MCP_BRIDGE_PORT });
+
+      server.once('listening', () => {
+        wss = server;
+        resolve();
+      });
+
+      server.once('error', (err: any) => {
+        if (err.code === 'EADDRINUSE') {
+          reject(new Error(`Port ${MCP_BRIDGE_PORT} already in use. Ensure 'npm run mcp' is not running.`));
+        } else {
+          reject(err);
+        }
+      });
+    });
   });
 
   test.afterAll(async () => {
-    wss.close();
+    if (wss) {
+      // Ensure all client connections are terminated
+      for (const client of wss.clients) {
+        client.terminate();
+      }
+      
+      await new Promise<void>((resolve) => {
+        wss.close(() => resolve());
+      });
+    }
   });
 
   test('should connect to MCP server and react to messages', async ({ page }) => {

@@ -44,7 +44,7 @@
     "vite": "^7.2.4",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.0.16",
-    "ws": "^8.19.0",
+    "ws": "8.18.3",
     "zod-to-json-schema": "^3.25.1"
   },
   "repository": {

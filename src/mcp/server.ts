@@ -193,21 +193,60 @@ export class FlowMcpServer {
     await this.server.connect(transport);
     console.error("Flow MCP Server running on stdio");
   }
+
+  /**
+   * Gracefully shuts down the MCP and WebSocket servers.
+   */
+  public async close(): Promise<void> {
+    console.error("[MCP] Shutting down...");
+    
+    // Close all connected WebSocket clients
+    for (const client of this.clients) {
+      try {
+        if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CLOSING) {
+          client.close();
+        }
+      } catch (err) {
+        console.error("[MCP] Error closing client:", err);
+      }
+    }
+    this.clients.clear();
+
+    // Close the WebSocket server
+    await new Promise<void>((resolve, reject) => {
+      this.wss.close((err?: Error) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.error("[MCP] WebSocket server closed.");
+          resolve();
+        }
+      });
+    });
+  }
 }
 
 /**
  * Programmatic entry point for running the Flow MCP server via CLI-style usage.
  */
-export async function runFlowMcpServerCli(): Promise<never> {
+export async function runFlowMcpServerCli(): Promise<void> {
   const server = new FlowMcpServer();
+  
+  // Handle graceful shutdown
+  const shutdown = async () => {
+    await server.close();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+
   try {
     await server.run();
   } catch (error) {
     console.error("Fatal error in MCP server:", error);
     process.exit(1);
   }
-  // The server should keep the process alive
-  return new Promise(() => {}); 
 }
 
 // Entry point for CLI usage

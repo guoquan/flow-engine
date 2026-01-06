@@ -73,6 +73,10 @@ jobs:
       - name: Build Demo
         run: |
           mkdir -p ${{ steps.path.outputs.out }}
+          # Create a root index.html if it doesn't exist (for track branches) to avoid empty root issues
+          if [ ! -f "dist-demo/index.html" ]; then
+            echo '<meta http-equiv="refresh" content="0;url=https://guoquan.github.io/flow-engine/main/" />' > dist-demo/index.html
+          fi
           GITHUB_PAGES=true VITE_BASE=${{ steps.path.outputs.base }} OUT_DIR=${{ steps.path.outputs.out }} pnpm run build:demo
 
       - name: Setup Pages

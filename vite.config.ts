@@ -47,6 +47,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'tests/e2e/**'],
+    reporters: ['default', 'junit'],
+    outputFile: {
+      junit: './test-results/junit.xml'
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],

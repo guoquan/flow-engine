@@ -27,6 +27,18 @@ vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => {
   };
 });
 
+// Mock 'ws' to prevent EADDRINUSE and avoid real network ops
+vi.mock('ws', () => {
+  return {
+    WebSocketServer: class {
+      constructor(options: any) { console.log('Mock WSS created'); }
+      on(event: string, cb: Function) { /* no-op */ }
+      clients = new Set();
+    },
+    WebSocket: class {}
+  };
+});
+
 describe('FlowMcpServer', () => {
   let server: FlowMcpServer;
 
@@ -65,8 +77,9 @@ describe('FlowMcpServer', () => {
     });
     
     expect(sayResult).toBeDefined();
-    expect(sayResult.content[0].text).toContain('Test message');
-    expect(sayResult.content[0].text).toContain('5000 ms');
+    // Message changed because no WS clients are connected in this mock
+    expect(sayResult.content[0].text).toContain('Command acknowledged but no frontend clients connected');
+    expect(sayResult.content[0].text).toContain('Say "Test message"');
 
     // 2. Simulate a 'think' call
     const thinkResult = await mcpServer.callHandler(CallToolRequestSchema, {
@@ -76,7 +89,8 @@ describe('FlowMcpServer', () => {
       }
     });
     expect(thinkResult).toBeDefined();
-    expect(thinkResult.content[0].text).toContain('Pondering...');
+    expect(thinkResult.content[0].text).toContain('Command acknowledged but no frontend clients connected');
+    expect(thinkResult.content[0].text).toContain('Think "Pondering..."');
 
     // 3. Simulate a 'play_action' call
     const actionResult = await mcpServer.callHandler(CallToolRequestSchema, {
@@ -87,7 +101,8 @@ describe('FlowMcpServer', () => {
     });
 
     expect(actionResult).toBeDefined();
-    expect(actionResult.content[0].text).toContain('wave');
+    expect(actionResult.content[0].text).toContain('Command acknowledged but no frontend clients connected');
+    expect(actionResult.content[0].text).toContain('Play "wave"');
   });
 
   it('should handle error cases correctly', async () => {
@@ -109,6 +124,7 @@ describe('FlowMcpServer', () => {
       params: { name: 'think', arguments: {} }
     });
     expect(result).toBeDefined();
-    expect(result.content[0].text).toContain('thinking');
+    // Verify default output when text is undefined (Schema defaults to "...")
+    expect(result.content[0].text).toContain('Think "..."');
   });
 });

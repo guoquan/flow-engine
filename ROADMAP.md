@@ -48,7 +48,7 @@
     - UI inputs to load custom `.glb` models and `config.json` files from URLs.
 - [x] **MCP Bridge (WebSocket)**:
     - Connect the browser playground to the local MCP server to receive commands in real-time.
-- [ ] **Multi-track Deployment**: 
+- [x] **Multi-track Deployment**: 
     - Support accessing different versioned tracks via subdirectories on GitHub Pages.
 
 ### Future Expansions 🔭

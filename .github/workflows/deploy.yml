@@ -2,17 +2,17 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "track/*"]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # Need write for potentially cleaning up or handling versions
   pages: write
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: "pages-${{ github.ref_name }}" # Separate concurrency per branch
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -54,8 +54,22 @@ jobs:
       - name: Run Tests
         run: pnpm test
 
+      - name: Calculate Deployment Path
+        id: path
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "base=/flow-engine/" >> $GITHUB_OUTPUT
+            echo "out=dist-demo" >> $GITHUB_OUTPUT
+          else
+            # For track/v0.2, base becomes /flow-engine/track/v0.2/
+            echo "base=/flow-engine/${{ github.ref_name }}/" >> $GITHUB_OUTPUT
+            echo "out=dist-demo/${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build Demo
-        run: GITHUB_PAGES=true pnpm run build:demo
+        run: |
+          mkdir -p ${{ steps.path.outputs.out }}
+          GITHUB_PAGES=true VITE_BASE=${{ steps.path.outputs.base }} OUT_DIR=${{ steps.path.outputs.out }} pnpm run build:demo
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -63,6 +77,11 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          # We upload the root of dist-demo so that all versions are included
+          # Note: GitHub Actions upload-pages-artifact only supports a single folder.
+          # To support multiple tracks simultaneously on one site, we'd need a more complex
+          # strategy (like an orphan 'gh-pages' branch). 
+          # For now, we deploy the specific track to its subfolder.
           path: './dist-demo'
 
       - name: Deploy to GitHub Pages

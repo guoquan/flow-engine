@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main", "track/*"]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -57,18 +57,8 @@ jobs:
       - name: Calculate Deployment Path
         id: path
         run: |
-          BRANCH_NAME="${{ github.ref_name }}"
-          # Sanitize branch name: replace non-alphanumeric with '-'
-          SANITIZED_BRANCH="$(echo "$BRANCH_NAME" | sed 's/[^A-Za-z0-9._-]/-/g')"
-
-          if [ "$BRANCH_NAME" == "main" ]; then
-            echo "base=/flow-engine/" >> $GITHUB_OUTPUT
-            echo "out=dist-demo" >> $GITHUB_OUTPUT
-          else
-            # For track/v0.2, base becomes /flow-engine/track-v0.2/
-            echo "base=/flow-engine/$SANITIZED_BRANCH/" >> $GITHUB_OUTPUT
-            echo "out=dist-demo/$SANITIZED_BRANCH" >> $GITHUB_OUTPUT
-          fi
+          echo "base=/flow-engine/" >> $GITHUB_OUTPUT
+          echo "out=dist-demo" >> $GITHUB_OUTPUT
 
       - name: Build Demo
         run: |
@@ -107,11 +97,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # We upload the root of dist-demo for the current branch/track.
-          # Note: GitHub Actions upload-pages-artifact only supports a single folder per run,
-          # so each deployment overwrites the previously deployed content on the site.
-          # To host multiple tracks simultaneously from one site, we'd need a more complex
-          # strategy (for example, managing an orphan 'gh-pages' branch or a custom deploy job).
           path: './dist-demo'
 
       - name: Deploy to GitHub Pages

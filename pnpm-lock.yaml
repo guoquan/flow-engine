@@ -61,8 +61,8 @@ importers:
         specifier: ^4.0.16
         version: 4.0.16(@types/node@25.0.3)(jsdom@27.4.0)(tsx@4.21.0)(yaml@2.8.2)
       ws:
-        specifier: ^8.19.0
-        version: 8.19.0
+        specifier: 8.18.3
+        version: 8.18.3
       zod-to-json-schema:
         specifier: ^3.25.1
         version: 3.25.1(zod@4.3.5)
@@ -1681,8 +1681,8 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.19.0:
-    resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
+  ws@8.18.3:
+    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -2790,7 +2790,7 @@ snapshots:
       webidl-conversions: 8.0.0
       whatwg-mimetype: 4.0.0
       whatwg-url: 15.1.0
-      ws: 8.19.0
+      ws: 8.18.3
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - '@exodus/crypto'
@@ -3312,7 +3312,7 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  ws@8.19.0: {}
+  ws@8.18.3: {}
 
   xml-name-validator@5.0.0: {}
 

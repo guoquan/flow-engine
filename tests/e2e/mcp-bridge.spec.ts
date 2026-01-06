@@ -45,13 +45,15 @@ test.describe('MCP Bridge Integration', () => {
     // 1. Setup Promise to detect connection on server side
     const connectionPromise = new Promise<void>((resolve) => {
       wss.once('connection', (ws) => {
-        // Send a command immediately upon connection
-        ws.send(JSON.stringify({
-          type: 'say',
-          text: 'Hello from E2E',
-          duration: 1000
-        }));
-        resolve();
+        // Wait a bit for the frontend to be ready to receive
+        setTimeout(() => {
+          ws.send(JSON.stringify({
+            type: 'say',
+            text: 'Hello from E2E',
+            duration: 1000
+          }));
+          resolve();
+        }, 500);
       });
     });
 

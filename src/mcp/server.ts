@@ -36,36 +36,48 @@ export class FlowMcpServer {
     );
 
     // Initialize WebSocket Server for bridging to Browser
-    this.wss = new WebSocketServer({ port: 3001 });
-    
-    this.wss.on('connection', (ws) => {
-      console.error('[MCP-Bridge] Client connected');
-      this.clients.add(ws);
-
-      ws.on('close', () => {
-        console.error('[MCP-Bridge] Client disconnected');
-        this.clients.delete(ws);
-      });
+    try {
+      this.wss = new WebSocketServer({ port: 3001 });
       
-      ws.on('error', (err) => {
-        console.error('[MCP-Bridge] Client error:', err);
-      });
-    });
+      this.wss.on('connection', (ws) => {
+        console.error('[MCP-Bridge] Client connected');
+        this.clients.add(ws);
 
-    console.error('[MCP-Bridge] WebSocket server listening on port 3001');
+        ws.on('close', () => {
+          console.error('[MCP-Bridge] Client disconnected');
+          this.clients.delete(ws);
+        });
+        
+        ws.on('error', (err) => {
+          console.error('[MCP-Bridge] Client error:', err);
+          // Ensure errored connections are properly cleaned up
+          if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            ws.close();
+          }
+          this.clients.delete(ws);
+        });
+      });
+
+      console.error('[MCP-Bridge] WebSocket server listening on port 3001');
+    } catch (err: any) {
+      if (err.code === 'EADDRINUSE') {
+        console.error('[MCP-Bridge] Error: Port 3001 is already in use. The WebSocket bridge will not be available.');
+      } else {
+        console.error('[MCP-Bridge] Failed to start WebSocket server:', err);
+      }
+      // Create a dummy wss to avoid crashes, though bridge won't work
+      this.wss = { on: () => {}, close: (cb: any) => cb(), clients: new Set() } as any;
+    }
 
     this.setupTools();
   }
 
   private setupTools() {
     // Generate JSON Schemas from Zod definitions
-    // Cast to Tool["inputSchema"] because zod-to-json-schema produces compatible JSON Schema.
-    // @ts-ignore - Zod 4 compatibility
-    const sayToolSchema = zodToJsonSchema(SaySchema) as Tool["inputSchema"];
-    // @ts-ignore
-    const thinkToolSchema = zodToJsonSchema(ThinkSchema) as Tool["inputSchema"];
-    // @ts-ignore
-    const playActionToolSchema = zodToJsonSchema(PlayActionSchema) as Tool["inputSchema"];
+    // Cast to Tool["inputSchema"] because zod-to-json-schema produces compatible JSON Schema at runtime.
+    const sayToolSchema = zodToJsonSchema(SaySchema as any) as unknown as Tool["inputSchema"];
+    const thinkToolSchema = zodToJsonSchema(ThinkSchema as any) as unknown as Tool["inputSchema"];
+    const playActionToolSchema = zodToJsonSchema(PlayActionSchema as any) as unknown as Tool["inputSchema"];
 
     const tools: Tool[] = [
       {

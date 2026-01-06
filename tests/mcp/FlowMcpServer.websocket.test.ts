@@ -19,40 +19,52 @@ describe('FlowMcpServer WebSocket Bridge', () => {
     server = new TestableMcpServer();
     // Wait for server to be ready (it starts listening in constructor)
     
-    // Create a client
-    return new Promise<void>((resolve) => {
+    // Create a client with timeout
+    return new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("Connection timeout")), 2000);
       client = new WebSocket('ws://localhost:3001');
-      client.on('open', () => resolve());
-      client.on('message', (data) => {
-        receivedMessages.push(JSON.parse(data.toString()));
+      client.on('open', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      client.on('error', (err) => {
+        clearTimeout(timeout);
+        reject(err);
       });
     });
   });
 
   afterAll(async () => {
-    client.close();
-    await server.close();
+    if (client) client.close();
+    if (server) await server.close();
   });
+
+  const waitForMessage = (type: string, timeoutMs = 2000) => {
+    return new Promise<any>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        client.off('message', listener);
+        reject(new Error(`Timeout waiting for message: ${type}`));
+      }, timeoutMs);
+
+      const listener = (data: any) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === type) {
+          clearTimeout(timeout);
+          client.off('message', listener);
+          resolve(msg);
+        }
+      };
+      client.on('message', listener);
+    });
+  };
 
   it('should broadcast "say" command to connected client', async () => {
     receivedMessages = []; // Clear buffer
     
     const payload = { text: "Hello WebSocket", duration: 1000 };
     
-    // Create a promise that resolves when a message arrives
-    const msgPromise = new Promise<any>(resolve => {
-      const listener = (data: any) => {
-        const msg = JSON.parse(data.toString());
-        if (msg.type === 'say') {
-          client.off('message', listener); // Clean up
-          resolve(msg);
-        }
-      };
-      client.on('message', listener);
-    });
-
+    const msgPromise = waitForMessage('say');
     await server.testSay(payload);
-
     const msg = await msgPromise;
 
     expect(msg).toMatchObject({
@@ -67,20 +79,9 @@ describe('FlowMcpServer WebSocket Bridge', () => {
     
     const payload = { text: "Thinking deep...", duration: 2000 };
     
-    const msgPromise = new Promise<any>(resolve => {
-      const listener = (data: any) => {
-        const msg = JSON.parse(data.toString());
-        if (msg.type === 'think') {
-          client.off('message', listener);
-          resolve(msg);
-        }
-      };
-      client.on('message', listener);
-    });
-
+    const msgPromise = waitForMessage('think');
     // We need to access private method, but we made a wrapper above
     await (server as any).handleThink(payload);
-
     const msg = await msgPromise;
 
     expect(msg).toMatchObject({
@@ -94,19 +95,8 @@ describe('FlowMcpServer WebSocket Bridge', () => {
     
     const payload = { action: "dance" };
     
-    const msgPromise = new Promise<any>(resolve => {
-      const listener = (data: any) => {
-        const msg = JSON.parse(data.toString());
-        if (msg.type === 'play_action') {
-          client.off('message', listener);
-          resolve(msg);
-        }
-      };
-      client.on('message', listener);
-    });
-
+    const msgPromise = waitForMessage('play_action');
     await (server as any).handlePlayAction(payload);
-
     const msg = await msgPromise;
 
     expect(msg).toMatchObject({

@@ -68,7 +68,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
     <!-- Panel 5: Protocol Tester -->
     <div class="panel collapsed" id="panel-protocol">
-      <h2 style="cursor: pointer;" onclick="document.getElementById('panel-protocol').classList.toggle('collapsed')">
+      <h2 style="cursor: pointer;" id="header-protocol">
         Protocol Tester <span style="float: right; font-size: 0.8em">▼</span>
       </h2>
       <div class="panel-content">
@@ -226,7 +226,7 @@ const init = async () => {
     document.getElementById('chat-send')?.addEventListener('click', handleUserMessage);
     chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleUserMessage(); });
 
-    // 5. Protocol Tester
+    // 5. Protocol Tester & Panels
     const jsonInput = document.getElementById('json-input') as HTMLTextAreaElement;
     const jsonError = document.getElementById('json-error')!;
 
@@ -248,6 +248,10 @@ const init = async () => {
       }
     });
 
+    document.getElementById('header-protocol')?.addEventListener('click', () => {
+      document.getElementById('panel-protocol')?.classList.toggle('collapsed');
+    });
+
     // 6. Polling for Brain State
     setInterval(() => {
       const stateEl = document.getElementById('brain-state');
@@ -263,6 +267,8 @@ const init = async () => {
     // 7. MCP Bridge (WebSocket Client)
     let reconnectDelay = 1000;
     const MAX_RECONNECT_DELAY = 30000;
+    let mcpWs: WebSocket | null = null;
+    let stableConnectionTimeout: number | null = null;
 
     const connectMcpBridge = () => {
       const statusEl = document.getElementById('mcp-status')!;
@@ -278,31 +284,41 @@ const init = async () => {
       const url = getMcpWebSocketUrl();
       console.log(`[MCP-Bridge] Connecting to ${url}...`);
       
-      const ws = new WebSocket(url);
+      mcpWs = new WebSocket(url);
       
-      ws.onopen = () => {
+      mcpWs.onopen = () => {
         console.log('[MCP-Bridge] Connected');
         statusEl.textContent = 'Connected';
         statusEl.style.background = '#2e7d32'; // Green
-        reconnectDelay = 1000; // Reset delay on successful connection
+        
+        // Reset delay only after connection has been stable for 5s
+        stableConnectionTimeout = window.setTimeout(() => {
+          reconnectDelay = 1000;
+        }, 5000);
       };
 
-      ws.onclose = () => {
+      mcpWs.onclose = () => {
         console.log(`[MCP-Bridge] Disconnected. Retrying in ${reconnectDelay}ms...`);
         statusEl.textContent = 'Disconnected';
         statusEl.style.background = '#c62828'; // Red
         
+        if (stableConnectionTimeout) {
+          clearTimeout(stableConnectionTimeout);
+          stableConnectionTimeout = null;
+        }
+
         setTimeout(connectMcpBridge, reconnectDelay);
         // Exponential backoff
         reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
+        mcpWs = null;
       };
 
-      ws.onerror = (err) => {
+      mcpWs.onerror = (err) => {
         console.error('[MCP-Bridge] Error:', err);
-        ws.close();
+        if (mcpWs) mcpWs.close();
       };
 
-      ws.onmessage = (event) => {
+      mcpWs.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data as string);
           console.log('[MCP-Bridge] Received:', data);
@@ -326,13 +342,21 @@ const init = async () => {
         } catch (e) {
           console.error('[MCP-Bridge] Failed to process message:', e);
           // Close the WebSocket on parse/processing errors to avoid inconsistent state
-          ws.close();
+          if (mcpWs) mcpWs.close();
         }
       };
     };
 
     // Start connection
     connectMcpBridge();
+
+    // Cleanup on unload
+    window.addEventListener('beforeunload', () => {
+      if (mcpWs) {
+        mcpWs.close();
+        mcpWs = null;
+      }
+    });
 
   } catch (e) {
     statusEl.textContent = 'Error loading assets. Check console.';

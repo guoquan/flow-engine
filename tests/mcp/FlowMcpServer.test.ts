@@ -31,7 +31,7 @@ vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => {
 vi.mock('ws', () => {
   return {
     WebSocketServer: class {
-      constructor(options: any) { console.log('Mock WSS created'); }
+      constructor(options: any) { /* no-op */ }
       on(event: string, cb: Function) { /* no-op */ }
       clients = new Set();
     },

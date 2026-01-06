@@ -7,6 +7,7 @@ import {
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { fileURLToPath } from "url";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { WebSocketServer, WebSocket } from 'ws';
 import { SaySchema, ThinkSchema, PlayActionSchema } from "../schemas/actions.js";
 import type { SayData, ThinkData, PlayActionData } from "../schemas/actions.js";
 
@@ -14,11 +15,12 @@ import type { SayData, ThinkData, PlayActionData } from "../schemas/actions.js";
  * FlowMcpServer
  * A Model Context Protocol server that exposes Flow Engine capabilities as tools.
  * 
- * Note: This server acts as a bridge. In a real production scenario, 
- * it would connect to a running FlowEngine instance via WebSockets or another IPC mechanism.
+ * Note: This server acts as a bridge. It connects to the FlowEngine instance via WebSocket.
  */
 export class FlowMcpServer {
   private server: Server;
+  private wss: WebSocketServer;
+  private clients: Set<WebSocket> = new Set();
 
   constructor() {
     this.server = new Server(
@@ -33,15 +35,49 @@ export class FlowMcpServer {
       }
     );
 
+    // Initialize WebSocket Server for bridging to Browser
+    try {
+      this.wss = new WebSocketServer({ port: 3001 });
+      
+      this.wss.on('connection', (ws) => {
+        console.error('[MCP-Bridge] Client connected');
+        this.clients.add(ws);
+
+        ws.on('close', () => {
+          console.error('[MCP-Bridge] Client disconnected');
+          this.clients.delete(ws);
+        });
+        
+        ws.on('error', (err) => {
+          console.error('[MCP-Bridge] Client error:', err);
+          // Ensure errored connections are properly cleaned up
+          if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            ws.close();
+          }
+          this.clients.delete(ws);
+        });
+      });
+
+      console.error('[MCP-Bridge] WebSocket server listening on port 3001');
+    } catch (err: any) {
+      if (err.code === 'EADDRINUSE') {
+        console.error('[MCP-Bridge] Error: Port 3001 is already in use. The WebSocket bridge will not be available.');
+      } else {
+        console.error('[MCP-Bridge] Failed to start WebSocket server:', err);
+      }
+      // Create a dummy wss to avoid crashes, though bridge won't work
+      this.wss = { on: () => {}, close: (cb: any) => cb(), clients: new Set() } as any;
+    }
+
     this.setupTools();
   }
 
   private setupTools() {
     // Generate JSON Schemas from Zod definitions
-    // Cast to the MCP Tool inputSchema type; zod-to-json-schema produces compatible JSON Schema.
-    const sayToolSchema = zodToJsonSchema(SaySchema) as Tool["inputSchema"];
-    const thinkToolSchema = zodToJsonSchema(ThinkSchema) as Tool["inputSchema"];
-    const playActionToolSchema = zodToJsonSchema(PlayActionSchema) as Tool["inputSchema"];
+    // Cast to Tool["inputSchema"] because zod-to-json-schema produces compatible JSON Schema at runtime.
+    const sayToolSchema = zodToJsonSchema(SaySchema as any) as unknown as Tool["inputSchema"];
+    const thinkToolSchema = zodToJsonSchema(ThinkSchema as any) as unknown as Tool["inputSchema"];
+    const playActionToolSchema = zodToJsonSchema(PlayActionSchema as any) as unknown as Tool["inputSchema"];
 
     const tools: Tool[] = [
       {
@@ -89,49 +125,76 @@ export class FlowMcpServer {
     });
   }
 
+  private broadcast(message: any) {
+    const payload = JSON.stringify(message);
+    let count = 0;
+    this.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(payload);
+        count++;
+      }
+    });
+    return count;
+  }
+
   /**
-   * Placeholder implementation for the "say" tool.
+   * Implementation for the "say" tool.
    */
   private async handleSay(args: SayData) {
     const durationInfo = ` for ${args.duration} ms`;
     console.error(`[MCP] Executing say: "${args.text}"${durationInfo}`);
+    
+    const sent = this.broadcast({ type: 'say', ...args });
+
     return {
       content: [
         { 
           type: "text", 
-          text: `Avatar is now saying: "${args.text}"${durationInfo} (stub: no connected FlowEngine)` 
+          text: sent > 0 
+            ? `Command sent to ${sent} client(s): Say "${args.text}"` 
+            : `Command acknowledged but no frontend clients connected. (Say "${args.text}")`
         }
       ],
     };
   }
 
   /**
-   * Placeholder implementation for the "think" tool.
+   * Implementation for the "think" tool.
    */
   private async handleThink(args: ThinkData) {
     const thought = args.text;
     const durationInfo = ` for ${args.duration} ms`;
     console.error(`[MCP] Executing think: "${thought}"${durationInfo}`);
+
+    const sent = this.broadcast({ type: 'think', ...args });
+
     return {
       content: [
         { 
           type: "text", 
-          text: `Avatar is now thinking: "${thought}"${durationInfo} (stub: no connected FlowEngine)` 
+          text: sent > 0
+            ? `Command sent to ${sent} client(s): Think "${thought}"`
+            : `Command acknowledged but no frontend clients connected. (Think "${thought}")`
         }
       ],
     };
   }
 
   /**
-   * Placeholder implementation for the "play_action" tool.
+   * Implementation for the "play_action" tool.
    */
   private async handlePlayAction(args: PlayActionData) {
     console.error(`[MCP] Executing play_action: ${args.action}`);
+    
+    const sent = this.broadcast({ type: 'play_action', ...args });
+
     return {
       content: [
         { 
           type: "text", 
-          text: `Avatar is now playing action: ${args.action} (stub: no connected FlowEngine)` 
+          text: sent > 0
+            ? `Command sent to ${sent} client(s): Play action "${args.action}"`
+            : `Command acknowledged but no frontend clients connected. (Play "${args.action}")`
         }
       ],
     };
@@ -142,21 +205,60 @@ export class FlowMcpServer {
     await this.server.connect(transport);
     console.error("Flow MCP Server running on stdio");
   }
+
+  /**
+   * Gracefully shuts down the MCP and WebSocket servers.
+   */
+  public async close(): Promise<void> {
+    console.error("[MCP] Shutting down...");
+    
+    // Close all connected WebSocket clients
+    for (const client of this.clients) {
+      try {
+        if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CLOSING) {
+          client.close();
+        }
+      } catch (err) {
+        console.error("[MCP] Error closing client:", err);
+      }
+    }
+    this.clients.clear();
+
+    // Close the WebSocket server
+    await new Promise<void>((resolve, reject) => {
+      this.wss.close((err?: Error) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.error("[MCP] WebSocket server closed.");
+          resolve();
+        }
+      });
+    });
+  }
 }
 
 /**
  * Programmatic entry point for running the Flow MCP server via CLI-style usage.
  */
-export async function runFlowMcpServerCli(): Promise<never> {
+export async function runFlowMcpServerCli(): Promise<void> {
   const server = new FlowMcpServer();
+  
+  // Handle graceful shutdown
+  const shutdown = async () => {
+    await server.close();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+
   try {
     await server.run();
   } catch (error) {
     console.error("Fatal error in MCP server:", error);
     process.exit(1);
   }
-  // The server should keep the process alive
-  return new Promise(() => {}); 
 }
 
 // Entry point for CLI usage

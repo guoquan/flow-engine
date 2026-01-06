@@ -34,18 +34,22 @@
     - Standardize avatar capabilities using the `skill.md` format for better agent discovery and usage.
 - [x] **Schema-First Architecture**:
     - Unified Zod schemas for internal API and MCP tools to ensure 100% consistency.
+- [x] **Visual API Documentation (TypeDoc)**:
+    - Standard TypeScript SDK documentation generated from source code.
 
-### Phase 4: Flow Playground (Next Step) 🏗️
+### Phase 4: Flow Playground (In Progress) 🏗️
 **Goal**: Transform the default deployment into a versatile playground for developers.
 
-- [ ] **Dynamic Configuration**:
-    - UI for users to provide their own GLB model URLs and JSON configurations.
-- [ ] **Multi-track Deployment**: 
-    - Support accessing different versioned tracks via subdirectories (e.g., `/track/v0.2/`, `/track/v0.3/`) on GitHub Pages.
-- [ ] **State Preview**:
-    - Visual debugger to see current brain states, weights, and active "reflexes".
-- [ ] **API Trigger Console**:
-    - Interactive panel to manually trigger API calls/callbacks and preview effects in real-time.
+- [x] **Interactive Control Panel**:
+    - **Action Buttons**: Quick triggers for `wave`, `bow`, `say`, `think`.
+    - **State Monitor**: Real-time display of Brain states (`IDLE`, `TALKING`, etc.).
+    - **JSON Console**: Manual input for `AgentResponse` payloads.
+- [x] **Dynamic Asset Loading**:
+    - UI inputs to load custom `.glb` models and `config.json` files from URLs.
+- [x] **MCP Bridge (WebSocket)**:
+    - Connect the browser playground to the local MCP server to receive commands in real-time.
+- [x] **Multi-track Deployment**: 
+    - Support accessing different versioned tracks via subdirectories on GitHub Pages.
 
 ### Future Expansions 🔭
 - **Hand/Body IK**: Reusing pursuit logic for reaching and gesturing.

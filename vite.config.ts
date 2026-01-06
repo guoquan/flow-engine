@@ -4,8 +4,8 @@ import { resolve } from 'path';
 import { codecovVitePlugin } from '@codecov/vite-plugin';
 
 export default defineConfig({
-  // Use /flow-engine/ if GITHUB_PAGES or BUILD_DEMO is true, otherwise root /
-  base: (process.env.GITHUB_PAGES === 'true') ? '/flow-engine/' : '/',
+  // Use VITE_BASE if provided, otherwise fallback to existing logic
+  base: process.env.VITE_BASE || ((process.env.GITHUB_PAGES === 'true') ? '/flow-engine/' : '/'),
   
   build: (process.env.BUILD_DEMO === 'true') 
     ? {
@@ -20,7 +20,14 @@ export default defineConfig({
           fileName: (format) => `flow.${format}.js`
         },
         rollupOptions: {
-          external: ['three', 'three/examples/jsm/loaders/GLTFLoader.js', 'three/webgpu'],
+          external: [
+            'three', 
+            'three/examples/jsm/loaders/GLTFLoader.js', 
+            'three/webgpu',
+            'ws',
+            '@modelcontextprotocol/sdk',
+            'zod-to-json-schema'
+          ],
           output: {
             globals: {
               three: 'THREE',
@@ -47,6 +54,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'tests/e2e/**'],
+    reporters: ['default', 'junit'],
+    outputFile: {
+      junit: './test-results/junit.xml'
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],

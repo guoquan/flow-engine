@@ -75,6 +75,32 @@ jobs:
           mkdir -p ${{ steps.path.outputs.out }}
           GITHUB_PAGES=true VITE_BASE=${{ steps.path.outputs.base }} OUT_DIR=${{ steps.path.outputs.out }} pnpm run build:demo
 
+      - name: Ensure root index redirect for track branches
+        if: ${{ github.ref_name != 'main' }}
+        run: |
+          # Ensure dist-demo exists (it should from build)
+          mkdir -p dist-demo
+          
+          # Create a root index.html to redirect to main if we are deploying a sub-track
+          # This prevents the artifact root from being empty or 404-ing
+          if [ ! -f "dist-demo/index.html" ]; then
+            cat <<'HTML' > dist-demo/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta http-equiv="refresh" content="0;url=https://guoquan.github.io/flow-engine/">
+              <title>Redirecting...</title>
+            </head>
+            <body>
+              <p>If you are not redirected automatically, follow this
+                <a href="https://guoquan.github.io/flow-engine/">link</a>.
+              </p>
+            </body>
+          </html>
+          HTML
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

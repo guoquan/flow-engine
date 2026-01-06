@@ -42,13 +42,24 @@ describe('FlowMcpServer WebSocket Bridge', () => {
     receivedMessages = []; // Clear buffer
     
     const payload = { text: "Hello WebSocket", duration: 1000 };
+    
+    // Create a promise that resolves when a message arrives
+    const msgPromise = new Promise<any>(resolve => {
+      const listener = (data: any) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'say') {
+          client.off('message', listener); // Clean up
+          resolve(msg);
+        }
+      };
+      client.on('message', listener);
+    });
+
     await server.testSay(payload);
 
-    // Wait briefly for async msg
-    await new Promise(r => setTimeout(r, 100));
+    const msg = await msgPromise;
 
-    expect(receivedMessages.length).toBe(1);
-    expect(receivedMessages[0]).toMatchObject({
+    expect(msg).toMatchObject({
       type: 'say',
       text: "Hello WebSocket",
       duration: 1000
@@ -59,14 +70,24 @@ describe('FlowMcpServer WebSocket Bridge', () => {
     receivedMessages = [];
     
     const payload = { text: "Thinking deep...", duration: 2000 };
-    // We need to access private method, but we made a wrapper above,
-    // actually we need to expose other handlers too or just use 'any' cast
+    
+    const msgPromise = new Promise<any>(resolve => {
+      const listener = (data: any) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'think') {
+          client.off('message', listener);
+          resolve(msg);
+        }
+      };
+      client.on('message', listener);
+    });
+
+    // We need to access private method, but we made a wrapper above
     await (server as any).handleThink(payload);
 
-    await new Promise(r => setTimeout(r, 100));
+    const msg = await msgPromise;
 
-    expect(receivedMessages.length).toBe(1);
-    expect(receivedMessages[0]).toMatchObject({
+    expect(msg).toMatchObject({
       type: 'think',
       text: "Thinking deep..."
     });
@@ -76,12 +97,23 @@ describe('FlowMcpServer WebSocket Bridge', () => {
     receivedMessages = [];
     
     const payload = { action: "dance" };
+    
+    const msgPromise = new Promise<any>(resolve => {
+      const listener = (data: any) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'play_action') {
+          client.off('message', listener);
+          resolve(msg);
+        }
+      };
+      client.on('message', listener);
+    });
+
     await (server as any).handlePlayAction(payload);
 
-    await new Promise(r => setTimeout(r, 100));
+    const msg = await msgPromise;
 
-    expect(receivedMessages.length).toBe(1);
-    expect(receivedMessages[0]).toMatchObject({
+    expect(msg).toMatchObject({
       type: 'play_action',
       action: "dance"
     });

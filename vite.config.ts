@@ -20,7 +20,14 @@ export default defineConfig({
           fileName: (format) => `flow.${format}.js`
         },
         rollupOptions: {
-          external: ['three', 'three/examples/jsm/loaders/GLTFLoader.js', 'three/webgpu'],
+          external: [
+            'three', 
+            'three/examples/jsm/loaders/GLTFLoader.js', 
+            'three/webgpu',
+            'ws',
+            '@modelcontextprotocol/sdk',
+            'zod-to-json-schema'
+          ],
           output: {
             globals: {
               three: 'THREE',

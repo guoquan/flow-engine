@@ -6,7 +6,6 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { fileURLToPath } from "url";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { WebSocketServer, WebSocket } from 'ws';
 import { SaySchema, ThinkSchema, PlayActionSchema } from "../schemas/actions.js";
 import type { SayData, ThinkData, PlayActionData } from "../schemas/actions.js";
@@ -73,11 +72,10 @@ export class FlowMcpServer {
   }
 
   private setupTools() {
-    // Generate JSON Schemas from Zod definitions
-    // Cast to Tool["inputSchema"] because zod-to-json-schema produces compatible JSON Schema at runtime.
-    const sayToolSchema = zodToJsonSchema(SaySchema) as unknown as Tool["inputSchema"];
-    const thinkToolSchema = zodToJsonSchema(ThinkSchema) as unknown as Tool["inputSchema"];
-    const playActionToolSchema = zodToJsonSchema(PlayActionSchema) as unknown as Tool["inputSchema"];
+    // Generate JSON Schemas from Zod definitions using Zod 4 native toJSONSchema
+    const sayToolSchema = (SaySchema as any).toJSONSchema() as Tool["inputSchema"];
+    const thinkToolSchema = (ThinkSchema as any).toJSONSchema() as Tool["inputSchema"];
+    const playActionToolSchema = (PlayActionSchema as any).toJSONSchema() as Tool["inputSchema"];
 
     const tools: Tool[] = [
       {

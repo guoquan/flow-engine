@@ -75,9 +75,9 @@ export class FlowMcpServer {
   private setupTools() {
     // Generate JSON Schemas from Zod definitions
     // Cast to Tool["inputSchema"] because zod-to-json-schema produces compatible JSON Schema at runtime.
-    const sayToolSchema = zodToJsonSchema(SaySchema as any) as unknown as Tool["inputSchema"];
-    const thinkToolSchema = zodToJsonSchema(ThinkSchema as any) as unknown as Tool["inputSchema"];
-    const playActionToolSchema = zodToJsonSchema(PlayActionSchema as any) as unknown as Tool["inputSchema"];
+    const sayToolSchema = zodToJsonSchema(SaySchema) as unknown as Tool["inputSchema"];
+    const thinkToolSchema = zodToJsonSchema(ThinkSchema) as unknown as Tool["inputSchema"];
+    const playActionToolSchema = zodToJsonSchema(PlayActionSchema) as unknown as Tool["inputSchema"];
 
     const tools: Tool[] = [
       {

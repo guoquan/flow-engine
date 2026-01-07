@@ -16,13 +16,17 @@ describe('FlowMcpServer WebSocket Bridge', () => {
   let receivedMessages: any[] = [];
 
   beforeAll(async () => {
-    server = new TestableMcpServer();
-    // Wait for server to be ready (it starts listening in constructor)
+    // Use port 0 to let the OS assign a random available port
+    server = new TestableMcpServer({ port: 0 });
     
+    // Wait for server to start (it starts in constructor, but binding is async-ish)
+    // Actually wss starts listening immediately in constructor.
+    const port = server.getPort();
+
     // Create a client with timeout
     return new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error("Connection timeout")), 2000);
-      client = new WebSocket('ws://localhost:3001');
+      client = new WebSocket(`ws://localhost:${port}`);
       client.on('open', () => {
         clearTimeout(timeout);
         resolve();

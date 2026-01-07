@@ -12,9 +12,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </div>
   
   <div id="sidebar">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-      <h2 style="margin:0; border:none; font-size: 1rem;">Controls</h2>
-      <button id="btn-toggle-sidebar" style="padding: 2px 8px; font-size: 0.8rem;">☰</button>
+    <div class="sidebar-header">
+      <h2>Controls</h2>
+      <button id="btn-toggle-sidebar" class="sidebar-toggle">☰</button>
     </div>
 
     <!-- Panel 1: Dashboard -->

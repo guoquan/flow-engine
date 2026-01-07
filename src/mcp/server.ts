@@ -20,8 +20,10 @@ export class FlowMcpServer {
   private server: Server;
   private wss: WebSocketServer;
   private clients: Set<WebSocket> = new Set();
+  private port: number;
 
-  constructor() {
+  constructor(options?: { port?: number }) {
+    this.port = options?.port !== undefined ? options.port : 3001;
     this.server = new Server(
       {
         name: "flow-engine-server",
@@ -36,7 +38,7 @@ export class FlowMcpServer {
 
     // Initialize WebSocket Server for bridging to Browser
     try {
-      this.wss = new WebSocketServer({ port: 3001 });
+      this.wss = new WebSocketServer({ port: this.port });
       
       this.wss.on('connection', (ws) => {
         console.error('[MCP-Bridge] Client connected');
@@ -57,10 +59,10 @@ export class FlowMcpServer {
         });
       });
 
-      console.error('[MCP-Bridge] WebSocket server listening on port 3001');
+      console.error(`[MCP-Bridge] WebSocket server listening on port ${this.port}`);
     } catch (err: any) {
       if (err.code === 'EADDRINUSE') {
-        console.error('[MCP-Bridge] Error: Port 3001 is already in use. The WebSocket bridge will not be available.');
+        console.error(`[MCP-Bridge] Error: Port ${this.port} is already in use. The WebSocket bridge will not be available.`);
       } else {
         console.error('[MCP-Bridge] Failed to start WebSocket server:', err);
       }
@@ -73,9 +75,12 @@ export class FlowMcpServer {
 
   private setupTools() {
     // Generate JSON Schemas from Zod definitions using Zod 4 native toJSONSchema
-    const sayToolSchema = (SaySchema as any).toJSONSchema() as Tool["inputSchema"];
-    const thinkToolSchema = (ThinkSchema as any).toJSONSchema() as Tool["inputSchema"];
-    const playActionToolSchema = (PlayActionSchema as any).toJSONSchema() as Tool["inputSchema"];
+    // Define a helper type since Zod 4 types might not be fully inferred by the compiler yet
+    type JsonSchemaCapable = { toJSONSchema: () => Tool["inputSchema"] };
+
+    const sayToolSchema = (SaySchema as unknown as JsonSchemaCapable).toJSONSchema();
+    const thinkToolSchema = (ThinkSchema as unknown as JsonSchemaCapable).toJSONSchema();
+    const playActionToolSchema = (PlayActionSchema as unknown as JsonSchemaCapable).toJSONSchema();
 
     const tools: Tool[] = [
       {
@@ -202,6 +207,17 @@ export class FlowMcpServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     console.error("Flow MCP Server running on stdio");
+  }
+
+  /**
+   * Returns the port the WebSocket server is listening on.
+   */
+  public getPort(): number {
+    const address = this.wss.address();
+    if (typeof address === 'object' && address !== null) {
+      return address.port;
+    }
+    return this.port;
   }
 
   /**

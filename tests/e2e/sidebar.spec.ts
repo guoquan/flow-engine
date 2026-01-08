@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Sidebar Toggle', () => {
   test('should toggle sidebar collapse state', async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
     
     const sidebar = page.locator('#sidebar');
     const toggleBtn = page.locator('#btn-toggle-sidebar');

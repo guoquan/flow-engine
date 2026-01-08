@@ -38,6 +38,8 @@ export class FlowEngine {
   public isDebug = false;
   private debugTargetMesh: THREE.Mesh | null = null;
   private debugPlaneMesh: THREE.GridHelper | null = null;
+  
+  private resizeObserver: ResizeObserver;
 
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
@@ -129,11 +131,18 @@ export class FlowEngine {
 
     // 8. Event Handlers
     // Use ResizeObserver to handle all layout changes (window resize, sidebar toggle, split screen)
-    const resizeObserver = new ResizeObserver(() => this.onWindowResize());
-    resizeObserver.observe(this.container);
+    this.resizeObserver = new ResizeObserver(() => this.onWindowResize());
+    this.resizeObserver.observe(this.container);
     
     // Start Loop (WebGPU Style)
     this.renderer.setAnimationLoop(this.animate.bind(this));
+  }
+
+  public dispose() {
+    this.resizeObserver.disconnect();
+    this.renderer.setAnimationLoop(null);
+    this.renderer.dispose();
+    this.controls.dispose();
   }
 
   private setupLights() {

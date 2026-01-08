@@ -22,6 +22,16 @@ export class FlowMcpServer {
   private clients: Set<WebSocket> = new Set();
   private port: number;
 
+  /**
+   * Creates a new FlowMcpServer instance.
+   *
+   * @param options Optional configuration for the server.
+   * @param options.port TCP port for the WebSocket bridge.
+   *   - If omitted, the server listens on port `3001` by default.
+   *   - If set to `0`, the operating system will automatically assign an
+   *     available ephemeral port. The actual port can then be retrieved via
+   *     the {@link FlowMcpServer.getPort | getPort()} method.
+   */
   constructor(options?: { port?: number }) {
     this.port = options?.port !== undefined ? options.port : 3001;
     this.server = new Server(
@@ -67,7 +77,7 @@ export class FlowMcpServer {
         console.error('[MCP-Bridge] Failed to start WebSocket server:', err);
       }
       // Create a dummy wss to avoid crashes, though bridge won't work
-      this.wss = { on: () => {}, close: (cb: any) => cb(), clients: new Set() } as any;
+      this.wss = { on: () => {}, close: (cb: any) => cb(), clients: new Set(), address: () => null } as any;
     }
 
     this.setupTools();
@@ -210,13 +220,29 @@ export class FlowMcpServer {
   }
 
   /**
-   * Returns the port the WebSocket server is listening on.
+   * Returns the port associated with the WebSocket server.
+   *
+   * If the WebSocket server is successfully listening and its address can be
+   * determined, this method returns the actual port reported by
+   * `this.wss.address()`. If the address is not available (for example,
+   * because the server has not started listening yet, failed to start, or
+   * the address could not be resolved), this method falls back to returning
+   * the configured port stored in `this.port`, which may differ from the
+   * actual listening port in those cases.
    */
   public getPort(): number {
-    const address = this.wss.address();
-    if (typeof address === 'object' && address !== null) {
-      return address.port;
+    // Gracefully handle dummy wss or early access
+    if (!this.wss) return this.port;
+    
+    try {
+      const address = this.wss.address();
+      if (typeof address === 'object' && address !== null) {
+        return address.port;
+      }
+    } catch {
+      // Ignore errors if address() throws (e.g. server closed or not listening)
     }
+    
     return this.port;
   }
 

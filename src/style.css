@@ -41,6 +41,7 @@ body {
   overflow-y: auto;
   box-shadow: -4px 0 10px rgba(0,0,0,0.3);
   transition: width 0.3s ease, min-width 0.3s ease, padding 0.3s ease;
+  will-change: width, min-width, padding;
 }
 
 #sidebar.collapsed {
@@ -51,7 +52,8 @@ body {
 }
 
 #sidebar.collapsed h2, 
-#sidebar.collapsed .panel {
+#sidebar.collapsed .panel,
+#sidebar.collapsed .sidebar-header {
   display: none;
 }
 

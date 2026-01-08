@@ -33,7 +33,9 @@ vi.mock('ws', () => {
     WebSocketServer: class {
       constructor(options: any) { /* no-op */ }
       on(event: string, cb: Function) { /* no-op */ }
+      close(cb: Function) { if (cb) cb(); }
       clients = new Set();
+      address() { return null; }
     },
     WebSocket: class {}
   };
@@ -126,5 +128,18 @@ describe('FlowMcpServer', () => {
     expect(result).toBeDefined();
     // Verify default output when text is undefined (Schema defaults to "...")
     expect(result.content[0].text).toContain('Think "..."');
+  });
+
+  it('should return the correct port via getPort()', () => {
+    // Should return 3001 by default (mocked wss.address returns null in my mock)
+    expect(server.getPort()).toBe(3001);
+    
+    // Test with specific port
+    const customServer = new FlowMcpServer({ port: 4000 });
+    expect(customServer.getPort()).toBe(4000);
+  });
+
+  it('should close the server and clients correctly', async () => {
+    await expect(server.close()).resolves.toBeUndefined();
   });
 });

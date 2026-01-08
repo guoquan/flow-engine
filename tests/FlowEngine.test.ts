@@ -29,11 +29,10 @@ vi.mock('three/webgpu', () => {
     render = vi.fn();
     revive = vi.fn();
     domElement = document.createElement('canvas');
+    address = vi.fn();
   }
   return { WebGPURenderer };
 });
-
-import { FlowEngine } from '../src/core/FlowEngine';
 
 describe('FlowEngine', () => {
   let engine: FlowEngine;
@@ -177,8 +176,31 @@ describe('FlowEngine', () => {
   });
 
   it('should handle window resize', () => {
-    const resizeSpy = vi.spyOn((engine as any).renderer, 'setSize');
-    window.dispatchEvent(new Event('resize'));
-    expect(resizeSpy).toHaveBeenCalled();
+    const width = 1024;
+    const height = 768;
+    
+    // Mock container dimensions
+    vi.spyOn(container, 'clientWidth', 'get').mockReturnValue(width);
+    vi.spyOn(container, 'clientHeight', 'get').mockReturnValue(height);
+
+    // @ts-ignore - trigger private handler
+    engine.onWindowResize();
+    
+    expect(engine['camera'].aspect).toBe(width / height);
+    expect(engine['renderer'].setSize).toHaveBeenCalled();
+  });
+
+  it('should cleanup resources on dispose', () => {
+    const disconnectSpy = vi.spyOn(engine['resizeObserver'], 'disconnect');
+    const rendererDisposeSpy = vi.spyOn(engine['renderer'], 'dispose');
+    const controlsDisposeSpy = vi.spyOn(engine['controls'], 'dispose');
+    
+    engine.dispose();
+    
+    expect(disconnectSpy).toHaveBeenCalled();
+    expect(rendererDisposeSpy).toHaveBeenCalled();
+    expect(controlsDisposeSpy).toHaveBeenCalled();
+    // @ts-ignore
+    expect(engine['renderer'].setAnimationLoop).toHaveBeenCalledWith(null);
   });
 });

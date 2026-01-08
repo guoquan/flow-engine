@@ -10,7 +10,7 @@ test.describe('Flow Playground UI', () => {
     await expect(loadingStatus).toHaveText('Ready', { timeout: 30000 });
 
     // 2. Quick Actions Panel
-    await expect(page.locator('h2', { hasText: 'Quick Actions' })).toBeVisible();
+    await expect(page.locator('h3', { hasText: 'Quick Actions' })).toBeVisible();
     
     // Verify Buttons
     const btnWave = page.locator('button[data-action="wave"]');
@@ -29,7 +29,7 @@ test.describe('Flow Playground UI', () => {
     // We could check if console has no errors, which is handled by app.spec.ts global listeners if we add them here.
     
     // 3. Asset Loader Panel
-    await expect(page.locator('h2', { hasText: 'Asset Loader' })).toBeVisible();
+    await expect(page.locator('h3', { hasText: 'Asset Loader' })).toBeVisible();
     
     const inputAvatar = page.locator('#input-avatar-url');
     await expect(inputAvatar).toBeVisible();
@@ -40,7 +40,7 @@ test.describe('Flow Playground UI', () => {
     await expect(inputStage).toBeVisible();
     
     // 4. Protocol Tester Panel Collapsing
-    const protoHeader = page.locator('h2', { hasText: 'Protocol Tester' });
+    const protoHeader = page.locator('h3', { hasText: 'Protocol Tester' });
     const protoContent = page.locator('#panel-protocol .panel-content');
     
     // Initially hidden (collapsed class logic)

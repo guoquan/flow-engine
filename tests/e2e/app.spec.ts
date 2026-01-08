@@ -59,7 +59,7 @@ test.describe('Flow Engine Visual E2E', () => {
     const jsonError = page.locator('#json-error');
 
     // Expand the panel first
-    await page.locator('h2', { hasText: 'Protocol Tester' }).click();
+    await page.locator('h3', { hasText: 'Protocol Tester' }).click();
     await expect(jsonInput).toBeVisible();
 
     // Test valid JSON

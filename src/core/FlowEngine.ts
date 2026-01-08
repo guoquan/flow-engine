@@ -128,8 +128,10 @@ export class FlowEngine {
     };
 
     // 8. Event Handlers
-    window.addEventListener('resize', this.onWindowResize.bind(this));
-
+    // Use ResizeObserver to handle all layout changes (window resize, sidebar toggle, split screen)
+    const resizeObserver = new ResizeObserver(() => this.onWindowResize());
+    resizeObserver.observe(this.container);
+    
     // Start Loop (WebGPU Style)
     this.renderer.setAnimationLoop(this.animate.bind(this));
   }

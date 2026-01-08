@@ -60,8 +60,15 @@ body {
 }
 
 #sidebar.collapsed h2, 
-#sidebar.collapsed .panel,
+#sidebar.collapsed .panel {
+  display: none;
+}
+
 #sidebar.collapsed .sidebar-header {
+  justify-content: center;
+}
+
+#sidebar.collapsed .sidebar-header h2 {
   display: none;
 }
 

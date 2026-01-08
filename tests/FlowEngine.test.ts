@@ -29,7 +29,6 @@ vi.mock('three/webgpu', () => {
     render = vi.fn();
     revive = vi.fn();
     domElement = document.createElement('canvas');
-    address = vi.fn();
   }
   return { WebGPURenderer };
 });

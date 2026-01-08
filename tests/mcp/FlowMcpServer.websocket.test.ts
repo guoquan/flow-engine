@@ -18,7 +18,7 @@ describe('FlowMcpServer WebSocket Bridge', () => {
     // Use port 0 to let the OS assign a random available port
     server = new TestableMcpServer({ port: 0 });
     
-    // Wait for server to start listening and obtain the assigned port
+    // Get the assigned port from the server
     const port = await new Promise<number>((resolve, reject) => {
       const start = Date.now();
       const timeoutMs = 2000;

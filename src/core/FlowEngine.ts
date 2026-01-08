@@ -287,9 +287,12 @@ export class FlowEngine {
   }
 
   private onWindowResize() {
-    this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+    const width = this.container.clientWidth;
+    const height = this.container.clientHeight;
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    // Pass false to prevent setting style.width/height, letting CSS handle the layout
+    this.renderer.setSize(width, height, false);
   }
 
   public isAutoRotate = false;

@@ -81,7 +81,12 @@ jobs:
 
     # --- Visual Reporting Logic ---
 
-    # 1. First, try to push to visual-reports branch
+    # 1. Generate README for the report (must be done before deploy)
+    - name: Generate Report README
+      if: always()
+      run: node .github/scripts/generate-readme.cjs
+
+    # 2. First, try to push to visual-reports branch
     - name: Deploy screenshots to visual-reports branch
       id: deploy_screenshots
       if: always() && github.event_name == 'pull_request'
@@ -95,7 +100,7 @@ jobs:
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
 
-    # 2. Generate the PR comment (aware of push success/failure)
+    # 3. Generate the PR comment (aware of push success/failure)
     - name: Generate Visual Report Comment
       id: generate_comment
       if: github.event_name == 'pull_request' && always()
@@ -105,15 +110,4 @@ jobs:
       with:
         script: |
           const script = require('./.github/scripts/generate-visual-report.cjs');
-          await script({github, context, core});
-
-    # 3. Generate README for the branch (if push succeeded or for local reference)
-    - name: Generate Report README
-      if: always()
-      uses: actions/github-script@v7
-      env:
-        COMMENT_ID: ${{ steps.generate_comment.outputs.comment_id }}
-      with:
-        script: |
-          const script = require('./.github/scripts/generate-readme.cjs');
           await script({github, context, core});

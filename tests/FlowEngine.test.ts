@@ -178,15 +178,11 @@ describe('FlowEngine', () => {
     const width = 1024;
     const height = 768;
     
-    // Mock container dimensions
-    vi.spyOn(container, 'clientWidth', 'get').mockReturnValue(width);
-    vi.spyOn(container, 'clientHeight', 'get').mockReturnValue(height);
-
-    // @ts-ignore - trigger private handler
-    engine.onWindowResize();
+    // @ts-ignore - trigger private handler with explicit dimensions (simulating ResizeObserver)
+    engine.onWindowResize(width, height);
     
     expect(engine['camera'].aspect).toBe(width / height);
-    expect(engine['renderer'].setSize).toHaveBeenCalled();
+    expect(engine['renderer'].setSize).toHaveBeenCalledWith(width, height);
   });
 
   it('should cleanup resources on dispose', () => {

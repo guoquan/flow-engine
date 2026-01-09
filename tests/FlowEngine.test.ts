@@ -178,8 +178,10 @@ describe('FlowEngine', () => {
     const width = 1024;
     const height = 768;
     
-    // @ts-ignore - trigger private handler with explicit dimensions (simulating ResizeObserver)
-    engine.onWindowResize(width, height);
+    // Simulate ResizeObserver callback
+    const entries = [{ contentRect: { width, height } }];
+    // @ts-ignore - Access mock instance
+    engine['resizeObserver'].trigger(entries);
     
     expect(engine['camera'].aspect).toBe(width / height);
     expect(engine['renderer'].setSize).toHaveBeenCalledWith(width, height);

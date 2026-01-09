@@ -311,7 +311,8 @@ const init = async () => {
       const getMcpWebSocketUrl = () => {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const hostname = window.location.hostname || 'localhost';
-        const port = '3001';
+        const urlParams = new URLSearchParams(window.location.search);
+        const port = urlParams.get('wsPort') || '3001';
         return `${protocol}//${hostname}:${port}`;
       };
 

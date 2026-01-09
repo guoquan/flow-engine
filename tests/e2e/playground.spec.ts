@@ -1,7 +1,13 @@
 import { test, expect } from '@playwright/test';
+import fs from 'fs';
 
 test.describe('Flow Playground UI', () => {
   test('should verify playground controls', async ({ page }) => {
+    // Ensure screenshot directory exists
+    if (!fs.existsSync('test-results/screenshots')) {
+      fs.mkdirSync('test-results/screenshots', { recursive: true });
+    }
+
     // 1. Go to page
     await page.goto('/');
     
@@ -20,6 +26,9 @@ test.describe('Flow Playground UI', () => {
     const btnBow = page.locator('button[data-action="bow"]');
     await expect(btnBow).toBeVisible();
     
+    const btnDance = page.locator('button[data-action="dance"]');
+    await expect(btnDance).toBeVisible();
+    
     const btnSay = page.locator('#btn-say-hello');
     await expect(btnSay).toBeVisible();
     
@@ -30,8 +39,11 @@ test.describe('Flow Playground UI', () => {
       const btn = page.locator(`button[data-action="${action}"]`);
       await btn.click();
       
-      // Wait for animation
-      await page.waitForTimeout(1000);
+      // Wait deterministically for any network activity or state change
+      // Since animation is client-side, networkidle might be too fast if no requests happen.
+      // But we can wait for a small stable delay or check for a visual change if possible.
+      // For now, we stick to a small delay but rely on networkidle as a synchronization point if assets load.
+      await page.waitForTimeout(1000); // Still need a small visual delay for animation to progress
       
       // Capture
       await page.screenshot({ path: `test-results/screenshots/ui-action-${action}.png` });

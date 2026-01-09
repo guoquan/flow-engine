@@ -1,30 +1,29 @@
 import { test, expect } from '@playwright/test';
 import { WebSocketServer } from 'ws';
-
-const MCP_BRIDGE_PORT = 3001;
+import fs from 'fs';
 
 test.describe('MCP Bridge Integration', () => {
   let wss: WebSocketServer;
+  let port: number;
   
   test.beforeAll(async () => {
-    // Start a mock WS server on port 3001
-    // Note: We use 3001 because the frontend currently expects this port.
-    // We add error handling for EADDRINUSE to provide better feedback if the real server is running.
+    // Ensure screenshot directory exists
+    if (!fs.existsSync('test-results/screenshots')) {
+      fs.mkdirSync('test-results/screenshots', { recursive: true });
+    }
+
+    // Start a mock WS server on random port
     return new Promise<void>((resolve, reject) => {
-      const server = new WebSocketServer({ port: MCP_BRIDGE_PORT });
+      const server = new WebSocketServer({ port: 0 });
 
       server.once('listening', () => {
         wss = server;
+        port = (server.address() as any).port;
+        console.log(`[E2E] Mock MCP Server listening on port ${port}`);
         resolve();
       });
 
-      server.once('error', (err: any) => {
-        if (err.code === 'EADDRINUSE') {
-          reject(new Error(`Port ${MCP_BRIDGE_PORT} already in use. Ensure 'npm run mcp' is not running.`));
-        } else {
-          reject(err);
-        }
-      });
+      server.once('error', reject);
     });
   });
 
@@ -57,12 +56,12 @@ test.describe('MCP Bridge Integration', () => {
       });
     });
 
-    // 2. Load Page
-    await page.goto('/');
+    // 2. Load Page with custom port
+    await page.goto(`/?wsPort=${port}`);
 
     // 3. Verify Connection UI
     const statusBadge = page.locator('#mcp-status');
-    await expect(statusBadge).toHaveText('Disconnected'); // Initial state
+    await expect(statusBadge).toHaveText('Disconnected'); // Initial state may be brief
 
     // Wait for connection to happen
     await connectionPromise;
@@ -72,7 +71,11 @@ test.describe('MCP Bridge Integration', () => {
     // Check color (green)
     await expect(statusBadge).toHaveCSS('background-color', 'rgb(46, 125, 50)');
 
-    // 4. Verify Action Execution & Capture Screenshots
+    // 4. Verify Initial 'Say' Action
+    await expect(page.locator('.msg.agent', { hasText: 'Hello from E2E' })).toBeVisible();
+    await page.screenshot({ path: 'test-results/screenshots/mcp-action-say.png' });
+
+    // 5. Verify Complex Actions & Capture Screenshots
     const actions = ['wave', 'bow', 'dance'];
     
     for (const action of actions) {
@@ -88,18 +91,15 @@ test.describe('MCP Bridge Integration', () => {
         }
       });
 
-      // Wait for animation to start/play
-      // We wait 1s to capture the "middle" of the action
-      await page.waitForTimeout(1000);
+      // Wait for animation to start by waiting for the log entry
+      const logEntry = page.locator('.msg.agent', { hasText: `Action: ${action}` });
+      await expect(logEntry).toBeVisible();
+      
+      // Wait a tiny bit more for animation state to progress
+      await page.waitForTimeout(500);
       
       // Capture screenshot
       await page.screenshot({ path: `test-results/screenshots/mcp-action-${action}.png` });
-      
-      // Verify log (optional but good)
-      await expect(page.locator('.msg.agent', { hasText: `Action: ${action}` })).toBeVisible();
-      
-      // Wait for action to finish before next (prevent overlap)
-      await page.waitForTimeout(2000); 
     }
   });
 });

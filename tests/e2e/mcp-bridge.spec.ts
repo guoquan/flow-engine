@@ -72,8 +72,34 @@ test.describe('MCP Bridge Integration', () => {
     // Check color (green)
     await expect(statusBadge).toHaveCSS('background-color', 'rgb(46, 125, 50)');
 
-    // 4. Verify Action Execution
-    // The "say" command should trigger a log entry
-    await expect(page.locator('.msg.agent', { hasText: 'Hello from E2E' })).toBeVisible();
+    // 4. Verify Action Execution & Capture Screenshots
+    const actions = ['wave', 'bow', 'dance'];
+    
+    for (const action of actions) {
+      console.log(`[E2E] Triggering MCP action: ${action}`);
+      
+      // Send action command
+      wss.clients.forEach(client => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({
+            type: 'play_action',
+            action: action
+          }));
+        }
+      });
+
+      // Wait for animation to start/play
+      // We wait 1s to capture the "middle" of the action
+      await page.waitForTimeout(1000);
+      
+      // Capture screenshot
+      await page.screenshot({ path: `test-results/screenshots/mcp-action-${action}.png` });
+      
+      // Verify log (optional but good)
+      await expect(page.locator('.msg.agent', { hasText: `Action: ${action}` })).toBeVisible();
+      
+      // Wait for action to finish before next (prevent overlap)
+      await page.waitForTimeout(2000); 
+    }
   });
 });

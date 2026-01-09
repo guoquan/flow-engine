@@ -23,10 +23,22 @@ test.describe('Flow Playground UI', () => {
     const btnSay = page.locator('#btn-say-hello');
     await expect(btnSay).toBeVisible();
     
-    // Test Interaction (Click Wave)
-    await btnWave.click();
-    // No explicit assertion for 3D state, but ensuring it doesn't crash is good.
-    // We could check if console has no errors, which is handled by app.spec.ts global listeners if we add them here.
+    // Test Interaction & Screenshots
+    const actions = ['wave', 'bow', 'dance'];
+    for (const action of actions) {
+      console.log(`[E2E] Triggering UI action: ${action}`);
+      const btn = page.locator(`button[data-action="${action}"]`);
+      await btn.click();
+      
+      // Wait for animation
+      await page.waitForTimeout(1000);
+      
+      // Capture
+      await page.screenshot({ path: `test-results/screenshots/ui-action-${action}.png` });
+      
+      // Cooldown
+      await page.waitForTimeout(2000);
+    }
     
     // 3. Asset Loader Panel
     await expect(page.locator('h3', { hasText: 'Asset Loader' })).toBeVisible();

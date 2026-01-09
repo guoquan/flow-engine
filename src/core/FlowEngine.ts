@@ -131,7 +131,11 @@ export class FlowEngine {
 
     // 8. Event Handlers
     // Use ResizeObserver to handle all layout changes (window resize, sidebar toggle, split screen)
-    this.resizeObserver = new ResizeObserver(() => this.onWindowResize());
+    this.resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      // Use contentRect for precise fractional pixels
+      this.onWindowResize(entry.contentRect.width, entry.contentRect.height);
+    });
     this.resizeObserver.observe(this.container);
     
     // Start Loop (WebGPU Style)
@@ -286,13 +290,12 @@ export class FlowEngine {
     if (this.debugPlaneMesh) { this.scene.remove(this.debugPlaneMesh); this.debugPlaneMesh = null; }
   }
 
-  private onWindowResize() {
-    const width = this.container.clientWidth;
-    const height = this.container.clientHeight;
+  private onWindowResize(width: number, height: number) {
+    if (!width || !height) return;
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    // Pass false to prevent setting style.width/height, letting CSS handle the layout
-    this.renderer.setSize(width, height, false);
+    // Enable style update (default) to match canvas size to container
+    this.renderer.setSize(width, height);
   }
 
   public isAutoRotate = false;

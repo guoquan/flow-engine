@@ -68,35 +68,6 @@ body {
   justify-content: center;
 }
 
-#sidebar.collapsed .sidebar-header h2 {
-  display: none;
-}
-
-#sidebar.collapsed #btn-toggle-sidebar {
-  display: block;
-  width: 100%;
-  text-align: center;
-  padding: 4px 0;
-}
-
-.sidebar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.sidebar-header h2 {
-  margin: 0;
-  border: none;
-  font-size: 1rem;
-}
-
-.sidebar-toggle {
-  padding: 2px 8px;
-  font-size: 0.8rem;
-}
-
 /* Components */
 h2 {
   font-size: 1.2rem;

@@ -14,7 +14,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="sidebar">
     <div class="sidebar-header">
       <h2>Controls</h2>
-      <button id="btn-toggle-sidebar" class="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">☰</button>
+      <button id="btn-toggle-sidebar" class="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar" aria-expanded="true">☰</button>
     </div>
 
     <!-- Panel 1: Dashboard -->
@@ -135,10 +135,18 @@ const init = async () => {
       };
 
       sidebarToggleBtn.addEventListener('click', toggleSidebar);
-      // Keyboard accessibility
+      // Keyboard activation on Enter/Space when the toggle has focus
       sidebarToggleBtn.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
+          toggleSidebar();
+        }
+      });
+
+      // Global keyboard shortcut: Ctrl+B / Cmd+B to toggle the sidebar
+      document.addEventListener('keydown', (event: KeyboardEvent) => {
+        if ((event.ctrlKey || event.metaKey) && (event.key === 'b' || event.key === 'B')) {
+          event.preventDefault();
           toggleSidebar();
         }
       });

@@ -16,9 +16,6 @@ test.describe('Sidebar Toggle', () => {
     
     // Should be collapsed
     await expect(sidebar).toHaveClass(/collapsed/);
-    
-    // Check width or visibility of content (optional, class check is usually enough logic-wise)
-    // But let's check if a panel is hidden
     const panel = page.locator('.panel').first();
     await expect(panel).toBeHidden();
     

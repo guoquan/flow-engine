@@ -222,17 +222,12 @@ export class FlowMcpServer {
   /**
    * Returns the port associated with the WebSocket server.
    *
-   * If the WebSocket server is successfully listening and its address can be
-   * determined, this method returns the actual port reported by
-   * `this.wss.address()`. If the address is not available (for example,
-   * because the server has not started listening yet, failed to start, or
-   * the address could not be resolved), this method falls back to returning
-   * the configured port stored in `this.port`, which may differ from the
-   * actual listening port in those cases.
+   * @returns The actual port if the server is successfully listening;
+   *          otherwise, returns the configured port or -1 if the server failed to start.
    */
   public getPort(): number {
-    // Gracefully handle dummy wss or early access
-    if (!this.wss) return this.port;
+    // If wss is a dummy object or failed to start
+    if (!this.wss || typeof this.wss.address !== 'function') return -1;
     
     try {
       const address = this.wss.address();
@@ -240,7 +235,7 @@ export class FlowMcpServer {
         return address.port;
       }
     } catch {
-      // Ignore errors if address() throws (e.g. server closed or not listening)
+      // Ignore errors if address() throws
     }
     
     return this.port;

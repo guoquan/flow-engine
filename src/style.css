@@ -24,12 +24,20 @@ body {
 
 #canvas-container {
   flex: 1;
+  min-width: 0; /* Critical for flex shrinking */
   position: relative;
   background: #000;
+  overflow: hidden;
+}
+
+#canvas-container canvas {
+  display: block;
 }
 
 #sidebar {
   width: 320px;
+  max-width: 40vw;
+  min-width: 200px;
   background: #242424;
   border-left: 1px solid #333;
   display: flex;
@@ -38,6 +46,24 @@ body {
   gap: 16px;
   overflow-y: auto;
   box-shadow: -4px 0 10px rgba(0,0,0,0.3);
+  transition: width 0.3s ease, min-width 0.3s ease, padding 0.3s ease;
+  will-change: width, min-width, padding;
+}
+
+#sidebar.collapsed {
+  width: 40px;
+  min-width: 0;
+  padding: 16px 4px;
+  overflow: hidden;
+}
+
+#sidebar.collapsed h2, 
+#sidebar.collapsed .panel {
+  display: none;
+}
+
+#sidebar.collapsed .sidebar-header {
+  justify-content: center;
 }
 
 /* Components */

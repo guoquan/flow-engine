@@ -12,9 +12,14 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </div>
   
   <div id="sidebar">
+    <div class="sidebar-header">
+      <h2>Controls</h2>
+      <button id="btn-toggle-sidebar" class="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar" aria-expanded="true">☰</button>
+    </div>
+
     <!-- Panel 1: Dashboard -->
     <div class="panel">
-      <h2>Dashboard</h2>
+      <h3>Dashboard</h3>
       <div class="control-group">
         <label><input type="checkbox" id="check-debug"> Debug Mode</label>
         <label><input type="checkbox" id="check-rotate"> Auto Rotate</label>
@@ -25,7 +30,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
     <!-- Panel 2: Quick Actions -->
     <div class="panel">
-      <h2>Quick Actions</h2>
+      <h3>Quick Actions</h3>
       <div class="action-grid">
         <button data-action="wave">👋 Wave</button>
         <button data-action="bow">🙇 Bow</button>
@@ -40,7 +45,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
     <!-- Panel 3: Asset Loader -->
     <div class="panel">
-      <h2>Asset Loader</h2>
+      <h3>Asset Loader</h3>
       <div class="control-group">
         <label class="label-small">Avatar Config URL</label>
         <div class="input-row">
@@ -58,7 +63,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
     <!-- Panel 4: Chat -->
     <div class="panel" style="display: flex; flex-direction: column; gap: 8px;">
-      <h2>Chat</h2>
+      <h3>Chat</h3>
       <div id="chat-log"></div>
       <div style="display: flex; gap: 4px;">
         <input type="text" id="chat-input" placeholder="Talk to avatar..." />
@@ -68,9 +73,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
     <!-- Panel 5: Protocol Tester -->
     <div class="panel collapsed" id="panel-protocol">
-      <h2 style="cursor: pointer;" id="header-protocol">
+      <h3 style="cursor: pointer;" id="header-protocol">
         Protocol Tester <span style="float: right; font-size: 0.8em">▼</span>
-      </h2>
+      </h3>
       <div class="panel-content">
         <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 4px;">Send raw JSON (Unified Action Protocol):</p>
         <textarea id="json-input">{
@@ -118,6 +123,35 @@ const init = async () => {
     // --- UI Logic ---
 
     // 1. Dashboard Controls
+    const sidebarToggleBtn = document.getElementById('btn-toggle-sidebar');
+    if (sidebarToggleBtn) {
+      const toggleSidebar = () => {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+          sidebar.classList.toggle('collapsed');
+          const isCollapsed = sidebar.classList.contains('collapsed');
+          sidebarToggleBtn.setAttribute('aria-expanded', String(!isCollapsed));
+        }
+      };
+
+      sidebarToggleBtn.addEventListener('click', toggleSidebar);
+      // Keyboard activation on Enter/Space when the toggle has focus
+      sidebarToggleBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleSidebar();
+        }
+      });
+
+      // Global keyboard shortcut: Ctrl+B / Cmd+B to toggle the sidebar
+      document.addEventListener('keydown', (event: KeyboardEvent) => {
+        if ((event.ctrlKey || event.metaKey) && (event.key === 'b' || event.key === 'B')) {
+          event.preventDefault();
+          toggleSidebar();
+        }
+      });
+    }
+
     document.getElementById('check-debug')?.addEventListener('change', (e) => {
       engine.setDebug((e.target as HTMLInputElement).checked);
     });

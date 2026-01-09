@@ -38,6 +38,8 @@ export class FlowEngine {
   public isDebug = false;
   private debugTargetMesh: THREE.Mesh | null = null;
   private debugPlaneMesh: THREE.GridHelper | null = null;
+  
+  private resizeObserver: ResizeObserver;
 
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
@@ -128,10 +130,23 @@ export class FlowEngine {
     };
 
     // 8. Event Handlers
-    window.addEventListener('resize', this.onWindowResize.bind(this));
-
+    // Use ResizeObserver to handle all layout changes (window resize, sidebar toggle, split screen)
+    this.resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      // Use contentRect for precise fractional pixels
+      this.onWindowResize(entry.contentRect.width, entry.contentRect.height);
+    });
+    this.resizeObserver.observe(this.container);
+    
     // Start Loop (WebGPU Style)
     this.renderer.setAnimationLoop(this.animate.bind(this));
+  }
+
+  public dispose() {
+    this.resizeObserver.disconnect();
+    this.renderer.setAnimationLoop(null);
+    this.renderer.dispose();
+    this.controls.dispose();
   }
 
   private setupLights() {
@@ -275,10 +290,12 @@ export class FlowEngine {
     if (this.debugPlaneMesh) { this.scene.remove(this.debugPlaneMesh); this.debugPlaneMesh = null; }
   }
 
-  private onWindowResize() {
-    this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+  private onWindowResize(width: number, height: number) {
+    if (!width || !height) return;
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    // Enable style update (default) to match canvas size to container
+    this.renderer.setSize(width, height);
   }
 
   public isAutoRotate = false;

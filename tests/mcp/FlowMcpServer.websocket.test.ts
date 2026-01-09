@@ -13,16 +13,40 @@ class TestableMcpServer extends FlowMcpServer {
 describe('FlowMcpServer WebSocket Bridge', () => {
   let server: TestableMcpServer;
   let client: WebSocket;
-  let receivedMessages: any[] = [];
 
   beforeAll(async () => {
-    server = new TestableMcpServer();
-    // Wait for server to be ready (it starts listening in constructor)
+    // Use port 0 to let the OS assign a random available port
+    server = new TestableMcpServer({ port: 0 });
     
+    // Get the assigned port from the server
+    const port = await new Promise<number>((resolve, reject) => {
+      const start = Date.now();
+      const timeoutMs = 2000;
+
+      const checkPort = () => {
+        try {
+          const p = server.getPort();
+          if (p && p !== 0) {
+            resolve(p);
+            return;
+          }
+        } catch (err) {
+          // Ignore transient errors while server is starting
+        }
+        if (Date.now() - start >= timeoutMs) {
+          reject(new Error('Server did not start listening in time'));
+        } else {
+          setTimeout(checkPort, 10);
+        }
+      };
+
+      checkPort();
+    });
+
     // Create a client with timeout
     return new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error("Connection timeout")), 2000);
-      client = new WebSocket('ws://localhost:3001');
+      client = new WebSocket(`ws://localhost:${port}`);
       client.on('open', () => {
         clearTimeout(timeout);
         resolve();
@@ -59,8 +83,6 @@ describe('FlowMcpServer WebSocket Bridge', () => {
   };
 
   it('should broadcast "say" command to connected client', async () => {
-    receivedMessages = []; // Clear buffer
-    
     const payload = { text: "Hello WebSocket", duration: 1000 };
     
     const msgPromise = waitForMessage('say');
@@ -75,8 +97,6 @@ describe('FlowMcpServer WebSocket Bridge', () => {
   });
 
   it('should broadcast "think" command', async () => {
-    receivedMessages = [];
-    
     const payload = { text: "Thinking deep...", duration: 2000 };
     
     const msgPromise = waitForMessage('think');
@@ -91,8 +111,6 @@ describe('FlowMcpServer WebSocket Bridge', () => {
   });
 
   it('should broadcast "play_action" command', async () => {
-    receivedMessages = [];
-    
     const payload = { action: "dance" };
     
     const msgPromise = waitForMessage('play_action');

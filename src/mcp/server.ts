@@ -6,7 +6,6 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { fileURLToPath } from "url";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { WebSocketServer, WebSocket } from 'ws';
 import { SaySchema, ThinkSchema, PlayActionSchema } from "../schemas/actions.js";
 import type { SayData, ThinkData, PlayActionData } from "../schemas/actions.js";
@@ -21,8 +20,20 @@ export class FlowMcpServer {
   private server: Server;
   private wss: WebSocketServer;
   private clients: Set<WebSocket> = new Set();
+  private port: number;
 
-  constructor() {
+  /**
+   * Creates a new FlowMcpServer instance.
+   *
+   * @param options Optional configuration for the server.
+   * @param options.port TCP port for the WebSocket bridge.
+   *   - If omitted, the server listens on port `3001` by default.
+   *   - If set to `0`, the operating system will automatically assign an
+   *     available ephemeral port. The actual port can then be retrieved via
+   *     the {@link FlowMcpServer.getPort | getPort()} method.
+   */
+  constructor(options?: { port?: number }) {
+    this.port = options?.port !== undefined ? options.port : 3001;
     this.server = new Server(
       {
         name: "flow-engine-server",
@@ -37,7 +48,7 @@ export class FlowMcpServer {
 
     // Initialize WebSocket Server for bridging to Browser
     try {
-      this.wss = new WebSocketServer({ port: 3001 });
+      this.wss = new WebSocketServer({ port: this.port });
       
       this.wss.on('connection', (ws) => {
         console.error('[MCP-Bridge] Client connected');
@@ -58,26 +69,28 @@ export class FlowMcpServer {
         });
       });
 
-      console.error('[MCP-Bridge] WebSocket server listening on port 3001');
+      console.error(`[MCP-Bridge] WebSocket server listening on port ${this.port}`);
     } catch (err: any) {
       if (err.code === 'EADDRINUSE') {
-        console.error('[MCP-Bridge] Error: Port 3001 is already in use. The WebSocket bridge will not be available.');
+        console.error(`[MCP-Bridge] Error: Port ${this.port} is already in use. The WebSocket bridge will not be available.`);
       } else {
         console.error('[MCP-Bridge] Failed to start WebSocket server:', err);
       }
       // Create a dummy wss to avoid crashes, though bridge won't work
-      this.wss = { on: () => {}, close: (cb: any) => cb(), clients: new Set() } as any;
+      this.wss = { on: () => {}, close: (cb: any) => cb(), clients: new Set(), address: () => null } as any;
     }
 
     this.setupTools();
   }
 
   private setupTools() {
-    // Generate JSON Schemas from Zod definitions
-    // Cast to Tool["inputSchema"] because zod-to-json-schema produces compatible JSON Schema at runtime.
-    const sayToolSchema = zodToJsonSchema(SaySchema as any) as unknown as Tool["inputSchema"];
-    const thinkToolSchema = zodToJsonSchema(ThinkSchema as any) as unknown as Tool["inputSchema"];
-    const playActionToolSchema = zodToJsonSchema(PlayActionSchema as any) as unknown as Tool["inputSchema"];
+    // Generate JSON Schemas from Zod definitions using Zod 4 native toJSONSchema
+    // Define a helper type since Zod 4 types might not be fully inferred by the compiler yet
+    type JsonSchemaCapable = { toJSONSchema: () => Tool["inputSchema"] };
+
+    const sayToolSchema = (SaySchema as unknown as JsonSchemaCapable).toJSONSchema();
+    const thinkToolSchema = (ThinkSchema as unknown as JsonSchemaCapable).toJSONSchema();
+    const playActionToolSchema = (PlayActionSchema as unknown as JsonSchemaCapable).toJSONSchema();
 
     const tools: Tool[] = [
       {
@@ -204,6 +217,28 @@ export class FlowMcpServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     console.error("Flow MCP Server running on stdio");
+  }
+
+  /**
+   * Returns the port associated with the WebSocket server.
+   *
+   * @returns The actual port if the server is successfully listening;
+   *          otherwise, returns the configured port or -1 if the server failed to start.
+   */
+  public getPort(): number {
+    // If wss is a dummy object or failed to start
+    if (!this.wss || typeof this.wss.address !== 'function') return -1;
+    
+    try {
+      const address = this.wss.address();
+      if (typeof address === 'object' && address !== null) {
+        return address.port;
+      }
+    } catch {
+      // Ignore errors if address() throws
+    }
+    
+    return this.port;
   }
 
   /**

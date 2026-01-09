@@ -15,11 +15,8 @@ importers:
         specifier: 8.18.3
         version: 8.18.3
       zod:
-        specifier: 4.3.5
+        specifier: ~4.3.5
         version: 4.3.5
-      zod-to-json-schema:
-        specifier: ^3.25.1
-        version: 3.25.1(zod@4.3.5)
     devDependencies:
       '@codecov/vite-plugin':
         specifier: ^1.9.1
@@ -1713,8 +1710,8 @@ packages:
     peerDependencies:
       zod: ^3.25 || ^4
 
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+  zod@3.24.1:
+    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
 
   zod@4.3.5:
     resolution: {integrity: sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==}
@@ -1789,7 +1786,7 @@ snapshots:
       chalk: 4.1.2
       semver: 7.5.4
       unplugin: 1.16.1
-      zod: 3.25.76
+      zod: 3.24.1
 
   '@codecov/vite-plugin@1.9.1(vite@7.3.0(@types/node@25.0.3)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
@@ -3326,6 +3323,6 @@ snapshots:
     dependencies:
       zod: 4.3.5
 
-  zod@3.25.76: {}
+  zod@3.24.1: {}
 
   zod@4.3.5: {}

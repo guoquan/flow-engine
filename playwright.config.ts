@@ -19,7 +19,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'cross-env BUILD_DEMO=true OUT_DIR=dist-e2e npm run build && npx http-server dist-e2e -p 4173 -a 127.0.0.1',
+    command: 'cross-env BUILD_DEMO=true OUT_DIR=dist-e2e npm run build && npx http-server dist-e2e -p 4173 -a 127.0.0.1 -c-1',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

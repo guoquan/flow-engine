@@ -226,7 +226,8 @@ const init = async () => {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const hostname = window.location.hostname || 'localhost';
         const urlParams = new URLSearchParams(window.location.search);
-        const port = urlParams.get('wsPort') || '3001';
+        // Port is intentionally kept as a string for URL construction.
+        const port: string = urlParams.get('wsPort') || '3001';
         return `${protocol}//${hostname}:${port}`;
       };
 
@@ -284,6 +285,14 @@ const init = async () => {
             case 'play_action':
               engine.playAction(data.action);
               addLog(`[MCP] Action: ${data.action}`, 'agent');
+              break;
+            case 'interaction':
+              if (data.name === 'lookAt') {
+                engine.processAgentResponse({
+                   actions: [{ type: 'interaction', name: 'lookAt', value: data.value }]
+                });
+                addLog(`[MCP] Interaction: ${data.name}`, 'agent');
+              }
               break;
             default:
               console.warn('[MCP-Bridge] Unknown message type:', data.type);

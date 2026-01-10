@@ -22,6 +22,9 @@ test.describe('Flow Playground UI', () => {
     const btnBow = page.locator('button[data-action="bow"]');
     await expect(btnBow).toBeVisible();
     
+    const btnDance = page.locator('button[data-action="dance"]');
+    await expect(btnDance).toBeVisible();
+    
     const btnSay = page.locator('#btn-say-hello');
     await expect(btnSay).toBeVisible();
     
@@ -32,14 +35,16 @@ test.describe('Flow Playground UI', () => {
       const btn = page.locator(`button[data-action="${action}"]`);
       await btn.click();
       
-      // Wait for animation
-      await page.waitForTimeout(1000);
+      // Wait for any network activity triggered by the action to complete
+      // and a small grace period for the animation to start
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(500); 
       
       // Capture
       await page.screenshot({ path: `test-results/screenshots/ui-action-${action}.png` });
       
       // Cooldown
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
     }
 
     // Test Extra Actions via Protocol Tester (Walk, Death)
@@ -61,9 +66,11 @@ test.describe('Flow Playground UI', () => {
       await jsonInput.fill(payload);
       await jsonSend.click();
       
-      await page.waitForTimeout(1000);
+      // Wait for log confirmation
+      await expect(page.locator('.msg.agent', { hasText: `Testing ${action}` })).toBeVisible();
+      
       await page.screenshot({ path: `test-results/screenshots/ui-action-${action}.png` });
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('networkidle');
     }
 
     // Test LookAt (Listening State via Chat)
@@ -72,11 +79,12 @@ test.describe('Flow Playground UI', () => {
     await page.locator('#chat-send').click();
     
     // Wait for response "tracking your cursor"
-    await expect(page.locator('.msg.agent', { hasText: 'tracking your cursor' })).toBeVisible();
+    const response = page.locator('.msg.agent', { hasText: 'tracking your cursor' });
+    await expect(response).toBeVisible({ timeout: 5000 });
     
     // Move mouse to trigger lookAt
     await page.mouse.move(100, 100);
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(500); // Small delay for head turn
     await page.screenshot({ path: 'test-results/screenshots/ui-state-listening.png' });
     
     // 3. Asset Loader Panel

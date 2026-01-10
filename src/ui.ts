@@ -1,3 +1,5 @@
+const TITLE_OVERLAY_OPACITY = '0.6';
+
 export function createLayout(app: HTMLElement) {
   // 1. Canvas Container
   const canvasContainer = document.createElement('div');
@@ -9,7 +11,7 @@ export function createLayout(app: HTMLElement) {
     top: '10px',
     left: '10px',
     pointerEvents: 'none',
-    opacity: '0.6'
+    opacity: TITLE_OVERLAY_OPACITY
   });
   
   const h1 = document.createElement('h1');

@@ -7,6 +7,7 @@ const OUTPUT_FILE = path.join(SCREENSHOTS_DIR, 'README.md');
 const descriptions = {
   'initial-state.png': 'The initial state of the application after engine load.',
   'debug-mode.png': 'Application with Debug Mode enabled (showing interaction plane and target).',
+  'mcp-action-say.png': 'Avatar performing the "Say" animation triggered via MCP.',
   'mcp-action-wave.png': 'Avatar performing the "Wave" animation triggered via MCP.',
   'mcp-action-bow.png': 'Avatar performing the "Bow" animation triggered via MCP.',
   'mcp-action-dance.png': 'Avatar performing the "Dance" animation triggered via MCP.',
@@ -21,7 +22,7 @@ const descriptions = {
   'ui-state-listening.png': 'Avatar in LISTENING state, tracking the cursor.',
 };
 
-function generate() {
+async function generate() {
   if (!fs.existsSync(SCREENSHOTS_DIR)) {
     console.log('Screenshots directory not found. Skipping README generation.');
     return;
@@ -36,12 +37,17 @@ function generate() {
 
   files.sort().forEach(file => {
     const desc = descriptions[file] || 'No description available.';
-    markdown += `| ![${file}](${file}) | **${file}**<br>${desc} |
-`;
+    markdown += `| ![${file}](${file}) | **${file}**<br>${desc} |\n`;
   });
 
   fs.writeFileSync(OUTPUT_FILE, markdown);
   console.log(`Successfully generated ${OUTPUT_FILE}`);
 }
 
-generate();
+module.exports = async ({ github, context, core } = {}) => {
+  await generate();
+};
+
+if (require.main === module) {
+  generate();
+}

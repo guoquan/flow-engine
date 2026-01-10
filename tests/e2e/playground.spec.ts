@@ -39,6 +39,43 @@ test.describe('Flow Playground UI', () => {
       // Cooldown
       await page.waitForTimeout(2000);
     }
+
+    // Test Extra Actions via Protocol Tester (Walk, Death)
+    const extraActions = ['walk', 'death'];
+    const jsonInput = page.locator('#json-input');
+    const jsonSend = page.locator('#json-send');
+    
+    // Expand Protocol Tester if needed (it starts collapsed)
+    const protoTesterHeader = page.locator('h3', { hasText: 'Protocol Tester' });
+    await protoTesterHeader.click();
+
+    for (const action of extraActions) {
+      console.log(`[E2E] Triggering Protocol Tester action: ${action}`);
+      const payload = JSON.stringify({ 
+        text: `Testing ${action}`, 
+        actions: [{ type: 'animation', name: action }] 
+      });
+      
+      await jsonInput.fill(payload);
+      await jsonSend.click();
+      
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: `test-results/screenshots/ui-action-${action}.png` });
+      await page.waitForTimeout(2000);
+    }
+
+    // Test LookAt (Listening State via Chat)
+    console.log('[E2E] Triggering LookAt via Chat');
+    await page.locator('#chat-input').fill('look at me');
+    await page.locator('#chat-send').click();
+    
+    // Wait for response "tracking your cursor"
+    await expect(page.locator('.msg.agent', { hasText: 'tracking your cursor' })).toBeVisible();
+    
+    // Move mouse to trigger lookAt
+    await page.mouse.move(100, 100);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'test-results/screenshots/ui-state-listening.png' });
     
     // 3. Asset Loader Panel
     await expect(page.locator('h3', { hasText: 'Asset Loader' })).toBeVisible();
@@ -52,7 +89,7 @@ test.describe('Flow Playground UI', () => {
     await expect(inputStage).toBeVisible();
     
     // 4. Protocol Tester Panel Collapsing
-    const protoHeader = page.locator('h3', { hasText: 'Protocol Tester' });
+    const protoCollapseHeader = page.locator('h3', { hasText: 'Protocol Tester' });
     const protoContent = page.locator('#panel-protocol .panel-content');
     
     // Initially hidden (collapsed class logic)
@@ -60,10 +97,12 @@ test.describe('Flow Playground UI', () => {
     // <div class="panel collapsed" id="panel-protocol">
     // So content should be hidden if CSS matches.
     // Let's check CSS: .panel.collapsed .panel-content { display: none; }
+    const protocolPanel = page.locator('#panel-protocol');
+    await expect(protocolPanel).toHaveClass(/collapsed/);
     await expect(protoContent).toBeHidden();
     
     // Click to expand
-    await protoHeader.click();
+    await protoCollapseHeader.click();
     await expect(protoContent).toBeVisible();
   });
 });

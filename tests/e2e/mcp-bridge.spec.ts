@@ -53,7 +53,7 @@ test.describe('MCP Bridge Integration', () => {
             duration: 1000
           }));
           resolve();
-        }, 500);
+        }, 1000);
       });
     });
 

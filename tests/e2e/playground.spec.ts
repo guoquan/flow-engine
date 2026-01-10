@@ -23,10 +23,19 @@ test.describe('Flow Playground UI', () => {
     const btnSay = page.locator('#btn-say-hello');
     await expect(btnSay).toBeVisible();
     
-    // Test Interaction (Click Wave)
-    await btnWave.click();
-    // No explicit assertion for 3D state, but ensuring it doesn't crash is good.
-    // We could check if console has no errors, which is handled by app.spec.ts global listeners if we add them here.
+    // Test Interaction & Screenshots
+    const actions = ['wave', 'bow', 'dance'];
+    for (const action of actions) {
+      console.log(`[E2E] Triggering UI action: ${action}`);
+      const btn = page.locator(`button[data-action="${action}"]`);
+      await btn.click();
+      
+      // Wait for animation
+      await page.waitForTimeout(1000);
+      
+      // Capture
+      await page.screenshot({ path: `test-results/screenshots/ui-action-${action}.png` });
+      
       // Cooldown
       await page.waitForTimeout(2000);
     }
@@ -37,8 +46,8 @@ test.describe('Flow Playground UI', () => {
     const jsonSend = page.locator('#json-send');
     
     // Expand Protocol Tester if needed (it starts collapsed)
-    const protoHeader = page.locator('h3', { hasText: 'Protocol Tester' });
-    await protoHeader.click();
+    const protoTesterHeader = page.locator('h3', { hasText: 'Protocol Tester' });
+    await protoTesterHeader.click();
 
     for (const action of extraActions) {
       console.log(`[E2E] Triggering Protocol Tester action: ${action}`);
@@ -80,7 +89,7 @@ test.describe('Flow Playground UI', () => {
     await expect(inputStage).toBeVisible();
     
     // 4. Protocol Tester Panel Collapsing
-    const protoHeader = page.locator('h3', { hasText: 'Protocol Tester' });
+    const protoCollapseHeader = page.locator('h3', { hasText: 'Protocol Tester' });
     const protoContent = page.locator('#panel-protocol .panel-content');
     
     // Initially hidden (collapsed class logic)
@@ -88,10 +97,12 @@ test.describe('Flow Playground UI', () => {
     // <div class="panel collapsed" id="panel-protocol">
     // So content should be hidden if CSS matches.
     // Let's check CSS: .panel.collapsed .panel-content { display: none; }
+    const protocolPanel = page.locator('#panel-protocol');
+    await expect(protocolPanel).toHaveClass(/collapsed/);
     await expect(protoContent).toBeHidden();
     
     // Click to expand
-    await protoHeader.click();
+    await protoCollapseHeader.click();
     await expect(protoContent).toBeVisible();
   });
 });

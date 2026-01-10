@@ -79,6 +79,7 @@ The Agent **MUST** follow this cycle for every PR. **ABSOLUTELY NO SELF-MERGING.
 
 4.  **Review Loop (Iterative)**:
     *   **Check**: The Agent **MUST** periodically poll for new comments (`gh pr view --comments`) at reasonable intervals (e.g., every 30-60 seconds) while waiting. Do not assume silence means approval. Respect GitHub API rate limits.
+        *   *Example Command*: `sleep 30 && gh pr view <pr-number> --comments`
     *   **Address**: If feedback requires changes:
         *   Convert back to Draft if changes are major (`gh pr ready --undo` or use GitHub UI).
         *   Implement fixes.

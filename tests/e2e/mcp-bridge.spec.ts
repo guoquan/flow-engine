@@ -75,5 +75,48 @@ test.describe('MCP Bridge Integration', () => {
     // 4. Verify Action Execution
     // The "say" command should trigger a log entry
     await expect(page.locator('.msg.agent', { hasText: 'Hello from E2E' })).toBeVisible();
+    // 5. Verify Complex Actions & Capture Screenshots
+    const actions = ['wave', 'bow', 'dance', 'walk', 'death'];
+    
+    for (const action of actions) {
+      console.log(`[E2E] Triggering MCP action: ${action}`);
+      
+      // Send action command
+      wss.clients.forEach(client => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({
+            type: 'play_action',
+            action: action
+          }));
+        }
+      });
+
+      // Wait for animation to start by waiting for the log entry
+      const logEntry = page.locator('.msg.agent', { hasText: `Action: ${action}` });
+      await expect(logEntry).toBeVisible();
+      
+      // Wait a tiny bit more for animation state to progress
+      await page.waitForTimeout(500);
+      
+      // Capture screenshot
+      await page.screenshot({ path: `test-results/screenshots/mcp-action-${action}.png` });
+    }
+
+    // 6. Verify LookAt Interaction
+    console.log('[E2E] Triggering MCP LookAt');
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify({
+          type: 'interaction',
+          name: 'lookAt',
+          value: { x: 1, y: 1, z: 1 } // Send raw object, engine/schema should handle parsing/Vector3 conversion
+        }));
+      }
+    });
+    
+    // LookAt doesn't always log to chat (it's a background behavior), but we can check if the debug target moves?
+    // Or we can just capture the screenshot to verify visually (head turned).
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: `test-results/screenshots/mcp-interaction-lookat.png` });
   });
 });

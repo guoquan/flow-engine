@@ -78,7 +78,7 @@ The Agent **MUST** follow this cycle for every PR. **ABSOLUTELY NO SELF-MERGING.
     *   **Wait**: Do **NOT** proceed. Wait for automated reviews (Copilot) or human feedback.
 
 4.  **Review Loop (Iterative)**:
-    *   **Check**: Regularly check for comments (`gh pr view --comments`).
+    *   **Check**: Poll for new comments (`gh pr view --comments`), respecting GitHub API rate limits (e.g., check every few minutes, not continuously).
     *   **Address**: If feedback requires changes:
         *   Convert back to Draft if changes are major (`gh pr ready --undo` or use GitHub UI).
         *   Implement fixes.

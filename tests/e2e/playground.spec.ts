@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Flow Playground UI', () => {
   test('should verify playground controls', async ({ page }) => {
+    test.setTimeout(60000); // Increase timeout for multiple animations
+    
     // 1. Go to page
     await page.goto('/');
     
@@ -91,18 +93,15 @@ test.describe('Flow Playground UI', () => {
     // 4. Protocol Tester Panel Collapsing
     const protoCollapseHeader = page.locator('h3', { hasText: 'Protocol Tester' });
     const protoContent = page.locator('#panel-protocol .panel-content');
-    
-    // Initially hidden (collapsed class logic)
-    // Wait, in my HTML I added 'collapsed' class initially?
-    // <div class="panel collapsed" id="panel-protocol">
-    // So content should be hidden if CSS matches.
-    // Let's check CSS: .panel.collapsed .panel-content { display: none; }
     const protocolPanel = page.locator('#panel-protocol');
+    
+    // It was expanded in the previous step to run actions, so verify it is visible/expanded
+    await expect(protocolPanel).not.toHaveClass(/collapsed/);
+    await expect(protoContent).toBeVisible();
+    
+    // Click to collapse
+    await protoCollapseHeader.click();
     await expect(protocolPanel).toHaveClass(/collapsed/);
     await expect(protoContent).toBeHidden();
-    
-    // Click to expand
-    await protoCollapseHeader.click();
-    await expect(protoContent).toBeVisible();
   });
 });

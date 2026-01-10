@@ -1,29 +1,30 @@
 import { test, expect } from '@playwright/test';
 import { WebSocketServer } from 'ws';
-import fs from 'fs';
+
+const MCP_BRIDGE_PORT = 3001;
 
 test.describe('MCP Bridge Integration', () => {
   let wss: WebSocketServer;
-  let port: number;
   
   test.beforeAll(async () => {
-    // Ensure screenshot directory exists
-    if (!fs.existsSync('test-results/screenshots')) {
-      fs.mkdirSync('test-results/screenshots', { recursive: true });
-    }
-
-    // Start a mock WS server on random port
+    // Start a mock WS server on port 3001
+    // Note: We use 3001 because the frontend currently expects this port.
+    // We add error handling for EADDRINUSE to provide better feedback if the real server is running.
     return new Promise<void>((resolve, reject) => {
-      const server = new WebSocketServer({ port: 0 });
+      const server = new WebSocketServer({ port: MCP_BRIDGE_PORT });
 
       server.once('listening', () => {
         wss = server;
-        port = (server.address() as any).port;
-        console.log(`[E2E] Mock MCP Server listening on port ${port}`);
         resolve();
       });
 
-      server.once('error', reject);
+      server.once('error', (err: any) => {
+        if (err.code === 'EADDRINUSE') {
+          reject(new Error(`Port ${MCP_BRIDGE_PORT} already in use. Ensure 'npm run mcp' is not running.`));
+        } else {
+          reject(err);
+        }
+      });
     });
   });
 
@@ -56,12 +57,12 @@ test.describe('MCP Bridge Integration', () => {
       });
     });
 
-    // 2. Load Page with custom port
-    await page.goto(`/?wsPort=${port}`);
+    // 2. Load Page
+    await page.goto('/');
 
     // 3. Verify Connection UI
     const statusBadge = page.locator('#mcp-status');
-    await expect(statusBadge).toHaveText('Disconnected'); // Initial state may be brief
+    await expect(statusBadge).toHaveText('Disconnected'); // Initial state
 
     // Wait for connection to happen
     await connectionPromise;
@@ -71,12 +72,11 @@ test.describe('MCP Bridge Integration', () => {
     // Check color (green)
     await expect(statusBadge).toHaveCSS('background-color', 'rgb(46, 125, 50)');
 
-    // 4. Verify Initial 'Say' Action
+    // 4. Verify Action Execution
+    // The "say" command should trigger a log entry
     await expect(page.locator('.msg.agent', { hasText: 'Hello from E2E' })).toBeVisible();
-    await page.screenshot({ path: 'test-results/screenshots/mcp-action-say.png' });
-
     // 5. Verify Complex Actions & Capture Screenshots
-    const actions = ['wave', 'bow', 'dance'];
+    const actions = ['wave', 'bow', 'dance', 'walk', 'death'];
     
     for (const action of actions) {
       console.log(`[E2E] Triggering MCP action: ${action}`);
@@ -101,5 +101,22 @@ test.describe('MCP Bridge Integration', () => {
       // Capture screenshot
       await page.screenshot({ path: `test-results/screenshots/mcp-action-${action}.png` });
     }
+
+    // 6. Verify LookAt Interaction
+    console.log('[E2E] Triggering MCP LookAt');
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify({
+          type: 'interaction',
+          name: 'lookAt',
+          value: { x: 1, y: 1, z: 1 } // Send raw object, engine/schema should handle parsing/Vector3 conversion
+        }));
+      }
+    });
+    
+    // LookAt doesn't always log to chat (it's a background behavior), but we can check if the debug target moves?
+    // Or we can just capture the screenshot to verify visually (head turned).
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: `test-results/screenshots/mcp-interaction-lookat.png` });
   });
 });

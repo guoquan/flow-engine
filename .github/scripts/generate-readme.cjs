@@ -10,9 +10,15 @@ const descriptions = {
   'mcp-action-wave.png': 'Avatar performing the "Wave" animation triggered via MCP.',
   'mcp-action-bow.png': 'Avatar performing the "Bow" animation triggered via MCP.',
   'mcp-action-dance.png': 'Avatar performing the "Dance" animation triggered via MCP.',
+  'mcp-action-walk.png': 'Avatar performing the "Walk" animation triggered via MCP.',
+  'mcp-action-death.png': 'Avatar performing the "Death" animation triggered via MCP.',
+  'mcp-interaction-lookat.png': 'Avatar looking at a specific target triggered via MCP interaction.',
   'ui-action-wave.png': 'Avatar performing the "Wave" animation triggered via Dashboard UI.',
   'ui-action-bow.png': 'Avatar performing the "Bow" animation triggered via Dashboard UI.',
   'ui-action-dance.png': 'Avatar performing the "Dance" animation triggered via Dashboard UI.',
+  'ui-action-walk.png': 'Avatar performing the "Walk" animation triggered via Protocol Tester.',
+  'ui-action-death.png': 'Avatar performing the "Death" animation triggered via Protocol Tester.',
+  'ui-state-listening.png': 'Avatar in LISTENING state, tracking the cursor.',
 };
 
 function generate() {

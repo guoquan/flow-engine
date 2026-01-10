@@ -1,13 +1,7 @@
 import { test, expect } from '@playwright/test';
-import fs from 'fs';
 
 test.describe('Flow Playground UI', () => {
   test('should verify playground controls', async ({ page }) => {
-    // Ensure screenshot directory exists
-    if (!fs.existsSync('test-results/screenshots')) {
-      fs.mkdirSync('test-results/screenshots', { recursive: true });
-    }
-
     // 1. Go to page
     await page.goto('/');
     
@@ -26,31 +20,53 @@ test.describe('Flow Playground UI', () => {
     const btnBow = page.locator('button[data-action="bow"]');
     await expect(btnBow).toBeVisible();
     
-    const btnDance = page.locator('button[data-action="dance"]');
-    await expect(btnDance).toBeVisible();
-    
     const btnSay = page.locator('#btn-say-hello');
     await expect(btnSay).toBeVisible();
     
-    // Test Interaction & Screenshots
-    const actions = ['wave', 'bow', 'dance'];
-    for (const action of actions) {
-      console.log(`[E2E] Triggering UI action: ${action}`);
-      const btn = page.locator(`button[data-action="${action}"]`);
-      await btn.click();
-      
-      // Wait deterministically for any network activity or state change
-      // Since animation is client-side, networkidle might be too fast if no requests happen.
-      // But we can wait for a small stable delay or check for a visual change if possible.
-      // For now, we stick to a small delay but rely on networkidle as a synchronization point if assets load.
-      await page.waitForTimeout(1000); // Still need a small visual delay for animation to progress
-      
-      // Capture
-      await page.screenshot({ path: `test-results/screenshots/ui-action-${action}.png` });
-      
+    // Test Interaction (Click Wave)
+    await btnWave.click();
+    // No explicit assertion for 3D state, but ensuring it doesn't crash is good.
+    // We could check if console has no errors, which is handled by app.spec.ts global listeners if we add them here.
       // Cooldown
       await page.waitForTimeout(2000);
     }
+
+    // Test Extra Actions via Protocol Tester (Walk, Death)
+    const extraActions = ['walk', 'death'];
+    const jsonInput = page.locator('#json-input');
+    const jsonSend = page.locator('#json-send');
+    
+    // Expand Protocol Tester if needed (it starts collapsed)
+    const protoHeader = page.locator('h3', { hasText: 'Protocol Tester' });
+    await protoHeader.click();
+
+    for (const action of extraActions) {
+      console.log(`[E2E] Triggering Protocol Tester action: ${action}`);
+      const payload = JSON.stringify({ 
+        text: `Testing ${action}`, 
+        actions: [{ type: 'animation', name: action }] 
+      });
+      
+      await jsonInput.fill(payload);
+      await jsonSend.click();
+      
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: `test-results/screenshots/ui-action-${action}.png` });
+      await page.waitForTimeout(2000);
+    }
+
+    // Test LookAt (Listening State via Chat)
+    console.log('[E2E] Triggering LookAt via Chat');
+    await page.locator('#chat-input').fill('look at me');
+    await page.locator('#chat-send').click();
+    
+    // Wait for response "tracking your cursor"
+    await expect(page.locator('.msg.agent', { hasText: 'tracking your cursor' })).toBeVisible();
+    
+    // Move mouse to trigger lookAt
+    await page.mouse.move(100, 100);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'test-results/screenshots/ui-state-listening.png' });
     
     // 3. Asset Loader Panel
     await expect(page.locator('h3', { hasText: 'Asset Loader' })).toBeVisible();

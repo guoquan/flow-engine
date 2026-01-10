@@ -1,96 +1,10 @@
 import './style.css';
 import { FlowEngine } from './core/FlowEngine';
 import type { AgentResponse } from './types';
+import { createLayout } from './ui';
 
 // Inject Layout
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div id="canvas-container">
-    <div style="position: absolute; top: 10px; left: 10px; pointer-events: none; opacity: 0.6;">
-      <h1>Flow Engine v0.2</h1>
-      <div id="loading-status">Initializing...</div>
-    </div>
-  </div>
-  
-  <div id="sidebar">
-    <div class="sidebar-header">
-      <h2>Controls</h2>
-      <button id="btn-toggle-sidebar" class="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar" aria-expanded="true">☰</button>
-    </div>
-
-    <!-- Panel 1: Dashboard -->
-    <div class="panel">
-      <h3>Dashboard</h3>
-      <div class="control-group">
-        <label><input type="checkbox" id="check-debug"> Debug Mode</label>
-        <label><input type="checkbox" id="check-rotate"> Auto Rotate</label>
-        <div class="status-indicator">Brain State: <span id="brain-state" class="badge">IDLE</span></div>
-        <div class="status-indicator">MCP Bridge: <span id="mcp-status" class="badge" style="background: #444;">Disconnected</span></div>
-      </div>
-    </div>
-
-    <!-- Panel 2: Quick Actions -->
-    <div class="panel">
-      <h3>Quick Actions</h3>
-      <div class="action-grid">
-        <button data-action="wave">👋 Wave</button>
-        <button data-action="bow">🙇 Bow</button>
-        <button data-action="dance">💃 Dance</button>
-        <button data-action="idle">🧘 Idle</button>
-      </div>
-      <div class="control-group" style="margin-top: 10px;">
-        <button id="btn-say-hello">🗣️ Say "Hello"</button>
-        <button id="btn-think">💭 Think "..."</button>
-      </div>
-    </div>
-
-    <!-- Panel 3: Asset Loader -->
-    <div class="panel">
-      <h3>Asset Loader</h3>
-      <div class="control-group">
-        <label class="label-small">Avatar Config URL</label>
-        <div class="input-row">
-          <input type="text" id="input-avatar-url" value="assets/avatars/expressive/config.json" />
-          <button id="btn-load-avatar" class="icon-btn">↻</button>
-        </div>
-        
-        <label class="label-small">Stage Config URL</label>
-        <div class="input-row">
-          <input type="text" id="input-stage-url" value="assets/stages/default/config.json" />
-          <button id="btn-load-stage" class="icon-btn">↻</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Panel 4: Chat -->
-    <div class="panel" style="display: flex; flex-direction: column; gap: 8px;">
-      <h3>Chat</h3>
-      <div id="chat-log"></div>
-      <div style="display: flex; gap: 4px;">
-        <input type="text" id="chat-input" placeholder="Talk to avatar..." />
-        <button id="chat-send">Send</button>
-      </div>
-    </div>
-
-    <!-- Panel 5: Protocol Tester -->
-    <div class="panel collapsed" id="panel-protocol">
-      <h3 style="cursor: pointer;" id="header-protocol">
-        Protocol Tester <span style="float: right; font-size: 0.8em">▼</span>
-      </h3>
-      <div class="panel-content">
-        <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 4px;">Send raw JSON (Unified Action Protocol):</p>
-        <textarea id="json-input">{
-  "text": "Checking systems.",
-  "state": "THINKING",
-  "actions": [
-    { "type": "animation", "name": "wave", "delay": 1000 }
-  ]
-}</textarea>
-        <div id="json-error"></div>
-        <button id="json-send" style="margin-top: 8px;">Process JSON</button>
-      </div>
-    </div>
-  </div>
-`;
+createLayout(document.getElementById('app')!);
 
 // Init Engine
 const init = async () => {

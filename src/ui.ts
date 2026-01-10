@@ -80,8 +80,7 @@ export function createLayout(app: HTMLElement) {
   const createIndicator = (label: string, id: string, defaultText: string, defaultClass: string = 'badge') => {
     const div = document.createElement('div');
     div.className = 'status-indicator';
-    div.innerHTML = `${label}: <span id="${id}" class="${defaultClass}">${defaultText}</span>`; // Safe innerHTML for tiny snippet? Or use nodes.
-    // Let's be safe and use nodes.
+    // Use nodes for safety
     div.textContent = `${label}: `;
     const span = document.createElement('span');
     span.id = id;

@@ -67,7 +67,9 @@ The Agent **MUST** follow this cycle for every PR. **ABSOLUTELY NO SELF-MERGING.
     *   **Create PR**: `gh pr create --draft`.
 
 2.  **CI Verification (Draft)**:
-    *   **Monitor**: Track CI progress (`gh run watch`).
+    *   **Monitor**: Track all checks in real-time.
+        *   `gh run watch` (for Actions)
+        *   `gh pr checks --watch` (for all checks including external ones)
     *   **Fix**: If CI fails, push fixes immediately.
     *   **Goal**: The PR **MUST** be Green ✅ (CI Passed) before leaving Draft.
 
@@ -78,7 +80,7 @@ The Agent **MUST** follow this cycle for every PR. **ABSOLUTELY NO SELF-MERGING.
 4.  **Review Loop (Iterative)**:
     *   **Check**: Regularly check for comments (`gh pr view --comments`).
     *   **Address**: If feedback requires changes:
-        *   Convert back to Draft if changes are major (`gh pr ready --undo` if supported, or just push).
+        *   Convert back to Draft if changes are major (`gh pr ready --undo` or use GitHub UI).
         *   Implement fixes.
         *   Verify CI again (Must be Green).
         *   Reply to comments if necessary.

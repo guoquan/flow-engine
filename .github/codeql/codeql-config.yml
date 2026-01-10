@@ -1,0 +1,12 @@
+name: "CodeQL Config"
+
+paths-ignore:
+  - dist
+  - dist-demo
+  - dist-e2e
+  - dist-docs
+  - node_modules
+  - coverage
+  - test-results
+  - '**/*.min.js'
+  - '**/*.bundle.js'

@@ -1,44 +1,47 @@
-module.exports = async ({ github, context, core }) => {
-  const fs = require('fs');
-  const path = require('path');
-  
-  const screenshotDir = 'test-results/screenshots';
-  const prNumber = context.issue.number;
-  const sha = process.env.COMMIT_SHA;
-  const owner = context.repo.owner;
-  const repo = context.repo.repo;
-  const commentId = process.env.COMMENT_ID;
-  
-  if (!fs.existsSync(screenshotDir)) {
-    console.log("Screenshot directory not found, skipping README generation.");
+const fs = require('fs');
+const path = require('path');
+
+const SCREENSHOTS_DIR = 'test-results/screenshots';
+const OUTPUT_FILE = path.join(SCREENSHOTS_DIR, 'README.md');
+
+const descriptions = {
+  'initial-state.png': 'The initial state of the application after engine load.',
+  'debug-mode.png': 'Application with Debug Mode enabled (showing interaction plane and target).',
+  'mcp-action-wave.png': 'Avatar performing the "Wave" animation triggered via MCP.',
+  'mcp-action-bow.png': 'Avatar performing the "Bow" animation triggered via MCP.',
+  'mcp-action-dance.png': 'Avatar performing the "Dance" animation triggered via MCP.',
+  'mcp-action-walk.png': 'Avatar performing the "Walk" animation triggered via MCP.',
+  'mcp-action-death.png': 'Avatar performing the "Death" animation triggered via MCP.',
+  'mcp-interaction-lookat.png': 'Avatar looking at a specific target triggered via MCP interaction.',
+  'ui-action-wave.png': 'Avatar performing the "Wave" animation triggered via Dashboard UI.',
+  'ui-action-bow.png': 'Avatar performing the "Bow" animation triggered via Dashboard UI.',
+  'ui-action-dance.png': 'Avatar performing the "Dance" animation triggered via Dashboard UI.',
+  'ui-action-walk.png': 'Avatar performing the "Walk" animation triggered via Protocol Tester.',
+  'ui-action-death.png': 'Avatar performing the "Death" animation triggered via Protocol Tester.',
+  'ui-state-listening.png': 'Avatar in LISTENING state, tracking the cursor.',
+};
+
+function generate() {
+  if (!fs.existsSync(SCREENSHOTS_DIR)) {
+    console.log('Screenshots directory not found. Skipping README generation.');
     return;
   }
+
+  const files = fs.readdirSync(SCREENSHOTS_DIR).filter(f => f.endsWith('.png'));
   
-  const files = fs.readdirSync(screenshotDir).filter(f => f.endsWith('.png'));
-  
-  let md = `# Visual E2E Report\n\n`;
-  if (prNumber) {
-    md += `**PR:** [#${prNumber}](https://github.com/${owner}/${repo}/pull/${prNumber})\n\n`;
-  }
-  if (commentId && prNumber) {
-    md += `**Comment:** [View Report](https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentId})\n\n`;
-  }
-  md += `**Commit:** [\`${sha.substring(0,7)}\`](https://github.com/${owner}/${repo}/commit/${sha})\n\n`;
-  md += `**Generated:** ${new Date().toUTCString()}\n\n`;
-  
-  md += `## Gallery\n\n`;
-  
-  if (files.length === 0) {
-    md += "_No screenshots captured._\n";
-  } else {
-    files.sort();
-    for (const file of files) {
-      const caption = file.replace(/[-_]/g, ' ').replace(/\.png$/i, '');
-      md += `### ${caption}\n\n`;
-      md += `![${caption}](./${file})\n\n`; 
-    }
-  }
-  
-  fs.writeFileSync(path.join(screenshotDir, 'README.md'), md);
-  console.log("README.md generated in screenshot directory.");
-};
+  let markdown = '# 📸 Visual E2E Test Screenshots\n\n';
+  markdown += 'This directory contains screenshots captured during automated E2E tests.\n\n';
+  markdown += '| Screenshot | Description |\n';
+  markdown += '| :--- | :--- |\n';
+
+  files.sort().forEach(file => {
+    const desc = descriptions[file] || 'No description available.';
+    markdown += `| ![${file}](${file}) | **${file}**<br>${desc} |
+`;
+  });
+
+  fs.writeFileSync(OUTPUT_FILE, markdown);
+  console.log(`Successfully generated ${OUTPUT_FILE}`);
+}
+
+generate();

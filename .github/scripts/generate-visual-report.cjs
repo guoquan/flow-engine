@@ -34,10 +34,18 @@ module.exports = async ({ github, context, core }) => {
         commentBody += `### Key Visuals\n`;
         
         const keyVisuals = files.filter(f => f === 'initial-state.png');
-        const debugVisuals = files.filter(f => f === 'debug-mode.png');
+        const debugVisuals = files.filter(f => f.startsWith('debug-'));
         const mcpActions = files.filter(f => f.startsWith('mcp-'));
         const uiActions = files.filter(f => f.startsWith('ui-'));
-        const others = files.filter(f => !keyVisuals.includes(f) && !debugVisuals.includes(f) && !mcpActions.includes(f) && !uiActions.includes(f));
+        const cameraActions = files.filter(f => f.startsWith('camera-'));
+        
+        const others = files.filter(f => 
+            !keyVisuals.includes(f) && 
+            !debugVisuals.includes(f) && 
+            !mcpActions.includes(f) && 
+            !uiActions.includes(f) &&
+            !cameraActions.includes(f)
+        );
 
         for (const file of keyVisuals) {
           const fullSizeUrl = `${baseUrl}/${file}`;
@@ -57,9 +65,11 @@ module.exports = async ({ github, context, core }) => {
             return html;
         };
 
-        commentBody += renderDetails('Debug Mode', debugVisuals);
+        commentBody += renderDetails('Debug & Diagnostics', debugVisuals);
+        commentBody += renderDetails('Camera & Interaction', cameraActions);
         commentBody += renderDetails('MCP Actions & States', mcpActions);
         commentBody += renderDetails('UI Actions & States', uiActions);
+        
         if (others.length > 0) {
             commentBody += renderDetails('Other Screenshots', others);
         }

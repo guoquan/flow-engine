@@ -74,11 +74,11 @@ test.describe('Flow Playground UI', () => {
     }
     await protoHeader.click(); // Collapse
 
-    // 4. UI Interactions (Say, Think, LookAt)
+    // 4. UI Interactions (Say, Think)
     // Say
     console.log('[E2E] Triggering UI Interaction: Say');
     await page.locator('#btn-say-hello').click();
-    await expect(page.locator('.msg.agent', { hasText: 'Hello' })).toBeVisible(); // Engine default text
+    await expect(page.locator('.msg.agent', { hasText: 'Hello' })).toBeVisible(); 
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'test-results/screenshots/ui-action-say.png' });
     
@@ -91,14 +91,53 @@ test.describe('Flow Playground UI', () => {
     await page.locator('button[data-action="idle"]').click();
     await page.waitForTimeout(500);
 
-    // LookAt (via Chat)
-    console.log('[E2E] Triggering UI Interaction: LookAt');
-    await page.locator('#chat-input').fill('look at me');
-    await page.locator('#chat-send').click();
+    // 5. Interaction & Camera Controls
+    console.log('[E2E] Testing Interaction & Camera');
     
-    await expect(page.locator('.msg.agent', { hasText: 'tracking your cursor' })).toBeVisible();
+    // LookAt (Click/Hold to look)
     await page.mouse.move(300, 300);
-    await page.waitForTimeout(1000);
+    await page.mouse.down(); // Trigger LookAt
+    await page.waitForTimeout(1000); // Wait for head to turn
     await page.screenshot({ path: 'test-results/screenshots/ui-interaction-lookat.png' });
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+
+    // Camera Rotate (Drag)
+    // Move to a new position to start drag
+    await page.mouse.move(400, 300);
+    await page.mouse.down();
+    await page.mouse.move(200, 300, { steps: 5 }); // Drag left
+    await page.waitForTimeout(500); // Wait for damping
+    await page.screenshot({ path: 'test-results/screenshots/camera-rotate.png' });
+    await page.mouse.up();
+
+    // Camera Zoom (Wheel)
+    await page.mouse.move(300, 300);
+    await page.mouse.wheel(0, -500); // Zoom in
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'test-results/screenshots/camera-zoom.png' });
+    await page.mouse.wheel(0, 500); // Zoom out reset
+    await page.waitForTimeout(500);
+
+    // Camera Pan (Right Click Drag)
+    await page.mouse.move(300, 300);
+    await page.mouse.down({ button: 'right' });
+    await page.mouse.move(300, 100, { steps: 5 }); // Pan up
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'test-results/screenshots/camera-pan.png' });
+    await page.mouse.up({ button: 'right' });
+
+    // 6. Debug LookAt
+    console.log('[E2E] Testing Debug LookAt');
+    await page.locator('#check-debug').check();
+    await page.waitForTimeout(500);
+    
+    await page.mouse.move(300, 300);
+    await page.mouse.down(); // Trigger LookAt with Debug info visible
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: 'test-results/screenshots/debug-lookat.png' });
+    await page.mouse.up();
+    
+    await page.locator('#check-debug').uncheck();
   });
 });

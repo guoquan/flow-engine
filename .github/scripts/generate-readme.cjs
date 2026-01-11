@@ -49,7 +49,7 @@ async function generate() {
   // Helper to render a group
   const renderGroup = (title, fileList) => {
     if (fileList.length === 0) return '';
-    let md = `<details open><summary><strong>${title}</strong></summary>\n\n`;
+    let md = `<details><summary><strong>${title}</strong></summary>\n\n`;
     md += '| Screenshot | Description |\n';
     md += '| :--- | :--- |\n';
     fileList.sort().forEach(file => {

@@ -123,6 +123,8 @@ test.describe('MCP Bridge Integration', () => {
       await page.waitForTimeout(1000);
     }
 
+    await page.waitForTimeout(500);
+
     // 7. Verify LookAt Interaction
     console.log('[E2E] Triggering MCP LookAt');
     expect(wss.clients.size).toBeGreaterThan(0);

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Flow Playground UI', () => {
   test('should verify playground controls and coverage', async ({ page }) => {
-    test.setTimeout(120000); // Extended timeout for full coverage
+    test.setTimeout(90000); // Extended timeout, but kept below 120s to avoid overly long tests
     
     // 1. Initial State
     await page.goto('/');
@@ -24,7 +24,7 @@ test.describe('Flow Playground UI', () => {
     await page.waitForTimeout(500); // Wait for debug visualizers
     await page.screenshot({ path: 'test-results/screenshots/debug-mode.png' });
     await debugCheckbox.uncheck();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000); // Extra wait to ensure debug visualizers fully disappear
 
     // 3. UI Actions (Wave, Bow, Dance, Walk, Death)
     // Note: Walk/Death are not in Quick Actions, accessed via Protocol Tester for UI simulation
@@ -45,7 +45,7 @@ test.describe('Flow Playground UI', () => {
       await page.waitForTimeout(500);
     }
 
-    // Advanced UI Actions (via Protocol Panel simulating UI input)
+    // Protocol-simulated UI Actions (via Protocol Panel simulating UI input for actions without buttons)
     const advancedActions = ['walk', 'death'];
     const protoHeader = page.locator('h3', { hasText: 'Protocol Tester' });
     await protoHeader.click(); // Expand
@@ -85,7 +85,7 @@ test.describe('Flow Playground UI', () => {
     // Think
     console.log('[E2E] Triggering UI Interaction: Think');
     await page.locator('#btn-think').click();
-    await expect(page.locator('.msg.agent', { hasText: 'Processing complex logic...' })).toBeVisible();
+    await expect(page.locator('.msg.agent', { hasText: 'Processing complex logic...' })).toBeVisible(); // Expected text from Think button handler (must match src/main.ts line 95)
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'test-results/screenshots/ui-action-think.png' });
     // Clear bubble
@@ -108,9 +108,9 @@ test.describe('Flow Playground UI', () => {
     await page.mouse.move(400, 300);
     await page.mouse.down();
     await page.mouse.move(200, 300, { steps: 5 }); // Drag left
+    await page.mouse.up();
     await page.waitForTimeout(500); // Wait for damping
     await page.screenshot({ path: 'test-results/screenshots/camera-rotate.png' });
-    await page.mouse.up();
 
     // Camera Zoom (Wheel)
     await page.mouse.move(300, 300);
@@ -124,9 +124,9 @@ test.describe('Flow Playground UI', () => {
     await page.mouse.move(300, 300);
     await page.mouse.down({ button: 'right' });
     await page.mouse.move(300, 100, { steps: 5 }); // Pan up
+    await page.mouse.up({ button: 'right' });
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'test-results/screenshots/camera-pan.png' });
-    await page.mouse.up({ button: 'right' });
 
     // 6. Debug LookAt
     console.log('[E2E] Testing Debug LookAt');

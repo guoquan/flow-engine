@@ -67,7 +67,23 @@ test.describe('MCP Bridge Integration', () => {
     await expect(sayLog).toBeVisible({ timeout: 5000 });
     await page.screenshot({ path: 'test-results/screenshots/mcp-action-say.png' });
 
-    // 5. Verify Complex Actions & Capture Screenshots
+    // 5. Verify 'Think' Action
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify({
+          type: 'think',
+          text: 'Thinking via MCP...',
+          duration: 2000
+        }));
+      }
+    });
+    const thinkLog = page.locator('.msg.agent', { hasText: 'Thinking via MCP...' });
+    await expect(thinkLog).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(500); // Wait for bubble
+    await page.screenshot({ path: 'test-results/screenshots/mcp-action-think.png' });
+    await page.waitForTimeout(2000); // Wait for think to finish
+
+    // 6. Verify Complex Actions & Capture Screenshots
     const actions = ['wave', 'bow', 'dance', 'walk', 'death'];
     
     for (const action of actions) {
@@ -90,13 +106,24 @@ test.describe('MCP Bridge Integration', () => {
       await expect(logEntry).toBeVisible({ timeout: 5000 });
       
       // Wait a tiny bit more for animation state to progress
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
       
       // Capture screenshot
       await page.screenshot({ path: `test-results/screenshots/mcp-action-${action}.png` });
+
+      // Reset to idle to prevent state bleeding (especially for death)
+      wss.clients.forEach(client => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({
+            type: 'play_action',
+            action: 'idle'
+          }));
+        }
+      });
+      await page.waitForTimeout(1000);
     }
 
-    // 6. Verify LookAt Interaction
+    // 7. Verify LookAt Interaction
     console.log('[E2E] Triggering MCP LookAt');
     expect(wss.clients.size).toBeGreaterThan(0);
 
@@ -113,6 +140,7 @@ test.describe('MCP Bridge Integration', () => {
     // Wait for UI log indicating the interaction was processed
     const lookAtLog = page.locator('.msg.agent', { hasText: 'Interaction: lookAt' });
     await expect(lookAtLog).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1000); // Wait for head to turn
     
     await page.screenshot({ path: `test-results/screenshots/mcp-interaction-lookat.png` });
   });

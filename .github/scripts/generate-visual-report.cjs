@@ -33,33 +33,35 @@ module.exports = async ({ github, context, core }) => {
         
         commentBody += `### Key Visuals\n`;
         
-        const keyScreenshots = ['initial-state.png', 'debug-mode.png'];
-        const displayed = [];
-        const hidden = [];
+        const keyVisuals = files.filter(f => f === 'initial-state.png');
+        const debugVisuals = files.filter(f => f === 'debug-mode.png');
+        const mcpActions = files.filter(f => f.startsWith('mcp-'));
+        const uiActions = files.filter(f => f.startsWith('ui-'));
+        const others = files.filter(f => !keyVisuals.includes(f) && !debugVisuals.includes(f) && !mcpActions.includes(f) && !uiActions.includes(f));
 
-        for (const file of files) {
-          const isKey = keyScreenshots.some(k => file.includes(k));
-          
-          if (isKey) {
-            const fullSizeUrl = `${baseUrl}/${file}`;
-            commentBody += `#### ${formatCaption(file)}\n`;
-            commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
-            displayed.push(file);
-          } else {
-            hidden.push(file);
-          }
+        for (const file of keyVisuals) {
+          const fullSizeUrl = `${baseUrl}/${file}`;
+          commentBody += `#### ${formatCaption(file)}\n`;
+          commentBody += `![${formatCaption(file)}](${fullSizeUrl})\n\n`;
         }
 
-        if (hidden.length > 0) {
-          commentBody += `<details>\n<summary><strong>See ${hidden.length} more screenshots...</strong></summary>\n\n`;
-          commentBody += `These files are available in the [visual-reports branch](${treeUrl}) and GitHub Artifacts.\n\n`;
-          commentBody += `| Screenshot | Status |\n|---|---|
-`;
-          for (const file of hidden) {
-             const fullSizeUrl = `${baseUrl}/${file}`;
-             commentBody += `| [${file}](${fullSizeUrl}) | 📦 In Artifacts |\n`;
-          }
-          commentBody += `\n</details>\n`;
+        const renderDetails = (summary, groupFiles) => {
+            if (groupFiles.length === 0) return '';
+            let html = `<details>\n<summary><strong>${summary} (${groupFiles.length})</strong></summary>\n\n`;
+            html += `| Screenshot | Name |\n|---|---|\n`;
+            for (const file of groupFiles) {
+                const fullSizeUrl = `${baseUrl}/${file}`;
+                html += `| ![${file}](${fullSizeUrl}) | ${formatCaption(file)} |\n`;
+            }
+            html += `\n</details>\n\n`;
+            return html;
+        };
+
+        commentBody += renderDetails('Debug Mode', debugVisuals);
+        commentBody += renderDetails('MCP Actions & States', mcpActions);
+        commentBody += renderDetails('UI Actions & States', uiActions);
+        if (others.length > 0) {
+            commentBody += renderDetails('Other Screenshots', others);
         }
       }
     } else {

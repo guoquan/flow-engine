@@ -86,11 +86,15 @@ const init = async () => {
     });
 
     document.getElementById('btn-say-hello')?.addEventListener('click', () => {
-      engine.say({ text: "Hello! I am Flow Engine.", duration: 3000 });
+      const text = "Hello! I am Flow Engine.";
+      engine.say({ text, duration: 3000 });
+      addLog(text, 'agent');
     });
 
     document.getElementById('btn-think')?.addEventListener('click', () => {
-      engine.think({ text: "Processing complex logic...", duration: 4000 });
+      const text = "Processing complex logic...";
+      engine.think({ text, duration: 4000 });
+      addLog(text, 'agent');
     });
 
     // 3. Asset Loader

@@ -1,7 +1,7 @@
 {
   "name": "@guoquan/flow-engine",
-  "version": "0.1.10",
-  "description": "A high-performance, WebGPU-based digital human engine.",
+  "private": true,
+  "version": "0.2.0",
   "type": "module",
   "main": "./dist/flow.umd.js",
   "module": "./dist/flow.es.js",

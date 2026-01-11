@@ -15,7 +15,7 @@ export function createLayout(app: HTMLElement) {
   });
   
   const h1 = document.createElement('h1');
-  h1.textContent = 'Flow Engine v0.2';
+  h1.textContent = 'Flow Engine v0.2.0';
   
   const statusDiv = document.createElement('div');
   statusDiv.id = 'loading-status';

@@ -37,7 +37,7 @@
 - [x] **Visual API Documentation (TypeDoc)**:
     - Standard TypeScript SDK documentation generated from source code.
 
-### Phase 4: Flow Playground (In Progress) 🏗️
+### Phase 4: Flow Playground (Completed) ✅
 **Goal**: Transform the default deployment into a versatile playground for developers.
 
 - [x] **Interactive Control Panel**:
@@ -50,8 +50,17 @@
     - Connect the browser playground to the local MCP server to receive commands in real-time.
 - [x] **Multi-track Deployment**: 
     - Support accessing different versioned tracks via subdirectories on GitHub Pages.
+- [x] **E2E Systematic Parity**:
+    - Complete E2E coverage for UI and MCP actions with visual reporting.
 
-### Future Expansions 🔭
-- **Hand/Body IK**: Reusing pursuit logic for reaching and gesturing.
+### Phase 5: Advanced Animation & IK (v0.3 - Planned) 🔜
+**Goal**: Introduce procedural realism through Inverse Kinematics and blending.
+
+- [ ] **Reflexive IK**: Automatic head/neck/spine tracking based on attention targets (replacing simple LookAt).
+- [ ] **Hand IK**: Reaching and gesturing capabilities.
+- [ ] **Animation Blending**: Smooth transitions between reflexive looking and canned actions.
+- [ ] **Spine Twist**: More natural body rotation logic.
+
+### Future Expansions (v0.4+) 🔭
 - **Lip Sync**: Audio-driven shape key modulation.
 - **Multimodal Feedback**: Visual/Audio cues for agent state awareness.

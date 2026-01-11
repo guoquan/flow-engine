@@ -16,7 +16,7 @@ test.describe('Flow Engine Visual E2E', () => {
     await page.goto('/');
     
     // 2. Check UI elements
-    await expect(page.locator('h1')).toHaveText('Flow Engine v0.2');
+    await expect(page.locator('h1')).toHaveText('Flow Engine v0.2.0');
     const loadingStatus = page.locator('#loading-status');
     await expect(loadingStatus).toBeVisible();
 

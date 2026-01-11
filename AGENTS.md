@@ -58,25 +58,42 @@ For **every** update requirement, the Agent **must** autonomously drive the foll
 *   **GPG Signing**: Use `--no-gpg-sign` for automated commits to avoid interactive agent prompts (e.g., 1Password). Humans will handle signing manually if needed.
 *   **Test**: Run `npm test`.
 
-#### Phase 3: Delivery & Review 🚚
+#### Phase 3: Delivery & Review Cycle (Strict) 🚚
 
-1.  **Delivery**:
+The Agent **MUST** follow this cycle for every PR. **ABSOLUTELY NO SELF-MERGING.**
+
+1.  **Draft Submission**:
     *   **Push**: `git push origin <branch-name>`.
-    *   **Draft PR**: `gh pr create --draft`.
+    *   **Create PR**: `gh pr create --draft`.
 
-2.  **Verification**:
-    *   **Monitor (MANDATORY)**: You **MUST** track CI progress in real-time. Use:
-        *   `gh pr checks --watch`
-        *   OR `gh run watch`
-    *   The PR **MUST** be Green ✅ before any further action.
-    *   **Promote**: `gh pr ready`.
+2.  **CI Verification (Draft)**:
+    *   **Monitor**: Track all checks in real-time.
+        *   `gh run watch` (for Actions)
+        *   `gh pr checks --watch` (for all checks including external ones)
+    *   **Fix**: If CI fails, push fixes immediately.
+    *   **Goal**: The PR **MUST** be Green ✅ (CI Passed) before leaving Draft.
 
-3.  **Review & Iteration**:
-    *   **Respond**: Resolve all comments. Re-verify via `gh pr checks --watch`.
+3.  **Request Review**:
+    *   **Promote**: Once CI is Green, run `gh pr ready <pr-number>`.
+    *   **Wait**: Do **NOT** proceed. Wait for automated reviews (Copilot) or human feedback.
 
-4.  **Merge**:
-    *   **Criteria**: CI Green ✅ AND Reviews Approved ✅.
-    *   **Strategy**: Use **Squash and merge**.
+4.  **Review Loop (Iterative)**:
+    *   **Check**: The Agent **MUST** periodically poll for new comments (`gh pr view --comments`) at reasonable intervals (e.g., every 30-60 seconds) while waiting. Do not assume silence means approval. Respect GitHub API rate limits.
+        *   *Example Command*: `sleep 30 && gh pr view <pr-number> --comments`
+    *   **Address**: If feedback requires changes:
+        *   Convert back to Draft if changes are major (`gh pr ready --undo` or use GitHub UI).
+        *   Implement fixes.
+        *   Verify CI again (Must be Green).
+        *   Reply to comments if necessary.
+    *   **Repeat**: Go back to Step 3 until all feedback is resolved.
+
+5.  **Handover (Stop)**:
+    *   **Condition**: PR is Green ✅ AND All Reviews Addressed/Approved.
+    *   **Action**: Stop. Do **NOT** merge.
+    *   **Notify**: Display a banner or message to the user:
+        > "PR #XX is Ready for Merge. All checks passed. Awaiting your command."
+
+**🛑 CRITICAL RULE: The Agent MUST NEVER use `gh pr merge` or merge locally to the target branch unless explicitly commanded by the user *after* the PR is ready.**
 
 ### 2. Release & Versioning Standards
 

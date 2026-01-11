@@ -78,13 +78,14 @@ test.describe('Flow Playground UI', () => {
     // Say
     console.log('[E2E] Triggering UI Interaction: Say');
     await page.locator('#btn-say-hello').click();
-    await expect(page.locator('.msg.agent', { hasText: 'Hello' })).toBeVisible(); 
+    await expect(page.locator('.msg.agent', { hasText: 'Hello! I am Flow Engine.' })).toBeVisible(); // Expected text from Say button handler
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'test-results/screenshots/ui-action-say.png' });
     
     // Think
     console.log('[E2E] Triggering UI Interaction: Think');
     await page.locator('#btn-think').click();
+    await expect(page.locator('.msg.agent', { hasText: 'Processing complex logic...' })).toBeVisible();
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'test-results/screenshots/ui-action-think.png' });
     // Clear bubble

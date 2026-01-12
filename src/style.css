@@ -72,9 +72,13 @@ body {
   margin-bottom: 0;
 }
 
-#sidebar.collapsed h2, 
-#sidebar.collapsed .panel {
-  display: none;
+/* Aggressively hide everything except the header/button when collapsed */
+#sidebar.collapsed > *:not(.sidebar-header) {
+  display: none !important;
+}
+
+#sidebar.collapsed .sidebar-header > *:not(.sidebar-toggle) {
+  display: none !important;
 }
 
 /* Components */

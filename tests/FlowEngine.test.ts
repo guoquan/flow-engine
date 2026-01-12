@@ -199,4 +199,30 @@ describe('FlowEngine', () => {
     // @ts-ignore
     expect(engine['renderer'].setAnimationLoop).toHaveBeenCalledWith(null);
   });
+
+  it('should respect setResizeEnabled flag', () => {
+    const width = 800;
+    const height = 600;
+    const entries = [{ contentRect: { width, height } }];
+    const rendererSpy = vi.spyOn(engine['renderer'], 'setSize');
+
+    // 1. Enabled by default
+    // @ts-ignore
+    engine['resizeObserver'].trigger(entries);
+    expect(rendererSpy).toHaveBeenCalledWith(width, height);
+    rendererSpy.mockClear();
+
+    // 2. Disable
+    engine.setResizeEnabled(false);
+    // @ts-ignore
+    engine['resizeObserver'].trigger(entries);
+    expect(rendererSpy).not.toHaveBeenCalled();
+
+    // 3. Enable (should force update using container size)
+    Object.defineProperty(container, 'clientWidth', { value: 500 });
+    Object.defineProperty(container, 'clientHeight', { value: 500 });
+    
+    engine.setResizeEnabled(true);
+    expect(rendererSpy).toHaveBeenCalledWith(500, 500);
+  });
 });

@@ -10,14 +10,44 @@ test.describe('Flow Playground UI', () => {
     await expect(loadingStatus).toHaveText('Ready', { timeout: 30000 });
     await expect(page.locator('#canvas-container canvas')).toBeVisible();
     
-    // Verify Key Panels
-    await expect(page.locator('h3', { hasText: 'Quick Actions' })).toBeVisible();
-    await expect(page.locator('h3', { hasText: 'Asset Loader' })).toBeVisible();
+    // 2. Sidebar & UI Controls Verification
+    console.log('[E2E] Testing Sidebar & UI Controls');
+    const sidebar = page.locator('#sidebar');
+    const toggleBtn = page.locator('#btn-toggle-sidebar');
     
-    // Capture Initial
-    await page.screenshot({ path: 'test-results/screenshots/initial-state.png' });
+    // Initial: Expanded
+    await expect(sidebar).not.toHaveClass(/collapsed/);
+    const initialBox = await sidebar.boundingBox();
+    expect(initialBox?.width).toBeGreaterThan(200); // Expect > 200px (e.g. 320px)
+    
+    // Action: Collapse
+    await toggleBtn.click();
+    await page.waitForTimeout(500); // Wait for CSS transition (0.3s)
+    
+    // Verify: Collapsed
+    await expect(sidebar).toHaveClass(/collapsed/);
+    const collapsedBox = await sidebar.boundingBox();
+    expect(collapsedBox?.width).toBeLessThan(100); // Expect ~40px
+    await page.screenshot({ path: 'test-results/screenshots/sidebar-collapsed.png' });
+    
+    // Verify Content Hidden
+    await expect(page.locator('h3', { hasText: 'Dashboard' })).toBeHidden();
+    
+    // Action: Expand
+    await toggleBtn.click();
+    await page.waitForTimeout(500); // Wait for transition
+    
+    // Verify: Expanded
+    await expect(sidebar).not.toHaveClass(/collapsed/);
+    await expect(page.locator('h3', { hasText: 'Dashboard' })).toBeVisible();
 
-    // 2. Debug Mode
+    // Verify Checkboxes
+    const rotateCheckbox = page.locator('#check-rotate');
+    await rotateCheckbox.check();
+    await expect(rotateCheckbox).toBeChecked();
+    await rotateCheckbox.uncheck();
+
+    // 3. Debug Mode
     console.log('[E2E] Testing Debug Mode');
     const debugCheckbox = page.locator('#check-debug');
     await debugCheckbox.check();
@@ -26,7 +56,7 @@ test.describe('Flow Playground UI', () => {
     await debugCheckbox.uncheck();
     await page.waitForTimeout(1000); // Extra wait to ensure debug visualizers fully disappear
 
-    // 3. UI Actions (Wave, Bow, Dance, Walk, Death)
+    // 4. UI Actions (Wave, Bow, Dance, Walk, Death)
     // Note: Walk/Death are not in Quick Actions, accessed via Protocol Tester for UI simulation
     const simpleActions = ['wave', 'bow', 'dance'];
     

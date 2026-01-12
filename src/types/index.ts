@@ -1,7 +1,82 @@
 /**
- * Avatar Configuration Interface
- * 定义数字人的元数据结构，对应资源包中的 config.json
+ * High-level Behavior States for the Agent Brain
  */
+export const AvatarBehaviorStates = {
+  IDLE: 'IDLE',
+  TALKING: 'TALKING',
+  THINKING: 'THINKING',
+  LISTENING: 'LISTENING',
+  EMOTIONAL: 'EMOTIONAL'
+} as const;
+
+export type AvatarBehaviorState = typeof AvatarBehaviorStates[keyof typeof AvatarBehaviorStates];
+
+/**
+ * Encapsulates an intent to change the avatar's high-level behavior.
+ * 
+ * This intent is typically forwarded to an `onStateChange` callback where 
+ * consumers (like AnimationController or Text-to-Speech) can react.
+ */
+export interface BehaviorIntent {
+  /** Target high-level behavior state for the avatar. */
+  state: AvatarBehaviorState;
+  
+  /** 
+   * What is being said when the state is `TALKING`. 
+   * Useful for lip-sync, subtitles, or speech synthesis.
+   */
+  text?: string;
+  
+  /** 
+   * The current mood when the state is `EMOTIONAL`. 
+   * Used to select appropriate facial expressions or emotional animations.
+   */
+  emotion?: string;
+  
+  /** 
+   * Optional timeout for the state in milliseconds. 
+   * The brain will automatically revert to `IDLE` after this duration.
+   */
+  duration?: number;
+}
+
+/**
+ * Represents a single discrete action to be performed by the avatar.
+ * @template T Type of the command value (e.g. THREE.Vector3, number)
+ */
+export interface ActionCommand<T = any> {
+  type: 'animation' | 'expression' | 'interaction';
+  name: string;       // e.g. 'wave', 'smile', 'lookAt'
+  value?: T;          // Optional parameters
+  delay?: number;     // Delay before execution (ms)
+}
+
+/**
+ * Standard data structure for Agent-to-Avatar communication.
+ * Agents are encouraged to respond with this JSON structure.
+ */
+export interface AgentResponse {
+  /** The text content to be spoken by the avatar. */
+  text?: string;
+  
+  /** High-level behavior state to enter. */
+  state?: AvatarBehaviorState;
+  
+  /** Discrete actions to perform alongside the speech. */
+  actions?: ActionCommand[];
+  
+  /** Global emotion to set. */
+  emotion?: string;
+}
+
+/**
+ * Interface for autonomous behavior components
+ */
+export interface InteractionProcessor {
+  update(timeMs: number, delta: number): void;
+  dispose(): void;
+}
+
 export interface AvatarConfig {
   name: string;
   modelSrc: string;
@@ -40,14 +115,6 @@ export interface AnimationStateConfig {
   timeScale?: number;
   /** Duration to hold the last frame before transitioning (seconds) */
   holdDuration?: number;
-}
-
-/**
- * Interface for autonomous behavior components
- */
-export interface InteractionProcessor {
-  update(timeMs: number, delta: number): void;
-  dispose(): void;
 }
 
 export interface StageConfig {

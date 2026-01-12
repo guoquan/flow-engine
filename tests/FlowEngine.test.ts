@@ -1,5 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { FlowEngine } from '../src/core/FlowEngine';
 import * as THREE from 'three';
+
+// Mock Canvas API for BubbleManager
+HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+  clearRect: vi.fn(),
+  beginPath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  bezierCurveTo: vi.fn(),
+  quadraticCurveTo: vi.fn(),
+  closePath: vi.fn(),
+  fill: vi.fn(),
+  arc: vi.fn(),
+  measureText: vi.fn().mockReturnValue({ width: 10 }),
+  fillText: vi.fn(),
+});
 
 // Mock WebGPURenderer as a class
 vi.mock('three/webgpu', () => {
@@ -15,8 +31,6 @@ vi.mock('three/webgpu', () => {
   }
   return { WebGPURenderer };
 });
-
-import { FlowEngine } from '../src/core/FlowEngine';
 
 describe('FlowEngine', () => {
   let engine: FlowEngine;
@@ -160,8 +174,29 @@ describe('FlowEngine', () => {
   });
 
   it('should handle window resize', () => {
-    const resizeSpy = vi.spyOn((engine as any).renderer, 'setSize');
-    window.dispatchEvent(new Event('resize'));
-    expect(resizeSpy).toHaveBeenCalled();
+    const width = 1024;
+    const height = 768;
+    
+    // Simulate ResizeObserver callback
+    const entries = [{ contentRect: { width, height } }];
+    // @ts-ignore - Access mock instance
+    engine['resizeObserver'].trigger(entries);
+    
+    expect(engine['camera'].aspect).toBe(width / height);
+    expect(engine['renderer'].setSize).toHaveBeenCalledWith(width, height);
+  });
+
+  it('should cleanup resources on dispose', () => {
+    const disconnectSpy = vi.spyOn(engine['resizeObserver'], 'disconnect');
+    const rendererDisposeSpy = vi.spyOn(engine['renderer'], 'dispose');
+    const controlsDisposeSpy = vi.spyOn(engine['controls'], 'dispose');
+    
+    engine.dispose();
+    
+    expect(disconnectSpy).toHaveBeenCalled();
+    expect(rendererDisposeSpy).toHaveBeenCalled();
+    expect(controlsDisposeSpy).toHaveBeenCalled();
+    // @ts-ignore
+    expect(engine['renderer'].setAnimationLoop).toHaveBeenCalledWith(null);
   });
 });

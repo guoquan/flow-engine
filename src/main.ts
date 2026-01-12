@@ -1,115 +1,328 @@
 import './style.css';
 import { FlowEngine } from './core/FlowEngine';
+import type { AgentResponse } from './types';
+import { createLayout } from './ui';
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div id="canvas-container"></div>
-  <div id="ui-overlay">
-    <h1>Flow (服喽)</h1>
-    <p>Status: <span id="status">Initializing...</span></p>
-    <p style="font-size: 0.8rem; color: #00d2ff;">Tip: Click & Hold anywhere to track! (Advanced LookAt v6)</p>
-    <div id="controls" style="margin-top: 10px; pointer-events: auto;">
-      <label style="margin-right: 15px;">
-        <input type="checkbox" id="auto-rotate" /> Auto Rotate
-      </label>
-      <label>
-        <input type="checkbox" id="debug-mode" /> Debug Mode
-      </label>
-    </div>
-  </div>
-  
-  <div id="ai-response"></div>
+// Inject Layout
+createLayout(document.getElementById('app')!);
 
-  <div id="chat-container">
-    <input type="text" id="user-input" placeholder="Say hello..." />
-    <button id="send-btn">Send</button>
-  </div>
-`;
-
-// Initialize Engine
+// Init Engine
 const init = async () => {
-  const statusEl = document.getElementById('status')!;
+  const statusEl = document.getElementById('loading-status')!;
+  
+  // Expose necessary internal state for dashboard visualization
+  interface DebuggableEngine {
+    brain: { getState: () => string };
+  }
+  let engine: FlowEngine;
+
   try {
-    console.log('[Flow] Creating engine instance...');
-    const engine = new FlowEngine('canvas-container');
+    engine = new FlowEngine('canvas-container');
     
-    statusEl.textContent = 'Loading Avatar...';
-    
-    // Load the real GLB avatar (handle base path for GH Pages)
     const baseUrl = import.meta.env.BASE_URL.endsWith('/') 
       ? import.meta.env.BASE_URL 
       : `${import.meta.env.BASE_URL}/`;
       
-    await engine.loadAvatar(`${baseUrl}assets/avatars/expressive/config.json`);
-    await engine.loadStage(`${baseUrl}assets/stages/default/config.json`);
+    // Initial Load
+    const defaultAvatar = `${baseUrl}assets/avatars/expressive/config.json`;
+    const defaultStage = `${baseUrl}assets/stages/default/config.json`;
     
-    statusEl.textContent = 'Ready (Idle)';
+    (document.getElementById('input-avatar-url') as HTMLInputElement).value = defaultAvatar;
+    (document.getElementById('input-stage-url') as HTMLInputElement).value = defaultStage;
 
-    // Controls Logic
-    const autoRotateCheck = document.getElementById('auto-rotate') as HTMLInputElement;
-    autoRotateCheck.addEventListener('change', (e) => {
+    await engine.loadAvatar(defaultAvatar);
+    await engine.loadStage(defaultStage);
+    statusEl.textContent = 'Ready';
+
+    // --- UI Logic ---
+
+    // 1. Dashboard Controls
+    const sidebarToggleBtn = document.getElementById('btn-toggle-sidebar');
+    if (sidebarToggleBtn) {
+      const toggleSidebar = () => {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+          sidebar.classList.toggle('collapsed');
+          const isCollapsed = sidebar.classList.contains('collapsed');
+          sidebarToggleBtn.setAttribute('aria-expanded', String(!isCollapsed));
+        }
+      };
+
+      sidebarToggleBtn.addEventListener('click', toggleSidebar);
+      // Keyboard activation on Enter/Space when the toggle has focus
+      sidebarToggleBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleSidebar();
+        }
+      });
+
+      // Global keyboard shortcut: Ctrl+B / Cmd+B to toggle the sidebar
+      document.addEventListener('keydown', (event: KeyboardEvent) => {
+        if ((event.ctrlKey || event.metaKey) && (event.key === 'b' || event.key === 'B')) {
+          event.preventDefault();
+          toggleSidebar();
+        }
+      });
+    }
+
+    document.getElementById('check-debug')?.addEventListener('change', (e) => {
+      engine.setDebug((e.target as HTMLInputElement).checked);
+    });
+    document.getElementById('check-rotate')?.addEventListener('change', (e) => {
       engine.isAutoRotate = (e.target as HTMLInputElement).checked;
     });
 
-    const debugCheck = document.getElementById('debug-mode') as HTMLInputElement;
-    debugCheck.addEventListener('change', (e) => {
-      engine.setDebug((e.target as HTMLInputElement).checked);
+    // 2. Quick Actions
+    document.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = (btn as HTMLElement).dataset.action!;
+        if (action === 'idle') {
+          engine.setBehavior({ state: 'IDLE' });
+        } else {
+          engine.playAction(action);
+        }
+      });
     });
 
-    // Chat Interaction Logic
-    const inputEl = document.getElementById('user-input') as HTMLInputElement;
-    const sendBtn = document.getElementById('send-btn') as HTMLButtonElement;
-    const responseEl = document.getElementById('ai-response')!;
+    document.getElementById('btn-say-hello')?.addEventListener('click', () => {
+      const text = "Hello! I am Flow Engine.";
+      engine.say({ text, duration: 3000 });
+      addLog(text, 'agent');
+    });
 
-    const sendMessage = async () => {
-      const text = inputEl.value.trim().toLowerCase();
-      if (!text) return;
+    document.getElementById('btn-think')?.addEventListener('click', () => {
+      const text = "Processing complex logic...";
+      engine.think({ text, duration: 4000 });
+      addLog(text, 'agent');
+    });
 
-      // UI State
-      inputEl.value = '';
-      statusEl.textContent = 'Thinking...';
+    // 3. Asset Loader
+    const loadAsset = async (type: 'avatar' | 'stage') => {
+      const inputId = type === 'avatar' ? 'input-avatar-url' : 'input-stage-url';
+      const input = document.getElementById(inputId) as HTMLInputElement;
+      const url = input.value.trim();
+      if (!url) return;
 
-      // --- Local Brain Logic (No fetch needed) ---
-      let replyText = "我听到了。";
-      let action = "idle";
+      const btn = document.getElementById(`btn-load-${type}`) as HTMLButtonElement;
+      const originalText = btn.textContent;
+      btn.textContent = '...';
+      btn.disabled = true;
 
-      if (text.includes("你好") || text.includes("hello")) {
-        replyText = "你好呀！很高兴见到你。";
-        action = "wave";
-      } else if (text.includes("跳舞") || text.includes("dance")) {
-        replyText = "好的，给你表演一段！";
-        action = "dance";
-      } else if (text.includes("再见") || text.includes("bye")) {
-        replyText = "下次再聊，拜拜！";
-        action = "bow";
-      } else if (text.includes("死") || text.includes("death") || text.includes("die")) {
-        replyText = "系统故障...重启中...";
-        action = "death";
+      try {
+        if (type === 'avatar') await engine.loadAvatar(url);
+        else await engine.loadStage(url);
+        console.log(`[UI] Loaded ${type}: ${url}`);
+      } catch (e) {
+        console.error(`[UI] Failed to load ${type}`, e);
+        alert(`Failed to load ${type}. Check console.`);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
       }
-
-      // Handle Response
-      statusEl.textContent = `Action: ${action}`;
-      responseEl.textContent = replyText;
-      responseEl.classList.add('visible');
-
-      console.log('[Flow] Local Brain Decision:', { action, replyText });
-      
-      engine.playAction(action); 
-
-      // Hide text after a while
-      setTimeout(() => {
-        responseEl.classList.remove('visible');
-        statusEl.textContent = 'Ready (Idle)';
-      }, 3000);
     };
 
-    sendBtn.addEventListener('click', sendMessage);
-    inputEl.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
+    document.getElementById('btn-load-avatar')?.addEventListener('click', () => loadAsset('avatar'));
+    document.getElementById('btn-load-stage')?.addEventListener('click', () => loadAsset('stage'));
+
+
+    // 4. Chat System
+    const chatLog = document.getElementById('chat-log')!;
+    const chatInput = document.getElementById('chat-input') as HTMLInputElement;
+    
+    const addLog = (text: string, type: 'user' | 'agent') => {
+      const msg = document.createElement('div');
+      msg.className = `msg ${type}`;
+      msg.textContent = text;
+      chatLog.appendChild(msg);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    };
+
+    const handleUserMessage = async () => {
+      const text = chatInput.value.trim();
+      if (!text) return;
+      
+      addLog(text, 'user');
+      chatInput.value = '';
+
+      // Mock Agent Logic
+      engine.think({ duration: 1000 }); // Simulate processing
+      
+      setTimeout(() => {
+        let response: AgentResponse = { text: "I heard you." };
+
+        if (text.match(/hello|hi/i)) {
+          response = {
+            text: "Hello there! I am Flow Engine.",
+            state: 'TALKING',
+            actions: [{ type: 'animation', name: 'wave' }]
+          };
+        } else if (text.match(/dance/i)) {
+          response = {
+            text: "Look at this move!",
+            state: 'EMOTIONAL',
+            actions: [{ type: 'animation', name: 'dance' }]
+          };
+        } else if (text.match(/look/i)) {
+          response = {
+            text: "I am tracking your cursor now.",
+            state: 'LISTENING'
+          };
+        }
+
+        addLog(response.text || "...", 'agent');
+        engine.processAgentResponse(response);
+      }, 800);
+    };
+
+    document.getElementById('chat-send')?.addEventListener('click', handleUserMessage);
+    chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleUserMessage(); });
+
+    // 5. Protocol Tester & Panels
+    const jsonInput = document.getElementById('json-input') as HTMLTextAreaElement;
+    const jsonError = document.getElementById('json-error')!;
+
+    document.getElementById('json-send')?.addEventListener('click', () => {
+      try {
+        jsonError.style.display = 'none';
+        const data = JSON.parse(jsonInput.value);
+        engine.processAgentResponse(data);
+        
+        // Echo the text to Chat Log if present in JSON
+        if (data.text) {
+          addLog(data.text, 'agent');
+        } else {
+          addLog(`[JSON Action Executed]`, 'agent');
+        }
+      } catch (e) {
+        jsonError.textContent = (e as Error).message;
+        jsonError.style.display = 'block';
+      }
     });
 
-  } catch (err) {
-    console.error(err);
-    document.getElementById('status')!.textContent = 'Error!';
+    document.getElementById('header-protocol')?.addEventListener('click', () => {
+      document.getElementById('panel-protocol')?.classList.toggle('collapsed');
+    });
+
+    // 6. Polling for Brain State
+    setInterval(() => {
+      const stateEl = document.getElementById('brain-state');
+      if (stateEl) {
+        const debugEngine = engine as unknown as DebuggableEngine;
+        stateEl.textContent = debugEngine.brain.getState();
+        
+        // Simple visual feedback
+        stateEl.className = 'badge ' + debugEngine.brain.getState().toLowerCase();
+      }
+    }, 200);
+
+    // 7. MCP Bridge (WebSocket Client)
+    let reconnectDelay = 1000;
+    const MAX_RECONNECT_DELAY = 30000;
+    let mcpWs: WebSocket | null = null;
+    let stableConnectionTimeout: number | null = null;
+
+    const connectMcpBridge = () => {
+      const statusEl = document.getElementById('mcp-status')!;
+      
+      // Build WebSocket URL based on current location (avoids hardcoded localhost)
+      const getMcpWebSocketUrl = () => {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const hostname = window.location.hostname || 'localhost';
+        const urlParams = new URLSearchParams(window.location.search);
+        // Port is intentionally kept as a string for URL construction.
+        const port: string = urlParams.get('wsPort') || '3001';
+        return `${protocol}//${hostname}:${port}`;
+      };
+
+      const url = getMcpWebSocketUrl();
+      console.log(`[MCP-Bridge] Connecting to ${url}...`);
+      
+      mcpWs = new WebSocket(url);
+      
+      mcpWs.onopen = () => {
+        console.log('[MCP-Bridge] Connected');
+        statusEl.textContent = 'Connected';
+        statusEl.style.background = '#2e7d32'; // Green
+        
+        // Reset delay only after connection has been stable for 5s
+        stableConnectionTimeout = window.setTimeout(() => {
+          reconnectDelay = 1000;
+        }, 5000);
+      };
+
+      mcpWs.onclose = () => {
+        console.log(`[MCP-Bridge] Disconnected. Retrying in ${reconnectDelay}ms...`);
+        statusEl.textContent = 'Disconnected';
+        statusEl.style.background = '#c62828'; // Red
+        
+        if (stableConnectionTimeout) {
+          clearTimeout(stableConnectionTimeout);
+          stableConnectionTimeout = null;
+        }
+
+        setTimeout(connectMcpBridge, reconnectDelay);
+        // Exponential backoff
+        reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
+        mcpWs = null;
+      };
+
+      mcpWs.onerror = (err) => {
+        console.error('[MCP-Bridge] Error:', err);
+        if (mcpWs) mcpWs.close();
+      };
+
+      mcpWs.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data as string);
+          console.log('[MCP-Bridge] Received:', data);
+
+          switch (data.type) {
+            case 'say':
+              engine.say({ text: data.text, duration: data.duration });
+              addLog(`[MCP] Say: ${data.text}`, 'agent');
+              break;
+            case 'think':
+              engine.think({ text: data.text, duration: data.duration });
+              addLog(`[MCP] Think: ${data.text}`, 'agent');
+              break;
+            case 'play_action':
+              engine.playAction(data.action);
+              addLog(`[MCP] Action: ${data.action}`, 'agent');
+              break;
+            case 'interaction':
+              if (data.name === 'lookAt') {
+                engine.processAgentResponse({
+                   actions: [{ type: 'interaction', name: 'lookAt', value: data.value }]
+                });
+                addLog(`[MCP] Interaction: ${data.name}`, 'agent');
+              }
+              break;
+            default:
+              console.warn('[MCP-Bridge] Unknown message type:', data.type);
+          }
+        } catch (e) {
+          console.error('[MCP-Bridge] Failed to process message:', e);
+          // Close the WebSocket on parse/processing errors to avoid inconsistent state
+          if (mcpWs) mcpWs.close();
+        }
+      };
+    };
+
+    // Start connection
+    connectMcpBridge();
+
+    // Cleanup on unload
+    window.addEventListener('beforeunload', () => {
+      if (mcpWs) {
+        mcpWs.close();
+        mcpWs = null;
+      }
+    });
+
+  } catch (e) {
+    statusEl.textContent = 'Error loading assets. Check console.';
+    console.error('Engine Init Failed:', e);
   }
 };
 

@@ -1,0 +1,145 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { FlowMcpServer } from '../../src/mcp/server';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+
+// Mock the MCP SDK Server
+vi.mock('@modelcontextprotocol/sdk/server/index.js', () => {
+  return {
+    Server: class {
+      public handlers = new Map();
+      constructor() {}
+      setRequestHandler(schema: any, handler: any) {
+        this.handlers.set(schema, handler);
+      }
+      async callHandler(schema: any, params: any) {
+        const handler = this.handlers.get(schema);
+        if (handler) return handler(params);
+        return null;
+      }
+      connect = vi.fn();
+    }
+  };
+});
+
+vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => {
+  return {
+    StdioServerTransport: class {}
+  };
+});
+
+// Mock 'ws' to prevent EADDRINUSE and avoid real network ops
+vi.mock('ws', () => {
+  return {
+    WebSocketServer: class {
+      constructor(options: any) { /* no-op */ }
+      on(event: string, cb: Function) { /* no-op */ }
+      close(cb: Function) { if (cb) cb(); }
+      clients = new Set();
+      address() { return null; }
+    },
+    WebSocket: class {}
+  };
+});
+
+describe('FlowMcpServer', () => {
+  let server: FlowMcpServer;
+
+  beforeEach(() => {
+    server = new FlowMcpServer();
+  });
+
+  it('should register tools correctly', async () => {
+    // @ts-ignore - access private server to verify registration
+    const mcpServer = server.server;
+    
+    // Check if handler is registered for ListToolsRequestSchema
+    expect(mcpServer.handlers.has(ListToolsRequestSchema)).toBe(true);
+
+    // Manual trigger
+    const result = await mcpServer.callHandler(ListToolsRequestSchema, {});
+    
+    expect(result).toBeDefined();
+    expect(result.tools).toBeDefined();
+    expect(result.tools).toHaveLength(3);
+    expect(result.tools[0].name).toBe('say');
+  });
+
+  it('should handle tool calls correctly', async () => {
+    // @ts-ignore
+    const mcpServer = server.server;
+    
+    expect(mcpServer.handlers.has(CallToolRequestSchema)).toBe(true);
+
+    // 1. Simulate a 'say' call
+    const sayResult = await mcpServer.callHandler(CallToolRequestSchema, {
+      params: {
+        name: 'say',
+        arguments: { text: 'Test message', duration: 5000 }
+      }
+    });
+    
+    expect(sayResult).toBeDefined();
+    // Message changed because no WS clients are connected in this mock
+    expect(sayResult.content[0].text).toContain('Command acknowledged but no frontend clients connected');
+    expect(sayResult.content[0].text).toContain('Say "Test message"');
+
+    // 2. Simulate a 'think' call
+    const thinkResult = await mcpServer.callHandler(CallToolRequestSchema, {
+      params: {
+        name: 'think',
+        arguments: { text: 'Pondering...' }
+      }
+    });
+    expect(thinkResult).toBeDefined();
+    expect(thinkResult.content[0].text).toContain('Command acknowledged but no frontend clients connected');
+    expect(thinkResult.content[0].text).toContain('Think "Pondering..."');
+
+    // 3. Simulate a 'play_action' call
+    const actionResult = await mcpServer.callHandler(CallToolRequestSchema, {
+      params: {
+        name: 'play_action',
+        arguments: { action: 'wave' }
+      }
+    });
+
+    expect(actionResult).toBeDefined();
+    expect(actionResult.content[0].text).toContain('Command acknowledged but no frontend clients connected');
+    expect(actionResult.content[0].text).toContain('Play "wave"');
+  });
+
+  it('should handle error cases correctly', async () => {
+    // @ts-ignore
+    const mcpServer = server.server;
+
+    // 1. Unknown tool
+    await expect(mcpServer.callHandler(CallToolRequestSchema, {
+      params: { name: 'unknown_tool', arguments: {} }
+    })).rejects.toThrow('Unknown tool');
+
+    // 2. Missing required arguments (say requires text)
+    await expect(mcpServer.callHandler(CallToolRequestSchema, {
+      params: { name: 'say', arguments: {} }
+    })).rejects.toThrow(); // Zod throws a specific error structure
+
+    // 3. Optional arguments should not throw (think requires nothing)
+    const result = await mcpServer.callHandler(CallToolRequestSchema, {
+      params: { name: 'think', arguments: {} }
+    });
+    expect(result).toBeDefined();
+    // Verify default output when text is undefined (Schema defaults to "...")
+    expect(result.content[0].text).toContain('Think "..."');
+  });
+
+  it('should return the correct port via getPort()', () => {
+    // Should return 3001 by default (mocked wss.address returns null in my mock)
+    expect(server.getPort()).toBe(3001);
+    
+    // Test with specific port
+    const customServer = new FlowMcpServer({ port: 4000 });
+    expect(customServer.getPort()).toBe(4000);
+  });
+
+  it('should close the server and clients correctly', async () => {
+    await expect(server.close()).resolves.toBeUndefined();
+  });
+});

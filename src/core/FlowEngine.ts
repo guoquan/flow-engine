@@ -6,7 +6,10 @@ import { AvatarLoader } from './AvatarLoader';
 import { StageLoader } from './StageLoader';
 import { AnimationController } from './AnimationController';
 import { LookAtProcessor } from './LookAtProcessor';
-import type { AvatarConfig } from '../types';
+import { BehaviorController } from './BehaviorController';
+import { BubbleManager } from './BubbleManager';
+import { AvatarBehaviorStates, type AvatarConfig, type BehaviorIntent, type AvatarBehaviorState, type AgentResponse, type ActionCommand } from '../types';
+import { SaySchema, ThinkSchema, type SayParams, type ThinkParams } from '../schemas/actions';
 
 export class FlowEngine {
   private container: HTMLElement;
@@ -27,12 +30,16 @@ export class FlowEngine {
 
   // Components
   private lookAtProcessor: LookAtProcessor;
+  private brain: BehaviorController;
+  private bubbleManager: BubbleManager;
   private currentAvatarConfig: AvatarConfig | null = null;
 
   // Debug Helpers
   public isDebug = false;
   private debugTargetMesh: THREE.Mesh | null = null;
   private debugPlaneMesh: THREE.GridHelper | null = null;
+  
+  private resizeObserver: ResizeObserver;
 
   constructor(containerId: string) {
     const container = document.getElementById(containerId);
@@ -43,6 +50,7 @@ export class FlowEngine {
     this.clock = new THREE.Clock();
     this.loader = new AvatarLoader();
     this.stageLoader = new StageLoader();
+    this.brain = new BehaviorController();
 
     // 1. Scene
     this.scene = new THREE.Scene();
@@ -52,7 +60,7 @@ export class FlowEngine {
     // 2. Camera
     this.camera = new THREE.PerspectiveCamera(
       45, 
-      window.innerWidth / window.innerHeight, 
+      this.container.clientWidth / this.container.clientHeight, 
       0.1, 
       100
     );
@@ -60,7 +68,7 @@ export class FlowEngine {
 
     // 3. Renderer (WebGPU)
     this.renderer = new WebGPURenderer({ antialias: true, alpha: true });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.container.appendChild(this.renderer.domElement);
 
@@ -72,7 +80,7 @@ export class FlowEngine {
     this.controls.enableDamping = true;
     this.controls.target.set(0, 1, 0);
 
-    // 6. Initialize Processor
+    // 6. Initialize Processors
     this.lookAtProcessor = new LookAtProcessor(
       this.container,
       this.camera,
@@ -85,12 +93,60 @@ export class FlowEngine {
         return list;
       }
     );
+    
+    this.bubbleManager = new BubbleManager(this.scene);
 
-    // 7. Event Handlers
-    window.addEventListener('resize', this.onWindowResize.bind(this));
+    // 7. Connect Brain to Reflexes
+    this.brain.onStateChange = (state: AvatarBehaviorState, intent: BehaviorIntent) => {
+      if (!this.animController) return;
+      
+      switch (state) {
+        case AvatarBehaviorStates.IDLE:
+          this.animController.play('idle');
+          this.lookAtProcessor.reset();
+          this.bubbleManager.hide();
+          break;
+        case AvatarBehaviorStates.TALKING:
+          this.animController.play('talk');
+          // Use clone to lock current position and avoid live-reference tracking issues
+          this.lookAtProcessor.setTarget(this.camera.position.clone());
+          if (intent.text) this.bubbleManager.show(intent.text, 'speech');
+          break;
+        case AvatarBehaviorStates.THINKING:
+          this.animController.play('thinking');
+          this.bubbleManager.show(intent.text || '...', 'thought');
+          break;
+        case AvatarBehaviorStates.LISTENING:
+          this.animController.play('idle'); 
+          this.lookAtProcessor.setTarget(this.camera.position.clone());
+          this.bubbleManager.hide();
+          break;
+        case AvatarBehaviorStates.EMOTIONAL:
+          this.animController.play('idle');
+          this.lookAtProcessor.setTarget(this.camera.position.clone());
+          this.bubbleManager.hide();
+          break;
+      }
+    };
 
+    // 8. Event Handlers
+    // Use ResizeObserver to handle all layout changes (window resize, sidebar toggle, split screen)
+    this.resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      // Use contentRect for precise fractional pixels
+      this.onWindowResize(entry.contentRect.width, entry.contentRect.height);
+    });
+    this.resizeObserver.observe(this.container);
+    
     // Start Loop (WebGPU Style)
     this.renderer.setAnimationLoop(this.animate.bind(this));
+  }
+
+  public dispose() {
+    this.resizeObserver.disconnect();
+    this.renderer.setAnimationLoop(null);
+    this.renderer.dispose();
+    this.controls.dispose();
   }
 
   private setupLights() {
@@ -138,11 +194,17 @@ export class FlowEngine {
           idle: { clipName: 'Idle', loop: true },
           walk: { clipName: 'Walking', loop: true },
           wave: { clipName: 'Wave', loop: false, next: 'idle' },
+          talk: { clipName: 'Talk', loop: true },
+          thinking: { clipName: 'Thinking', loop: true },
           dance: { clipName: 'Dance', loop: false, next: 'idle' },
           bow: { clipName: 'Bow', loop: false, next: 'idle' }
         }
       };
       this.animController.init(animConfig);
+    }
+
+    if (this.headBone) {
+      this.bubbleManager.setTarget(this.headBone);
     }
     
     console.log(`[Flow] Avatar "${config.name}" loaded.`);
@@ -165,8 +227,13 @@ export class FlowEngine {
 
   public setDebug(enabled: boolean) {
     this.isDebug = enabled;
-    if (enabled) this.createDebugHelpers();
-    else this.removeDebugHelpers();
+    if (enabled) {
+      this.createDebugHelpers();
+      this.brain.setDebugMode(true);
+    } else {
+      this.removeDebugHelpers();
+      this.brain.setDebugMode(false);
+    }
   }
 
   private createDebugHelpers() {
@@ -223,24 +290,137 @@ export class FlowEngine {
     if (this.debugPlaneMesh) { this.scene.remove(this.debugPlaneMesh); this.debugPlaneMesh = null; }
   }
 
-  private onWindowResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+  private onWindowResize(width: number, height: number) {
+    if (!width || !height) return;
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    // Enable style update (default) to match canvas size to container
+    this.renderer.setSize(width, height);
   }
 
   public isAutoRotate = false;
 
+  /**
+   * HIGH-LEVEL BEHAVIOR API
+   */
+
+  /**
+   * Submit a 'TALKING' intent to the brain.
+   * @param params Conversation parameters (text, duration)
+   */
+  public say(params: SayParams | string) {
+    const raw = typeof params === 'string' ? { text: params } : params;
+    const data = SaySchema.parse(raw);
+    this.brain.setIntent({ 
+      state: AvatarBehaviorStates.TALKING, 
+      text: data.text, 
+      duration: data.duration 
+    });
+  }
+
+  /**
+   * Submit a 'THINKING' intent to the brain.
+   * @param params Thought parameters (text, duration)
+   */
+  public think(params?: ThinkParams | string) {
+    const raw = typeof params === 'string' ? { text: params } : (params || {});
+    const data = ThinkSchema.parse(raw);
+    this.brain.setIntent({ 
+      state: AvatarBehaviorStates.THINKING, 
+      text: data.text,
+      duration: data.duration 
+    });
+  }
+
+  /**
+   * Submit a complex behavior intent.
+   * @param intent The behavior intent object
+   */
+  public setBehavior(intent: BehaviorIntent) {
+    this.brain.setIntent(intent);
+  }
+
+  /**
+   * Processes a structured response from an AI Agent.
+   * This is the primary bridge for Agent-to-Avatar interaction.
+   * @param response The structured message according to the Unified Action Protocol
+   */
+  public processAgentResponse(response: AgentResponse) {
+    if (!response || typeof response !== 'object') {
+      console.warn('[Flow] Invalid AgentResponse received:', response);
+      return;
+    }
+
+    console.log('[Flow] Processing Agent Response:', response);
+
+    // 1. Handle high-level state if explicitly provided
+    if (response.state) {
+      this.brain.setIntent({ 
+        state: response.state,
+        text: response.text,
+        emotion: response.emotion
+      });
+    } else if (response.text) {
+      // 2. Default to TALKING if text is present but state is omitted
+      this.say(response.text);
+    }
+
+    // 3. Execute discrete actions
+    if (response.actions && Array.isArray(response.actions)) {
+      response.actions.forEach(cmd => {
+        setTimeout(() => {
+          this.executeCommand(cmd);
+        }, cmd.delay || 0);
+      });
+    }
+  }
+
+  /**
+   * Internal executor for discrete action commands.
+   * Note: Actions scheduled with delay may conflict if state changes rapidly.
+   */
+  private executeCommand(cmd: ActionCommand) {
+    if (!cmd || !cmd.type) return;
+
+    switch (cmd.type) {
+      case 'animation':
+        // Directly play animation via animController to avoid brain-reset feedback loops
+        if (this.animController) this.animController.play(cmd.name.toLowerCase());
+        break;
+      case 'expression':
+        // Future: Emotional blending/morph targets
+        break;
+      case 'interaction':
+        if (cmd.name === 'lookAt' && cmd.value instanceof THREE.Vector3) {
+          this.lookAtProcessor.setTarget(cmd.value);
+        }
+        break;
+      default:
+        console.warn('[Flow] Unknown action command type received:', cmd.type, cmd);
+        break;
+    }
+  }
+
+  /**
+   * Play a manual low-level action. Interrupts high-level brain state.
+   * @param action State name defined in config.animations.states
+   */
   public playAction(action: string) {
     this.lookAtProcessor.interrupt();
+    this.brain.setIntent({ state: AvatarBehaviorStates.IDLE });
     if (this.animController) this.animController.play(action.toLowerCase());
   }
 
   private animate(_timeMs: number) {
     const delta = this.clock.getDelta();
+    
+    // Update Brain
+    this.brain.update(_timeMs);
+
     if (this.avatarModel) {
        if (this.animController) this.animController.update(delta);
        this.lookAtProcessor.update(_timeMs, delta);
+       this.bubbleManager.update();
     }
     this.updateDebugHelpers();
     if (this.stageModel && this.stageAnimController) this.stageAnimController.update(delta);

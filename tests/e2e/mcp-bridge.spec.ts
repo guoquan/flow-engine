@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { WebSocketServer, AddressInfo } from 'ws';
-import fs from 'fs';
 
 test.describe('MCP Bridge Integration', () => {
   let wss: WebSocketServer;

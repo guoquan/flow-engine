@@ -26,12 +26,14 @@ body {
   flex: 1;
   min-width: 0; /* Critical for flex shrinking */
   position: relative;
-  background: #000;
+  background: #1a1a1a;
   overflow: hidden;
 }
 
 #canvas-container canvas {
   display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 #sidebar {

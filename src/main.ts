@@ -42,9 +42,17 @@ const init = async () => {
       const toggleSidebar = () => {
         const sidebar = document.getElementById('sidebar');
         if (sidebar) {
+          // Pause resize to prevent WebGPU surface flicker/black screen during layout animation
+          engine.setResizeEnabled(false);
+          
           sidebar.classList.toggle('collapsed');
           const isCollapsed = sidebar.classList.contains('collapsed');
           sidebarToggleBtn.setAttribute('aria-expanded', String(!isCollapsed));
+          
+          // Re-enable resize after transition (0.3s)
+          setTimeout(() => {
+            engine.setResizeEnabled(true);
+          }, 350);
         }
       };
 

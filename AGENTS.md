@@ -56,7 +56,7 @@ For **every** update requirement, the Agent **must** autonomously drive the foll
 #### Phase 2: Implementation & Verification 🧪
 *   **Commit**: Use **Conventional Commits** (e.g., `fix(core): ...`, `feat(api): ...`).
 *   **GPG Signing**: Use `--no-gpg-sign` for automated commits to avoid interactive agent prompts (e.g., 1Password). Humans will handle signing manually if needed.
-*   **Test**: Run `npm test`.
+*   **Test**: Run `pnpm test`.
 
 #### Phase 3: Delivery & Review Cycle (Strict) 🚚
 

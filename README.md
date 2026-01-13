@@ -19,13 +19,16 @@
 
 ### 📦 Installation
 
-This package is distributed under two different scopes depending on the registry:
+This project uses **pnpm** as the package manager. Please ensure you have it installed:
+```bash
+npm install -g pnpm
+```
 
 #### Stable Versions (Recommended)
 
 **From NPM Registry:**
 ```bash
-npm install @guoquan.net/flow-engine
+pnpm add @guoquan.net/flow-engine
 ```
 
 **From GitHub Packages Registry:**
@@ -35,27 +38,21 @@ Add a `.npmrc` file to your project:
 ```
 Then install:
 ```bash
-npm install @guoquan/flow-engine
+pnpm add @guoquan/flow-engine
 ```
 
 > **Note**: The naming difference (`@guoquan.net` on NPM vs `@guoquan` on GitHub) is due to account scope requirements on each platform.
 
 #### Development / Latest Version
 
-Install directly from the GitHub repository. You can specify a branch, tag, or commit hash using the `#` prefix:
+Install directly from the GitHub repository. You can specify a branch, tag, or commit hash:
 
 ```bash
 # Latest from main branch
-npm install github:guoquan/flow-engine
+pnpm add github:guoquan/flow-engine
 
 # Specific branch
-npm install github:guoquan/flow-engine#develop
-
-# Specific tag
-npm install github:guoquan/flow-engine#v0.1.9
-
-# Specific commit hash
-npm install github:guoquan/flow-engine#7834b6c
+pnpm add github:guoquan/flow-engine#develop
 ```
 
 ### 🌟 Highlights
@@ -75,7 +72,7 @@ Flow Engine includes a built-in **Model Context Protocol (MCP)** server. This al
 
 ```bash
 # Start the MCP Server
-npm run mcp
+pnpm run mcp
 ```
 
 *   👉 **[Read the MCP Integration Guide](./docs/MCP_GUIDE.md)**

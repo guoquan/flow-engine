@@ -54,7 +54,7 @@ jobs:
       - name: Publish to NPM
         # 官方文档指出：使用 Trusted Publishing 时，npm 会自动处理身份验证并生成 provenance。
         # 且不需要 NODE_AUTH_TOKEN 环境变量。
-        run: npm publish --access public --provenance
+        run: pnpm publish --access public --provenance --no-git-checks
 
   publish-gpr:
     name: Publish to GitHub Packages
@@ -99,7 +99,7 @@ jobs:
         run: pnpm run build
 
       - name: Publish to GitHub Packages
-        run: npm publish
+        run: pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

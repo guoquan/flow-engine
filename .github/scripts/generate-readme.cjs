@@ -28,6 +28,7 @@ const descriptions = {
   'ui-action-walk.png': 'Avatar performing the "Walk" animation triggered via Protocol Tester.',
   'ui-action-death.png': 'Avatar performing the "Death" animation triggered via Protocol Tester.',
   'ui-interaction-lookat.png': 'Avatar performing LookAt interaction triggered by Mouse Click.',
+  'sidebar-collapsed.png': 'Playground UI with Sidebar collapsed.',
   
   // Camera
   'camera-rotate.png': 'Camera rotation via Mouse Drag.',
